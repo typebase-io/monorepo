@@ -1,0 +1,128 @@
+---
+title: Work Locally
+description: Run your Typebase server on localhost during development.
+---
+
+For most day-to-day work, the simplest setup is to deploy your server to `dev` once and point your frontend at the deployed URL. Your frontend hot-reloads instantly, and you redeploy the backend with `npx typebase-io-cli deploy dev` whenever you change it.
+
+But sometimes you want to iterate on server code without redeploying — for debugging, working offline, or just a faster feedback loop. In those cases you can run the server on your own machine.
+
+## Generate the server
+
+```npm
+npx typebase-io-cli generate-server
+```
+
+This writes a runnable server to `typebase/_server/`. See the [generate-server reference](/docs/cli/generate-server) for output formats and adapters.
+
+<Callout type="warn">
+  The generated server is a snapshot of your `typebase/` directory — it isn't watching your files. Re-run `generate-server` (and restart the local
+  server) any time you change anything inside `typebase/`, whether that's an action, your schema, or your auth config.
+</Callout>
+
+## Start it
+
+```bash
+cd typebase/_server
+npm install
+npx tsx src/index.ts
+```
+
+The server listens on `http://localhost:3000` by default.
+
+<Callout type="info">
+  `generate-server` defaults to TypeScript output and the `node` adapter. If you'd rather run plain JavaScript, pass `--output esm` or `--output cjs`
+  and run the built files with `node src/index.js`.
+</Callout>
+
+## Environment variables
+
+The generated server reads its config from a `.env` file in `typebase/_server/`. At minimum you'll need:
+
+```bash title="typebase/_server/.env"
+DATABASE_URL=postgresql://...   # only if your project has a db/schema.ts
+BETTER_AUTH_SECRET=...          # only if your project has an auth.ts
+```
+
+The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`) once — it provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
+
+<Callout type="info">
+  The generated server reads a plain `DATABASE_URL`, but the CLI stores both connection strings in your project-root `.env` under different keys so
+  they can coexist:
+
+- `DATABASE_URL` → prod branch
+- `DATABASE_URL_DEV` → dev branch
+
+For local development, copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`:
+
+```bash title="typebase/_server/.env"
+# running against the dev branch — paste DATABASE_URL_DEV from your project-root .env
+DATABASE_URL=postgresql://...
+```
+
+Most of the time you'll want the dev branch so local experiments don't touch production data.
+
+</Callout>
+
+If the value isn't in your project root yet (for example, on a fresh machine), you can fetch it from the provider — pick the target that matches the branch you want.
+
+Dev branch:
+
+```npm
+npx typebase-io-cli env dev get DATABASE_URL
+```
+
+```npm
+npx typebase-io-cli env dev get BETTER_AUTH_SECRET
+```
+
+Prod branch:
+
+```npm
+npx typebase-io-cli env prod get DATABASE_URL
+```
+
+```npm
+npx typebase-io-cli env prod get BETTER_AUTH_SECRET
+```
+
+If a command prints `ENCRYPTED`, that provider is hiding the raw secret value. In that case, copy the value from the original source instead — the Neon console for `DATABASE_URL`, or the provider dashboard for `BETTER_AUTH_SECRET`.
+
+## Point your frontend at localhost
+
+In your frontend project's `.env`, override the server URL so your client hits localhost instead of the deployed server:
+
+```bash title=".env"
+TYPEBASE_APP_URL=http://localhost:3000
+```
+
+## Trusted origins for auth
+
+If you have an `auth.ts` file, add your frontend's local origin to `trustedOrigins` so the local server accepts its requests:
+
+```ts title="typebase/auth.ts"
+export const auth = defineAuth({
+  trustedOrigins: ['http://localhost:3000', 'http://localhost:3001'],
+  emailAndPassword: { enabled: true },
+});
+```
+
+Use whatever ports your frontend and server actually run on.
+
+## Pushing schema changes
+
+You can apply schema changes to your dev Neon branch without doing a full deploy:
+
+```npm
+npx typebase-io-cli db dev push
+```
+
+This is the same command `npx typebase-io-cli deploy dev` runs under the hood, so your local server and your next deploy stay on the same schema.
+
+If you'd rather run your local server against a Postgres instance on your own machine (Docker, Postgres.app, etc.) instead of a Neon branch, point `db local push` at it:
+
+```npm
+npx typebase-io-cli db local push --url postgres://localhost:5432/mydb
+```
+
+You can also set `DATABASE_URL` (in your shell or in `typebase/_server/.env`) and omit the `--url` flag. See the [db local push reference](/docs/cli/db#db-local-push) for details.

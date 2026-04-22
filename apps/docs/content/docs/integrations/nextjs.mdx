@@ -1,0 +1,580 @@
+---
+title: Next.js
+description: Set up Typebase with Next.js — client, TanStack Query, Server Components, Server Actions, and authentication.
+---
+
+Typebase provides two client types for Next.js. **`createRouterClient`** is a simple promise-based client, best for Server Components and Server Actions. **`createTanstackQueryClient`** is a [TanStack Query](https://tanstack.com/query) integration, best for Client Components that need caching, loading states, and automatic refetching.
+
+Pick the one that fits your use case — or use both in the same project.
+
+## Simple client
+
+### Setup
+
+`createRouterClient` is a thin helper that creates a typed [oRPC](https://orpc.dev) client. If you need more control over the client configuration, you can build your own using oRPC directly — the full oRPC client docs apply here.
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: process.env.TYPEBASE_APP_URL ?? '',
+});
+```
+
+<details>
+<summary><strong>createRouterClient source</strong></summary>
+
+```ts
+export const createRouterClient = <TRouter>(options: RPCLinkOptions<ClientContext>): RouterClient<TRouter> => {
+  if (typeof options.url === 'string') {
+    options.url = `${options.url}/rpc`;
+  }
+
+  return createORPCClient(new RPCLink(options));
+};
+```
+
+</details>
+
+That's it — you're ready to call your actions anywhere on the server. Each call is just a regular async function call, fully typed based on the `.input()` and `.output()` you defined on the action. Here are two common patterns in Next.js:
+
+### Examples
+
+#### Server Components
+
+```tsx
+import { client } from '@/lib/typebase/client';
+
+export default async function Page() {
+  const todos = await client.queries.todos.getMany();
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.value}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+#### Server Actions
+
+```ts title="app/actions.ts"
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { client } from '@/lib/typebase/client';
+
+export async function addTodo(formData: FormData) {
+  const value = formData.get('value') as string;
+  await client.mutations.todos.create({ value: value.trim() });
+  revalidatePath('/');
+}
+
+export async function toggleTodo(formData: FormData) {
+  const id = Number(formData.get('id'));
+  await client.mutations.todos.toggle({ id });
+  revalidatePath('/');
+}
+```
+
+---
+
+## TanStack Query client
+
+### Setup
+
+`createTanstackQueryClient` is a thin helper that creates an [oRPC](https://orpc.dev) client wrapped with [TanStack Query](https://tanstack.com/query) utilities. If you need more control, you can build your own using oRPC and TanStack Query directly.
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL ?? '',
+});
+```
+
+<Callout type="info">The environment variable must be prefixed with `NEXT_PUBLIC_` so it's available in the browser.</Callout>
+
+<details>
+<summary><strong>createTanstackQueryClient source</strong></summary>
+
+```ts
+export const createTanstackQueryClient = <TRouter>(
+  options: RPCLinkOptions<ClientContext>,
+  utilsOptions?: CreateRouterUtilsOptions<RouterClient<TRouter>>
+): RouterUtils<RouterClient<TRouter>> => {
+  if (typeof options.url === 'string') {
+    options.url = `${options.url}/rpc`;
+  }
+
+  return createTanstackQueryUtils(createORPCClient(new RPCLink(options)), utilsOptions);
+};
+```
+
+</details>
+
+### QueryClientProvider
+
+Wrap your app with TanStack Query's provider. This setup correctly handles server and client environments separately:
+
+```ts title="lib/tanstack-query/get-query-client.ts"
+import { QueryClient, defaultShouldDehydrateQuery, environmentManager } from '@tanstack/react-query';
+
+const makeQueryClient = () => {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000,
+      },
+      dehydrate: {
+        shouldDehydrateQuery: (query) => defaultShouldDehydrateQuery(query) || query.state.status === 'pending',
+      },
+    },
+  });
+};
+
+let browserQueryClient: QueryClient | undefined = undefined;
+
+export const getQueryClient = () => {
+  if (environmentManager.isServer()) {
+    return makeQueryClient();
+  }
+
+  if (!browserQueryClient) {
+    browserQueryClient = makeQueryClient();
+  }
+
+  return browserQueryClient;
+};
+```
+
+```tsx title="lib/tanstack-query/provider.tsx"
+'use client';
+
+import { QueryClientProvider } from '@tanstack/react-query';
+import type * as React from 'react';
+import { getQueryClient } from './get-query-client';
+
+export default function TanstackQueryProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = getQueryClient();
+
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+```
+
+```tsx title="app/layout.tsx"
+import TanstackQueryProvider from '@/lib/tanstack-query/provider';
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <TanstackQueryProvider>{children}</TanstackQueryProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### Querying data
+
+```tsx title="components/todos.tsx"
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { client } from '@/lib/typebase/client';
+
+export function Todos() {
+  const { data: todos } = useQuery(client.queries.todos.getMany.queryOptions());
+
+  return (
+    <ul>
+      {todos.map((todo) => (
+        <li key={todo.id}>{todo.value}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### Mutating data
+
+```tsx title="components/add-todo-form.tsx"
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { client } from '@/lib/typebase/client';
+
+export function AddTodoForm() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation(
+    client.mutations.todos.create.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: client.queries.todos.getMany.key(),
+        });
+      },
+    })
+  );
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        mutation.mutate({ value: formData.get('value') as string });
+      }}
+    >
+      <input name="value" placeholder="What needs to be done?" />
+      <button type="submit">Add</button>
+    </form>
+  );
+}
+```
+
+---
+
+## Authentication
+
+<Callout type="info">
+  Authentication requires an `auth.ts` file in your Typebase project. See the [Authentication guide](/docs/auth) to set it up.
+</Callout>
+
+### Setup
+
+#### Auth client
+
+Import `createAuthClient` from the Typebase package — it re-exports better-auth's client configured for your setup:
+
+```ts title="lib/typebase/auth-client.ts"
+import { createAuthClient } from 'typebase-io/client/auth/react';
+
+export const authClient = createAuthClient();
+```
+
+The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference for everything `authClient` can do.
+
+#### Proxy setup
+
+When your Typebase server is deployed on a different domain than your Next.js app (which is the typical setup), you need to add a proxy so that auth cookies are set on your app's domain. This is required for secure, `HttpOnly` cookies to work correctly.
+
+<Callout type="warn">
+  better-auth does support cookies across different domains, but it is less secure and may have problems on Safari due to third-party cookie
+  restrictions. The proxy approach is strongly recommended.
+</Callout>
+
+<Callout type="info">
+  Proxied requests hop through your Next.js host before reaching the Typebase server, so they add one extra network hop. In practice this is
+  negligible compared to the cost of the underlying RPC call, especially when both hosts are deployed to the same edge network.
+</Callout>
+
+Create a `proxy.ts` file that forwards auth requests to your Typebase server:
+
+<Callout type="info">
+  `proxy.ts` is the renamed version of `middleware.ts` — same file location, same API, same behavior. If your project is on an older Next.js version
+  that only recognizes `middleware.ts`, use that filename and rename the exported function from `proxy` to `middleware`. Everything else in this guide
+  stays the same.
+</Callout>
+
+```ts title="proxy.ts"
+import { NextResponse, type NextRequest } from 'next/server';
+import { proxyToTypebase } from 'typebase-io/client/auth/nextjs';
+
+export async function proxy(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+
+  if (requestUrl.pathname.startsWith('/api/auth')) {
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|.*\\.png$).*)'],
+};
+```
+
+If you are using the TanStack Query client, the proxy also needs to forward `/rpc` requests so that server-side calls include the session cookie:
+
+```ts title="proxy.ts"
+import { NextResponse, type NextRequest } from 'next/server';
+import { proxyToTypebase } from 'typebase-io/client/auth/nextjs';
+
+export async function proxy(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+
+  if (requestUrl.pathname.startsWith('/api/auth') || requestUrl.pathname.startsWith('/rpc')) {
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|.*\\.png$).*)'],
+};
+```
+
+#### Update your client
+
+With the proxy in place, update your client to forward the session cookie on server-side requests.
+
+**Simple client:**
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: process.env.TYPEBASE_APP_URL ?? '',
+  headers: async () => getServerAuthCookie(),
+});
+```
+
+**TanStack Query client:**
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_TYPEBASE_APP_URL ?? ''),
+  headers: async () => {
+    if (typeof window !== 'undefined') {
+      return {};
+    }
+
+    return await getServerAuthCookie();
+  },
+});
+```
+
+When running in the browser, the TanStack Query client points to the same origin so requests go through the proxy automatically. On the server, it forwards the session cookie directly to the Typebase server.
+
+### Examples
+
+#### Sign up
+
+```tsx
+'use client';
+
+import { authClient } from '@/lib/typebase/auth-client';
+
+export function SignUpForm() {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    await authClient.signUp.email({
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name="name" placeholder="Name" />
+      <input name="email" type="email" placeholder="Email" />
+      <input name="password" type="password" placeholder="Password" />
+      <button type="submit">Sign up</button>
+    </form>
+  );
+}
+```
+
+#### Sign in
+
+```tsx
+'use client';
+
+import { authClient } from '@/lib/typebase/auth-client';
+
+export function SignInForm() {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    await authClient.signIn.email({
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name="email" type="email" placeholder="Email" />
+      <input name="password" type="password" placeholder="Password" />
+      <button type="submit">Sign in</button>
+    </form>
+  );
+}
+```
+
+#### Sign out
+
+```tsx
+'use client';
+
+import { authClient } from '@/lib/typebase/auth-client';
+
+export function SignOutButton() {
+  return <button onClick={() => authClient.signOut()}>Sign out</button>;
+}
+```
+
+#### Get session on the server
+
+```tsx
+import { getServerSession } from 'typebase-io/client/auth/nextjs';
+
+export default async function Page() {
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL ?? '');
+
+  if (!session) {
+    return <p>Not signed in</p>;
+  }
+
+  return <p>Welcome, {session.user.name}!</p>;
+}
+```
+
+#### Get session on the client
+
+```tsx
+'use client';
+
+import { authClient } from '@/lib/typebase/auth-client';
+
+export function Profile() {
+  const { data: session } = authClient.useSession();
+
+  if (!session) return <p>Not signed in</p>;
+
+  return <p>Welcome, {session.user.name}!</p>;
+}
+```
+
+#### Protect routes with a middleware
+
+Extend `proxy.ts` to forward `/api/auth` and `/rpc` and redirect unauthenticated traffic to `/auth`:
+
+```ts title="proxy.ts"
+import { NextResponse, type NextRequest } from 'next/server';
+import { proxyToTypebase, getServerSession } from 'typebase-io/client/auth/nextjs';
+
+export async function proxy(request: NextRequest) {
+  const requestUrl = new URL(request.url);
+
+  if (requestUrl.pathname.startsWith('/api/auth') || requestUrl.pathname.startsWith('/rpc')) {
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+  }
+
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL ?? '');
+
+  if (!session && requestUrl.pathname !== '/auth') {
+    return NextResponse.redirect(new URL('/auth', request.url));
+  }
+
+  if (session && requestUrl.pathname === '/auth') {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|.*\\.png$).*)'],
+};
+```
+
+<Callout type="info">
+  The `/rpc` match is only required for the TanStack Query client, where server-side calls come in on the app's origin and need to be forwarded to
+  your Typebase server. For the simple client, `/api/auth` on its own is enough.
+</Callout>
+
+---
+
+## How routing works
+
+The `Router` type is auto-generated by `npx typebase-io-cli codegen` and mirrors your `actions/` folder structure:
+
+```
+typebase/actions/
+  queries/
+    todos.ts     → client.queries.todos.*
+  mutations/
+    todos.ts     → client.mutations.todos.*
+```
+
+Each exported [action](/docs/actions) from your files becomes a callable method on the client.
+
+## Environment variables
+
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`. Use this for all server-side calls (Server Components, Server Actions).
+
+If you use the TanStack Query client, the variable also needs to be available in the browser with the `NEXT_PUBLIC_` prefix. We recommend adding this to your `.env` file so you don't have to duplicate the value:
+
+```bash title=".env"
+NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
+```
+
+---
+
+## API Reference
+
+### `createRouterClient`
+
+```ts
+import { createRouterClient } from 'typebase-io/client';
+```
+
+Creates a simple promise-based client. Takes the same options as an oRPC `RPCLink`. Returns a fully typed client that mirrors your `actions/` folder structure.
+
+### `createTanstackQueryClient`
+
+```ts
+import { createTanstackQueryClient } from 'typebase-io/client';
+```
+
+Creates a TanStack Query-wrapped client. Returns utilities (`queryOptions`, `mutationOptions`) for use with `useQuery`, `useSuspenseQuery`, `useMutation`, and more. Accepts the same options as `createRouterClient` plus an optional second argument for TanStack Query configuration.
+
+### `createAuthClient`
+
+```ts
+import { createAuthClient } from 'typebase-io/client/auth/react';
+```
+
+Re-exports better-auth's `createAuthClient` from `better-auth/react`. Returns an `authClient` with methods like `signUp.email`, `signIn.email`, `signOut`, and `useSession`. The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference.
+
+### `getServerAuthCookie`
+
+```ts
+import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
+```
+
+Reads the current session cookie from the incoming request on the server and returns it as a headers object. Used to forward the session when making server-side calls to your Typebase server.
+
+### `getServerSession`
+
+```ts
+import { getServerSession } from 'typebase-io/client/auth/nextjs';
+```
+
+Fetches the current user's session from the server. Can be called in Server Components and Server Actions. Returns the session object or `null` if the user is not authenticated.
+
+### `proxyToTypebase`
+
+```ts
+import { proxyToTypebase } from 'typebase-io/client/auth/nextjs';
+```
+
+Forwards an incoming Next.js request to your Typebase server. Used in `proxy.ts` (or `middleware.ts`) to proxy auth and RPC requests through your Next.js app's domain, enabling secure `HttpOnly` cookies.

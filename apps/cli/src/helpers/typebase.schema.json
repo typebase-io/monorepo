@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Configuration schema for Typebase project settings.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "projectPath": {
+      "type": "string",
+      "description": "Path to the Typebase project directory.",
+      "minLength": 1
+    },
+    "serverProvider": {
+      "type": "string",
+      "enum": ["vercel", "cloudflare", "deno"],
+      "description": "The server provider to deploy to."
+    },
+    "server": {
+      "type": "object",
+      "description": "Server build configuration.",
+      "properties": {
+        "output": {
+          "type": "string",
+          "enum": ["ts", "esm", "cjs"],
+          "description": "The output format for the server build."
+        },
+        "adapter": {
+          "type": "string",
+          "enum": ["node", "bun", "cloudflare", "deno", "fastify", "hono"],
+          "description": "The server adapter to use."
+        },
+        "skipLoadEnv": {
+          "type": "boolean",
+          "description": "Whether to skip loading environment variables."
+        },
+        "outDir": {
+          "type": "string",
+          "description": "The output directory for the server build.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "vercel": {
+      "type": "object",
+      "description": "Vercel deployment configuration.",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "The Vercel project ID."
+        },
+        "projectName": {
+          "type": "string",
+          "description": "The Vercel project name."
+        },
+        "orgId": {
+          "type": "string",
+          "description": "The Vercel organization ID."
+        }
+      },
+      "required": ["projectId", "projectName"],
+      "additionalProperties": false
+    },
+    "cloudflare": {
+      "type": "object",
+      "description": "Cloudflare deployment configuration.",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "description": "The Cloudflare account ID."
+        },
+        "workerName": {
+          "type": "string",
+          "description": "The Cloudflare Worker name."
+        },
+        "subdomain": {
+          "type": "string",
+          "description": "The Cloudflare Workers subdomain."
+        }
+      },
+      "required": ["accountId", "workerName", "subdomain"],
+      "additionalProperties": false
+    },
+    "deno": {
+      "type": "object",
+      "description": "Deno Deploy configuration.",
+      "properties": {
+        "org": {
+          "type": "string",
+          "description": "The Deno Deploy organization."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The Deno Deploy project ID."
+        },
+        "slug": {
+          "type": "string",
+          "description": "The Deno Deploy project slug."
+        }
+      },
+      "required": ["org", "projectId", "slug"],
+      "additionalProperties": false
+    },
+    "neon": {
+      "type": "object",
+      "description": "Neon database configuration.",
+      "properties": {
+        "orgId": {
+          "type": "string",
+          "description": "The Neon organization ID."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "The Neon project ID."
+        }
+      },
+      "required": ["orgId", "projectId"],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

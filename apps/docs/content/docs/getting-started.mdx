@@ -1,0 +1,173 @@
+---
+title: Getting Started
+description: Install Typebase and make your first server call.
+---
+
+## Prerequisites
+
+<Cards>
+  <Card
+    href="https://nodejs.org"
+    title="Node.js 20+"
+    description="18 works, 20+ recommended. The latest LTS is ideal — it matches what the CLI, Neon, and the popular deploy targets are tested against."
+  />
+  <Card
+    title="A package manager"
+    description="npm, pnpm, yarn, or bun — anything that reads a package.json. The CLI auto-detects which one your project uses."
+  />
+</Cards>
+
+## Install
+
+Typebase is split into two packages. **`typebase-io`** is the core library — it provides the `action` builder for your server code and the client utilities for your frontend. **`typebase-io-cli`** is the CLI tool that handles code generation, schema pushes to your database, and deployment.
+
+```package-install
+typebase-io
+```
+
+Then install the CLI as a dev dependency, since you only need it during development:
+
+```package-install
+-D typebase-io-cli
+```
+
+Add a `typebase` script to your `package.json`:
+
+```json title="package.json"
+{
+  "scripts": {
+    "typebase": "typebase-io-cli"
+  }
+}
+```
+
+This lets you run CLI commands through your package manager (`npx typebase-io-cli init`, `npx typebase-io-cli deploy`, etc.) without installing the CLI globally. Any teammate who clones the repo and runs `npm install` will have access to the same CLI version.
+
+<Callout type="info">
+  <details>
+    <summary>
+      <strong>Using CommonJS?</strong>
+    </summary>
+
+    Typebase ships two CLI binaries: `typebase-io-cli` (ESM) and `typebase-io-cli-cjs` (CommonJS). Use `typebase-io-cli` if your project has `"type": "module"` in `package.json` — this is the default for most modern setups (Next.js 14+, Vite, SvelteKit, Nuxt 3).
+
+If your project still uses CommonJS — either you don't set `"type"` in `package.json`, or you set it to `"commonjs"` explicitly — use `typebase-io-cli-cjs` instead. The two binaries are functionally identical; the only difference is which module system they're built with, so they can interop cleanly with the rest of your project.
+
+```json title="package.json"
+{
+  "scripts": {
+    "typebase": "typebase-io-cli-cjs"
+  }
+}
+```
+
+You only need to make this choice once. Everything inside your `typebase/` directory (actions, schema, auth) is always written in TypeScript and is compiled to whatever your deployment target needs — your project's module system doesn't change anything there.
+
+  </details>
+</Callout>
+
+## Initialize
+
+Scaffold the `typebase/` directory:
+
+```npm
+npx typebase-io-cli init
+```
+
+This creates your backend directory with example files. If you want the examples to include authentication setup, pass `--with-auth`. If you'd rather start from scratch without any examples, pass `--skip-example`.
+
+```
+typebase/
+├── tsconfig.json
+├── _generated/           ← auto-generated types, do not edit
+├── db/
+│   ├── schema.ts         ← your database tables
+│   └── relations.ts      ← table relationships
+└── actions/
+    ├── queries/
+    │   └── todos.ts
+    └── mutations/
+        └── todos.ts
+```
+
+<Callout type="info">
+  If your project has a `src/` directory, Typebase will create the files inside `src/typebase/` instead. You can customize this path in
+  [`typebase.json`](/docs/configuration).
+</Callout>
+
+## Your first action
+
+The `init` command already created example actions. Open `typebase/actions/queries/todos.ts` to see what one looks like:
+
+```ts title="typebase/actions/queries/todos.ts"
+import { ServerError } from 'typebase-io/server';
+import { z } from 'zod';
+
+import { action } from '../../_generated/server.ts';
+
+export const getOne = action
+  .input(
+    z.object({
+      id: z.number(),
+    })
+  )
+  .output(
+    z.object({
+      id: z.number(),
+      value: z.string(),
+      completed: z.boolean(),
+    })
+  )
+  .handler(async ({ db, input }) => {
+    const todo = await db.query.todos.findFirst({
+      where: { id: input.id },
+    });
+
+    if (!todo) {
+      throw new ServerError('NOT_FOUND');
+    }
+
+    return {
+      id: todo.id,
+      value: todo.value,
+      completed: todo.completed,
+    };
+  });
+```
+
+Each exported action with a `.handler()` becomes a callable endpoint on your client. Feel free to edit these files or add new ones. Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `db/schema.ts`, or `db/relations.ts`:
+
+```npm
+npx typebase-io-cli codegen
+```
+
+See [Actions](/docs/actions) to learn everything about writing actions.
+
+## Deploy
+
+Deploy your server to the cloud:
+
+```npm
+npx typebase-io-cli deploy dev
+```
+
+On first run, the CLI will ask you to:
+
+1. Choose a deployment provider (Vercel, Cloudflare Workers, or Deno Deploy)
+2. Log in to that provider
+3. Set up a PostgreSQL database (via Neon)
+
+After setup, running `npx typebase-io-cli deploy dev` is a single command. The CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`.
+
+See [Deploy](/docs/cli/deploy) for the full deployment reference.
+
+## Call it from your frontend
+
+Pick your framework to learn how to set up the client and start calling your actions with full type safety:
+
+<Cards>
+  <Card title="Next.js" href="/docs/integrations/nextjs" description="App Router, Server Actions, and TanStack Query." />
+  <Card title="SvelteKit" href="/docs/integrations/sveltekit" description="Remote functions and Svelte Query." />
+  <Card title="Nuxt" href="/docs/integrations/nuxt" description="Server-side rendering and Vue Query." />
+  <Card title="Expo" href="/docs/integrations/expo" description="React Native client setup." />
+</Cards>

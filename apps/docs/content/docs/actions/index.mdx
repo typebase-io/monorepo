@@ -1,0 +1,302 @@
+---
+title: Actions
+description: Define your server-side logic with type-safe actions.
+---
+
+Actions are the server-side functions that power your API. They are how your client communicates with your backend — reading data, creating records, sending emails, or anything else your app needs to do.
+
+Under the hood, actions are built on top of [oRPC](https://orpc.dev), a type-safe RPC framework. Typebase provides a simplified API so you can define actions without worrying about the underlying RPC details, but the full power of oRPC is available if you need it.
+
+## Folder structure
+
+The `npx typebase-io-cli init` command scaffolds a `typebase/actions/` folder with `queries/` and `mutations/` subfolders. This is just a suggested convention — **the only requirement is that your action files live somewhere inside the `typebase/actions/` folder**. You're free to organize them however you want:
+
+```
+typebase/actions/
+  queries/users.ts       # suggested convention
+  mutations/users.ts
+
+typebase/actions/
+  users.ts               # flat structure — also fine
+
+typebase/actions/
+  users/
+    get.ts               # grouped by entity — also fine
+    create.ts
+```
+
+## Defining an action
+
+An action is built by chaining `.input()`, `.output()`, and `.handler()` on the `action` builder imported from `typebase/_generated/server.ts`:
+
+```ts title="typebase/actions/queries/users.ts"
+import { ServerError } from 'typebase-io/server';
+import { z } from 'zod';
+
+import { action } from '../../_generated/server.ts';
+
+export const getUser = action
+  .input(
+    z.object({
+      id: z.number(),
+    })
+  )
+  .output(
+    z.object({
+      id: z.number(),
+      name: z.string(),
+      age: z.number(),
+      email: z.email(),
+    })
+  )
+  .handler(async ({ db, input }) => {
+    const user = await db.query.users.findFirst({ where: { id: input.id } });
+
+    if (!user) {
+      throw new ServerError('NOT_FOUND');
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      age: user.age,
+      email: user.email,
+    };
+  });
+```
+
+Let's break that down:
+
+- **`.input()`** — optional. Validates the data coming in from the client before your handler runs. If the data doesn't match the schema, the request is rejected automatically.
+- **`.output()`** — optional. Validates the data your handler returns before sending it back to the client, ensuring you never accidentally leak extra fields. If omitted, the return type is inferred directly from your handler's return type — you still get full type safety on the client, just without runtime validation on the output.
+- **`.handler()`** — the function that runs on the server. It receives a context object with:
+  - `input` — the validated input data
+  - `db` — your Drizzle database client, ready to query
+
+## Input and output validation
+
+Typebase accepts any library that implements the [Standard Schema](https://standardschema.dev/) spec. This means you're not locked into any single validation library — use whichever one you prefer.
+
+Here's the same action written with different validation libraries:
+
+### Zod
+
+```ts
+import { z } from 'zod';
+
+export const getUser = action
+  .input(z.object({ id: z.number() }))
+  .output(z.object({ id: z.number(), name: z.string() }))
+  .handler(async ({ db, input }) => {
+    // ...
+  });
+```
+
+### Valibot
+
+```ts
+import * as v from 'valibot';
+
+export const getUser = action
+  .input(v.object({ id: v.number() }))
+  .output(v.object({ id: v.number(), name: v.string() }))
+  .handler(async ({ db, input }) => {
+    // ...
+  });
+```
+
+### ArkType
+
+```ts
+import { type } from 'arktype';
+
+export const getUser = action
+  .input(type({ id: 'number' }))
+  .output(type({ id: 'number', name: 'string' }))
+  .handler(async ({ db, input }) => {
+    // ...
+  });
+```
+
+## Mutations
+
+There's no technical difference between a "query" and a "mutation" in Typebase — they're both actions. The distinction is purely organizational. A mutation is just an action that writes data:
+
+```ts title="typebase/actions/mutations/users.ts"
+import { ServerError } from 'typebase-io/server';
+import { z } from 'zod';
+
+import { action } from '../../_generated/server.ts';
+import { users } from '../../db/schema.ts';
+
+export const createUser = action
+  .input(
+    z.object({
+      name: z.string(),
+      age: z.number(),
+      email: z.email(),
+    })
+  )
+  .output(
+    z.object({
+      id: z.number(),
+      name: z.string(),
+      age: z.number(),
+      email: z.email(),
+    })
+  )
+  .handler(async ({ db, input }) => {
+    const result = await db
+      .insert(users)
+      .values({
+        name: input.name,
+        age: input.age,
+        email: input.email,
+      })
+      .returning();
+
+    const user = result.at(0);
+
+    if (!user) {
+      throw new ServerError('INTERNAL_SERVER_ERROR');
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      age: user.age,
+      email: user.email,
+    };
+  });
+```
+
+## Error handling
+
+Throw a `ServerError` to return a structured error to the client. It maps to standard HTTP status codes:
+
+```ts
+import { ServerError } from 'typebase-io/server';
+
+throw new ServerError('NOT_FOUND');
+throw new ServerError('BAD_REQUEST', { message: 'Email is already taken' });
+throw new ServerError('UNAUTHORIZED');
+throw new ServerError('FORBIDDEN');
+throw new ServerError('INTERNAL_SERVER_ERROR');
+```
+
+<details>
+<summary><strong>All error codes</strong></summary>
+
+| Code                    | HTTP Status |
+| ----------------------- | ----------- |
+| `BAD_REQUEST`           | 400         |
+| `UNAUTHORIZED`          | 401         |
+| `FORBIDDEN`             | 403         |
+| `NOT_FOUND`             | 404         |
+| `METHOD_NOT_SUPPORTED`  | 405         |
+| `TIMEOUT`               | 408         |
+| `CONFLICT`              | 409         |
+| `PRECONDITION_FAILED`   | 412         |
+| `PAYLOAD_TOO_LARGE`     | 413         |
+| `UNPROCESSABLE_CONTENT` | 422         |
+| `TOO_MANY_REQUESTS`     | 429         |
+| `INTERNAL_SERVER_ERROR` | 500         |
+| `NOT_IMPLEMENTED`       | 501         |
+| `SERVICE_UNAVAILABLE`   | 503         |
+
+</details>
+
+## Handler context
+
+The object your handler receives is built automatically based on your project setup. You only get what you've configured:
+
+**`input`** — present when you define `.input()` on the action. Contains the validated data sent by the client.
+
+**`db`** — present when your project has a `db/schema.ts` file. A fully typed Drizzle client ready to query your database.
+
+**`auth`** — present when your project has an `auth.ts` file. The better-auth instance, useful for reading the current session inside middleware.
+
+**`reqHeaders`** — always passed to the handler but may be `undefined`. The raw request headers, needed when calling `auth.api.getSession()` to verify a session in middleware.
+
+So an action that uses all of them might look like:
+
+```ts
+export const getProfile = action
+  .input(z.object({ id: z.number() }))
+  .handler(async ({ db, input, auth, reqHeaders }) => {
+    const session = await auth.api.getSession({ headers: reqHeaders });
+
+    if (!session) throw new ServerError('UNAUTHORIZED');
+
+    return db.query.users.findFirst({ where: { id: input.id } });
+  });
+```
+
+And one that uses none of them is equally valid:
+
+```ts
+export const ping = action.handler(async () => {
+  return { ok: true };
+});
+```
+
+## Environment variables
+
+Anywhere inside your `typebase/` directory — handlers, middleware, utility modules — you can read environment variables with `process.env`:
+
+```ts
+export const sendEmail = action
+  .input(z.object({ to: z.email(), subject: z.string() }))
+  .handler(async ({ input }) => {
+    const apiKey = process.env.RESEND_API_KEY;
+    // ...
+  });
+```
+
+In development, variables come from your local `.env` file. In production, they come from whatever you've configured on your deployment provider — manage them with [`npx typebase-io-cli env`](/docs/cli/env).
+
+## How routing works
+
+Typebase automatically builds a router from your `actions/` folder structure. Each file becomes a namespace, and each exported action becomes an endpoint.
+
+More specifically, Typebase only includes exported values that resolve to a Typebase/oRPC procedure. You can export helpers, constants, and shared
+types from the same file without them showing up on the client router.
+
+For example, this folder structure:
+
+```
+typebase/actions/
+  queries/
+    todos.ts    → exports: getMany, getOne
+    users.ts    → exports: getById
+  mutations/
+    todos.ts    → exports: create, toggle, deleteTodo
+```
+
+Produces this router:
+
+```ts
+router.queries.todos.getMany();
+router.queries.todos.getOne({ id: 1 });
+router.queries.users.getById({ id: 1 });
+router.mutations.todos.create({ value: 'Buy milk' });
+router.mutations.todos.toggle({ id: 1 });
+router.mutations.todos.deleteTodo({ id: 1 });
+```
+
+This same structure is what your client uses to call actions from the frontend. See the [Next.js Guide](/docs/integrations/nextjs) for client setup.
+
+## Regenerating types
+
+Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `db/schema.ts`, or `db/relations.ts`:
+
+```npm
+npx typebase-io-cli codegen
+```
+
+This updates `_generated/server.ts` with the new router structure so your client stays in sync.
+
+## Next steps
+
+- Learn how to add [middleware](/docs/actions/middleware) to your actions for authentication and shared logic.
+- Set up a [client](/docs/integrations/nextjs) to call your actions from the frontend.

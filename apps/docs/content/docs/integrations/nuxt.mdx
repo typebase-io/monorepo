@@ -1,0 +1,508 @@
+---
+title: Nuxt
+description: Set up Typebase with Nuxt — client, Tanstack Query, composables, and authentication.
+---
+
+Typebase provides two client types for Nuxt. **`createRouterClient`** is a simple promise-based client, best for `useLazyAsyncData` and server-side calls. **`createTanstackQueryClient`** is a [Tanstack Query](https://tanstack.com/query/latest/docs/framework/vue/overview) integration, best for components that need caching, loading states, and automatic refetching.
+
+Both clients are set up as Nuxt plugins and injected into the app via `provide`, making them available anywhere via `useNuxtApp()`.
+
+Pick the one that fits your use case — or use both in the same project.
+
+## Simple client
+
+### Setup
+
+#### nuxt.config.ts
+
+Expose your Typebase server URL as a public runtime config value so it's available on both server and client:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  runtimeConfig: {
+    public: {
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL,
+    },
+  },
+});
+```
+
+#### Plugin
+
+Create a plugin that sets up the client and injects it into the app:
+
+```ts title="app/plugins/typebase.ts"
+import { createRouterClient } from 'typebase-io/client';
+import type { Router } from '~/utils/typebase/_generated/server';
+
+export default defineNuxtPlugin(() => {
+  const event = useRequestEvent();
+  const runtimeConfig = useRuntimeConfig();
+
+  const client = createRouterClient<Router>({
+    url: runtimeConfig.public.TYPEBASE_APP_URL,
+    headers: event?.headers,
+  });
+
+  return {
+    provide: { client },
+  };
+});
+```
+
+`useRequestEvent()` gives you the incoming H3 request on the server. Passing its headers to the client forwards cookies on SSR requests so they reach your Typebase server.
+
+That's it — `$client` is now available anywhere via `useNuxtApp()`, fully typed based on the `.input()` and `.output()` you defined on each action.
+
+### Examples
+
+#### Fetching data
+
+```vue title="components/Todos.vue"
+<script setup lang="ts">
+const { $client } = useNuxtApp();
+
+const { data: todos } = useLazyAsyncData('todos', () => $client.queries.todos.getMany());
+</script>
+
+<template>
+  <ul>
+    <li v-for="todo in todos" :key="todo.id">
+      {{ todo.value }}
+    </li>
+  </ul>
+</template>
+```
+
+#### Mutating data
+
+```vue title="components/AddTodoForm.vue"
+<script setup lang="ts">
+const { $client } = useNuxtApp();
+
+const value = ref('');
+
+const addTodo = async (e: SubmitEvent) => {
+  e.preventDefault();
+
+  await $client.mutations.todos.create({ value: value.value });
+  await refreshNuxtData('todos');
+
+  value.value = '';
+};
+</script>
+
+<template>
+  <form @submit="addTodo">
+    <input v-model="value" placeholder="What needs to be done?" />
+    <button type="submit">Add</button>
+  </form>
+</template>
+```
+
+---
+
+## Tanstack Query client
+
+### Setup
+
+#### nuxt.config.ts
+
+Same as the simple client — expose your server URL as a public runtime config value:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  runtimeConfig: {
+    public: {
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL,
+    },
+  },
+});
+```
+
+#### Vue Query plugin
+
+Set up `VueQueryPlugin` with server-side dehydration and client-side hydration so SSR-prefetched data is passed to the browser without an extra round trip:
+
+```ts title="app/plugins/tanstack-query.ts"
+import { dehydrate, hydrate, QueryClient, VueQueryPlugin, type DehydratedState, type VueQueryPluginOptions } from '@tanstack/vue-query';
+
+export default defineNuxtPlugin((nuxt) => {
+  const vueQueryState = useState<DehydratedState | null>('vue-query');
+
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { staleTime: 5000 } },
+  });
+
+  nuxt.vueApp.use(VueQueryPlugin, { queryClient } satisfies VueQueryPluginOptions);
+
+  if (import.meta.server) {
+    nuxt.hooks.hook('app:rendered', () => {
+      vueQueryState.value = dehydrate(queryClient);
+    });
+  }
+
+  if (import.meta.client) {
+    nuxt.hooks.hook('app:created', () => {
+      hydrate(queryClient, vueQueryState.value);
+    });
+  }
+});
+```
+
+#### Typebase plugin
+
+```ts title="app/plugins/typebase.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '~/utils/typebase/_generated/server';
+
+export default defineNuxtPlugin(() => {
+  const event = useRequestEvent();
+  const runtimeConfig = useRuntimeConfig();
+
+  const client = createTanstackQueryClient<Router>({
+    url: runtimeConfig.public.TYPEBASE_APP_URL,
+    headers: event?.headers,
+  });
+
+  return {
+    provide: { client },
+  };
+});
+```
+
+### Querying data
+
+Use `onServerPrefetch` with `suspense()` to prefetch data on the server so it's included in the SSR response:
+
+```vue title="components/Todos.vue"
+<script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
+
+const { $client } = useNuxtApp();
+
+const { data: todos, suspense } = useQuery($client.queries.todos.getMany.queryOptions());
+
+onServerPrefetch(async () => {
+  await suspense();
+});
+</script>
+
+<template>
+  <ul>
+    <li v-for="todo in todos" :key="todo.id">
+      {{ todo.value }}
+    </li>
+  </ul>
+</template>
+```
+
+### Mutating data
+
+```vue title="components/AddTodoForm.vue"
+<script setup lang="ts">
+import { useMutation, useQueryClient } from '@tanstack/vue-query';
+
+const { $client } = useNuxtApp();
+const queryClient = useQueryClient();
+
+const value = ref('');
+
+const { mutate, isPending } = useMutation(
+  $client.mutations.todos.create.mutationOptions({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: $client.queries.todos.getMany.key(),
+      });
+
+      value.value = '';
+    },
+  })
+);
+</script>
+
+<template>
+  <form @submit.prevent="mutate({ value })">
+    <input v-model="value" :disabled="isPending" placeholder="What needs to be done?" />
+    <button type="submit" :disabled="isPending">Add</button>
+  </form>
+</template>
+```
+
+---
+
+## Authentication
+
+<Callout type="info">
+  Authentication requires an `auth.ts` file in your Typebase project. See the [Authentication guide](/docs/auth) to set it up.
+</Callout>
+
+### Setup
+
+#### Auth plugin
+
+Create an auth plugin that injects `$auth` into the app:
+
+```ts title="app/plugins/auth.ts"
+import { createAuthClient } from 'typebase-io/client/auth/vue';
+
+export default defineNuxtPlugin(() => {
+  const authClient = createAuthClient();
+
+  return {
+    provide: { auth: authClient },
+  };
+});
+```
+
+The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference for everything `$auth` can do.
+
+#### Proxy setup
+
+When your Typebase server is deployed on a different domain than your Nuxt app (which is the typical setup), you need a server middleware that proxies auth and RPC requests through your app's domain. This is required for secure, `HttpOnly` cookies to work correctly.
+
+<Callout type="warn">
+  better-auth does support cookies across different domains, but it is less secure and may have problems on Safari due to third-party cookie
+  restrictions. The proxy approach is strongly recommended.
+</Callout>
+
+<Callout type="info">
+  Proxied requests hop through your Nuxt host before reaching the Typebase server, so they add one extra network hop. In practice this is negligible
+  compared to the cost of the underlying RPC call, especially when both hosts are deployed to the same edge network.
+</Callout>
+
+Create a server middleware at `server/middleware/typebase.ts`:
+
+```ts title="server/middleware/typebase.ts"
+import { proxyToTypebase } from 'typebase-io/client/auth/nuxt';
+
+export default defineEventHandler(async (event) => {
+  if (!event.path.startsWith('/api/auth') && !event.path.startsWith('/rpc')) {
+    return;
+  }
+
+  const runtimeConfig = useRuntimeConfig();
+
+  return proxyToTypebase(event, runtimeConfig.public.TYPEBASE_APP_URL);
+});
+```
+
+This forwards all `/api/auth` requests (auth sign-in, sign-up, sign-out) and all `/rpc` requests (your actions) through the Nuxt server, ensuring cookies are set on your app's domain.
+
+#### Update your client
+
+With the proxy in place, update your client plugin to route browser requests through the proxy by pointing to the current origin on the client:
+
+**Simple client:**
+
+```ts title="app/plugins/typebase.ts"
+import { createRouterClient } from 'typebase-io/client';
+import type { Router } from '~/utils/typebase/_generated/server';
+
+export default defineNuxtPlugin(() => {
+  const event = useRequestEvent();
+  const runtimeConfig = useRuntimeConfig();
+
+  const client = createRouterClient<Router>({
+    url: import.meta.client ? window.location.origin : runtimeConfig.public.TYPEBASE_APP_URL,
+    headers: event?.headers,
+  });
+
+  return {
+    provide: { client },
+  };
+});
+```
+
+**Tanstack Query client:**
+
+```ts title="app/plugins/typebase.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '~/utils/typebase/_generated/server';
+
+export default defineNuxtPlugin(() => {
+  const event = useRequestEvent();
+  const runtimeConfig = useRuntimeConfig();
+
+  const client = createTanstackQueryClient<Router>({
+    url: import.meta.client ? window.location.origin : runtimeConfig.public.TYPEBASE_APP_URL,
+    headers: event?.headers,
+  });
+
+  return {
+    provide: { client },
+  };
+});
+```
+
+<Callout type="info">
+  If you're using the Tanstack Query client, the `app/plugins/tanstack-query.ts` plugin from the [Tanstack Query setup](#vue-query-plugin) section is
+  still required alongside this one.
+</Callout>
+
+When running in the browser, the client points to the same origin so requests go through the proxy automatically. On the server, `headers: event?.headers` forwards the session cookie directly to the Typebase server.
+
+### Examples
+
+#### Sign up / Sign in
+
+```vue title="pages/auth.vue"
+<script setup lang="ts">
+const { $auth } = useNuxtApp();
+
+const name = ref('');
+const email = ref('');
+const password = ref('');
+
+const signIn = async () => {
+  await $auth.signIn.email({ email: email.value, password: password.value });
+  reloadNuxtApp({ path: '/' });
+};
+
+const signUp = async () => {
+  await $auth.signUp.email({ name: name.value, email: email.value, password: password.value });
+  reloadNuxtApp({ path: '/' });
+};
+</script>
+
+<template>
+  <form>
+    <input v-model="name" type="text" placeholder="Name" />
+    <input v-model="email" type="email" placeholder="Email" />
+    <input v-model="password" type="password" placeholder="Password" />
+    <button type="button" @click="signIn">Sign in</button>
+    <button type="button" @click="signUp">Sign up</button>
+  </form>
+</template>
+```
+
+#### Sign out
+
+```vue
+<script setup lang="ts">
+const { $auth } = useNuxtApp();
+
+const signOut = async () => {
+  await $auth.signOut();
+  reloadNuxtApp({ path: '/auth' });
+};
+</script>
+
+<template>
+  <button @click="signOut">Sign out</button>
+</template>
+```
+
+#### Get session
+
+```vue
+<script setup lang="ts">
+const { $auth } = useNuxtApp();
+
+const session = $auth.useSession();
+</script>
+
+<template>
+  <p v-if="session.data">Welcome, {{ session.data.user.name }}!</p>
+  <p v-else>Not signed in</p>
+</template>
+```
+
+#### Protect routes with middleware
+
+```ts title="app/middleware/auth.global.ts"
+export default defineNuxtRouteMiddleware(async (to) => {
+  const { $auth } = useNuxtApp();
+  const { data: session } = await $auth.useSession(useFetch);
+
+  if (!session.value && to.path !== '/auth') {
+    return navigateTo('/auth');
+  }
+
+  if (session.value && to.path === '/auth') {
+    return navigateTo('/');
+  }
+});
+```
+
+---
+
+## How routing works
+
+The `Router` type is auto-generated by `npx typebase-io-cli codegen` and mirrors your `actions/` folder structure:
+
+```
+typebase/actions/
+  queries/
+    todos.ts     → $client.queries.todos.*
+  mutations/
+    todos.ts     → $client.mutations.todos.*
+```
+
+Each exported [action](/docs/actions) from your files becomes a callable method on the client.
+
+## Environment variables
+
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`. Expose it in `nuxt.config.ts` under `runtimeConfig.public` so it's available on both server and client:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  runtimeConfig: {
+    public: {
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL,
+    },
+  },
+});
+```
+
+---
+
+## API Reference
+
+### `createRouterClient`
+
+```ts
+import { createRouterClient } from 'typebase-io/client';
+```
+
+Creates a simple promise-based client. Takes the same options as an oRPC `RPCLink`. Returns a fully typed client that mirrors your `actions/` folder structure.
+
+### `createTanstackQueryClient`
+
+```ts
+import { createTanstackQueryClient } from 'typebase-io/client';
+```
+
+Creates a Tanstack Query-wrapped client. Returns utilities (`queryOptions`, `mutationOptions`) for use with `useQuery`, `useMutation`, and more. Accepts the same options as `createRouterClient` plus an optional second argument for Tanstack Query configuration.
+
+### `createAuthClient`
+
+```ts
+import { createAuthClient } from 'typebase-io/client/auth/vue';
+```
+
+Re-exports better-auth's `createAuthClient` from `better-auth/vue`. Returns an `authClient` with methods like `signUp.email`, `signIn.email`, `signOut`, and `useSession`. The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference.
+
+### `getServerAuthCookie`
+
+```ts
+import { getServerAuthCookie } from 'typebase-io/client/auth/nuxt';
+```
+
+Reads the current session cookie from the incoming H3 event on the server and returns it as a headers object. Takes the H3 event as its argument. Used to forward the session when making server-side calls to your Typebase server.
+
+### `getServerSession`
+
+```ts
+import { getServerSession } from 'typebase-io/client/auth/nuxt';
+```
+
+Fetches the current user's session from the server. Takes the H3 event and your Typebase server URL. Can be called in server routes, server middleware, and `useAsyncData` callbacks. Returns the session object or `null` if the user is not authenticated.
+
+### `proxyToTypebase`
+
+```ts
+import { proxyToTypebase } from 'typebase-io/client/auth/nuxt';
+```
+
+Forwards an incoming H3 event to your Typebase server. Used in `server/middleware/typebase.ts` to proxy auth and RPC requests through your Nuxt app's domain, enabling secure `HttpOnly` cookies.

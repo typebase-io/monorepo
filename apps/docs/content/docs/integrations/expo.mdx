@@ -1,0 +1,295 @@
+---
+title: Expo
+description: Set up Typebase with Expo — TanStack Query client setup and authentication with SecureStore.
+---
+
+Expo is a client-only environment — there's no server-side rendering, so all calls to your Typebase server happen from the device. Typebase uses `createTanstackQueryClient` as the standard client for Expo, giving you caching, loading states, and automatic refetching via [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview).
+
+## Setup
+
+### Client
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../server/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: process.env.EXPO_PUBLIC_TYPEBASE_APP_URL ?? '',
+});
+```
+
+<Callout type="info">The environment variable must be prefixed with `EXPO_PUBLIC_` so it's available at runtime on the device.</Callout>
+
+### QueryClientProvider
+
+Expo requires a few extra hooks to keep TanStack Query in sync with the app's focus and network state. Create a query client with these hooks wired up and wrap your app in the provider:
+
+```ts title="lib/tanstack-query/query-client.ts"
+import { focusManager, QueryClient } from '@tanstack/react-query';
+import { AppStateStatus, Platform } from 'react-native';
+
+export const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 2 } },
+});
+
+export const onAppStateChange = (status: AppStateStatus) => {
+  if (Platform.OS !== 'web') {
+    focusManager.setFocused(status === 'active');
+  }
+};
+```
+
+```tsx title="app/_layout.tsx"
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Stack } from 'expo-router';
+import { useAppState } from '../hooks/use-app-state';
+import { useOnlineManager } from '../hooks/use-online-manager';
+import { onAppStateChange, queryClient } from '../lib/tanstack-query/query-client';
+
+export default function Layout() {
+  useOnlineManager();
+  useAppState(onAppStateChange);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Stack />
+    </QueryClientProvider>
+  );
+}
+```
+
+`useOnlineManager` and `useAppState` are small hooks that tell TanStack Query when the app comes back online or returns to the foreground, so it can refetch stale data automatically. `useOnlineManager` relies on `expo-network`, so install it first:
+
+```npm
+npx expo install expo-network
+```
+
+You can copy the hook implementations from the [Expo example](https://github.com/typebase-io/monorepo/tree/main/apps/examples/expo/app-with-auth/src/hooks) or the [TanStack Query React Native docs](https://tanstack.com/query/latest/docs/framework/react/react-native).
+
+## Querying data
+
+```tsx title="app/index.tsx"
+import { useQuery } from '@tanstack/react-query';
+import { client } from '../lib/typebase/client';
+
+export default function HomeScreen() {
+  const { data: todos } = useQuery(client.queries.todos.getMany.queryOptions());
+
+  return (
+    // render todos
+  );
+}
+```
+
+## Mutating data
+
+```tsx title="app/add-todo.tsx"
+import { useMutation } from '@tanstack/react-query';
+import { client } from '../lib/typebase/client';
+import { queryClient } from '../lib/tanstack-query/query-client';
+
+export default function AddTodoScreen() {
+  const addTodo = useMutation(
+    client.mutations.todos.create.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({
+          queryKey: client.queries.todos.getMany.key(),
+        });
+      },
+    })
+  );
+
+  return (
+    // render form, call addTodo.mutate({ value })
+  );
+}
+```
+
+---
+
+## Authentication
+
+<Callout type="info">
+  Authentication requires an `auth.ts` file in your Typebase project. See the [Authentication guide](/docs/auth) to set it up.
+</Callout>
+
+Expo uses better-auth's `expoClient` plugin, which handles session storage using `expo-secure-store` instead of cookies. There's no proxy needed — the auth client talks directly to your Typebase server.
+
+### Setup
+
+<Callout type="warn">
+  The Expo scheme you set in `app.json` (for example `"scheme": "myapp"`) must match `trustedOrigins` in `auth.ts` (`'myapp://'`) **and** the `scheme`
+  / `storagePrefix` values passed to `expoClient` below. If any of the three drifts, auth will fail silently — the snippets in this section use
+  `myapp` everywhere; replace it with your own scheme in all three places.
+</Callout>
+
+#### auth.ts
+
+Your Typebase `auth.ts` must include the `expo` server plugin and list your app's schemes as trusted origins:
+
+```ts title="typebase/auth.ts"
+import { defineAuth } from 'typebase-io/server';
+import { expo } from '@better-auth/expo';
+
+export const auth = defineAuth({
+  trustedOrigins: ['myapp://', 'exp://', 'exp://**'],
+  plugins: [expo()],
+  emailAndPassword: {
+    enabled: true,
+  },
+});
+```
+
+`'myapp://'` is the scheme from your `app.json`. The `exp://` entries cover Expo Go during development. If you're using a dev build on a physical device or simulator, also add `'exp://192.168.*.*:*/**'` and `'exp://192.168.*.*:*'` to `trustedOrigins`.
+
+#### Auth client
+
+Install the Expo better-auth plugin:
+
+```npm
+npx expo install @better-auth/expo expo-secure-store
+```
+
+Then create your auth client:
+
+```ts title="lib/typebase/auth-client.ts"
+import { createAuthClient } from 'typebase-io/client/auth/react';
+import { expoClient } from '@better-auth/expo/client';
+import * as SecureStore from 'expo-secure-store';
+
+export const authClient = createAuthClient({
+  baseURL: process.env.EXPO_PUBLIC_TYPEBASE_APP_URL,
+  plugins: [
+    expoClient({
+      scheme: 'myapp',
+      storagePrefix: 'myapp',
+      storage: SecureStore,
+    }),
+  ],
+});
+```
+
+The `expoClient` plugin handles session persistence in `SecureStore`. `scheme` and `storagePrefix` must match the scheme you set in `app.json` — see the callout at the top of this section.
+
+#### Update your client
+
+With the auth client in place, update your Typebase client to include the session cookie on every request:
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../server/_generated/server';
+import { authClient } from './auth-client';
+
+export const client = createTanstackQueryClient<Router>({
+  url: process.env.EXPO_PUBLIC_TYPEBASE_APP_URL ?? '',
+  headers: () => ({
+    cookie: authClient.getCookie(),
+  }),
+});
+```
+
+### Examples
+
+#### Sign in
+
+```tsx
+import { authClient } from '../lib/typebase/auth-client';
+
+const { data, error } = await authClient.signIn.email({ email, password });
+```
+
+#### Sign up
+
+```tsx
+import { authClient } from '../lib/typebase/auth-client';
+
+const { data, error } = await authClient.signUp.email({ name, email, password });
+```
+
+#### Sign out
+
+```tsx
+import { authClient } from '../lib/typebase/auth-client';
+
+await authClient.signOut();
+```
+
+#### Get session
+
+```tsx
+import { authClient } from '../lib/typebase/auth-client';
+
+const { data: session, isPending } = authClient.useSession();
+```
+
+#### Protect routes
+
+Use `authClient.useSession()` in your root index screen to redirect based on auth state:
+
+```tsx title="app/index.tsx"
+import { Redirect } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
+import { authClient } from '../lib/typebase/auth-client';
+
+export default function IndexScreen() {
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (session) {
+    return <Redirect href="/(authed)/" />;
+  }
+
+  return <Redirect href="/(un-authed)/" />;
+}
+```
+
+---
+
+## How routing works
+
+The `Router` type is auto-generated by `npx typebase-io-cli codegen` and mirrors your `actions/` folder structure:
+
+```
+typebase/actions/
+  queries/
+    todos.ts     → client.queries.todos.*
+  mutations/
+    todos.ts     → client.mutations.todos.*
+```
+
+Each exported [action](/docs/actions) from your files becomes a callable method on the client.
+
+## Environment variables
+
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`. Expo requires a different prefix for variables exposed to the app — add this to your `.env` file:
+
+```bash title=".env"
+EXPO_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
+```
+
+---
+
+## API Reference
+
+### `createTanstackQueryClient`
+
+```ts
+import { createTanstackQueryClient } from 'typebase-io/client';
+```
+
+Creates a TanStack Query-wrapped client. Returns utilities (`queryOptions`, `mutationOptions`) for use with `useQuery`, `useMutation`, and more. Accepts the same options as an oRPC `RPCLink` plus an optional second argument for TanStack Query configuration.
+
+### `createAuthClient`
+
+```ts
+import { createAuthClient } from 'typebase-io/client/auth/react';
+```
+
+Re-exports better-auth's `createAuthClient` from `better-auth/react`. In Expo, pass the `expoClient` plugin to enable SecureStore-based session persistence. Returns an `authClient` with methods like `signUp.email`, `signIn.email`, `signOut`, `useSession`, and `getCookie`. The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference.

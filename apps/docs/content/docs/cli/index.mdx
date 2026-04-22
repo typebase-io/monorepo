@@ -1,0 +1,30 @@
+---
+title: Reference
+description: All available Typebase CLI commands.
+---
+
+The Typebase CLI is the main tool for managing your project. It handles code generation, deployment, database management, and more.
+
+## Usage
+
+```npm
+npx typebase-io-cli <command> [options]
+```
+
+If you installed the CLI globally, you can also run:
+
+```npm
+typebase-io-cli <command> [options]
+```
+
+## Commands
+
+| Command                                        | Description                                              |
+| ---------------------------------------------- | -------------------------------------------------------- |
+| [`init`](/docs/cli/init)                       | Scaffold a new Typebase project structure                |
+| [`codegen`](/docs/cli/codegen)                 | Regenerate type definitions                              |
+| [`deploy`](/docs/cli/deploy)                   | Build and deploy your server to the cloud                |
+| [`generate-server`](/docs/cli/generate-server) | Generate server files locally without deploying          |
+| [`db`](/docs/cli/db)                           | Manage your database (push schema changes)               |
+| [`auth`](/docs/cli/auth)                       | Manage authentication (generate auth tables)             |
+| [`env`](/docs/cli/env)                         | Manage environment variables on your deployment provider |

@@ -1,0 +1,34 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "comparison",
+
+    "---Core Concepts---",
+    "actions",
+    "database",
+    "auth",
+    "generated",
+    "[Deploy](/docs/cli/deploy)",
+    "work-locally",
+
+    "---Integrations---",
+    "integrations/nextjs",
+    "integrations/sveltekit",
+    "integrations/nuxt",
+    "integrations/expo",
+
+    "---Examples---",
+    "examples/nextjs",
+    "examples/sveltekit",
+    "examples/nuxt",
+    "examples/expo",
+
+    "---More---",
+    "cli",
+    "configuration",
+    "troubleshooting",
+    "roadmap"
+  ]
+}

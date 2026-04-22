@@ -1,0 +1,9 @@
+{
+  "title": "SvelteKit",
+  "pages": [
+    "[ExternalLink][Remote Functions](https://github.com/typebase-io/monorepo/tree/main/apps/examples/svelte-kit/remote-functions)",
+    "[ExternalLink][Remote Functions + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/svelte-kit/remote-functions-with-auth)",
+    "[ExternalLink][Svelte Query](https://github.com/typebase-io/monorepo/tree/main/apps/examples/svelte-kit/using-svelte-query)",
+    "[ExternalLink][Svelte Query + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/svelte-kit/using-svelte-query-with-auth)"
+  ]
+}

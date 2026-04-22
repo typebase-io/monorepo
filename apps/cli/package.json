@@ -1,0 +1,63 @@
+{
+  "name": "@typebase-io/cli",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "typebase",
+    "typebase-io",
+    "typescript",
+    "backend",
+    "cli",
+    "api",
+    "database",
+    "auth",
+    "drizzle",
+    "better-auth",
+    "orpc"
+  ],
+  "scripts": {
+    "build": "node ../build-apps/src/index.ts build --app cli",
+    "dev": "node src/index.ts",
+    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint ."
+  },
+  "bin": {
+    "typebase-io-cli": "dist/esm/src/index.js",
+    "typebase-io-cli-cjs": "dist/cjs/src/index.js"
+  },
+  "imports": {
+    "#commands/*": [
+      "./src/commands/*"
+    ],
+    "#helpers/*": [
+      "./src/helpers/*"
+    ]
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "14.0.0",
+    "@inquirer/prompts": "8.4.2",
+    "@neondatabase/api-client": "2.7.1",
+    "auth": "1.6.8",
+    "chalk": "5.6.2",
+    "commander": "14.0.3",
+    "dotenv": "17.4.2",
+    "drizzle-kit": "1.0.0-beta.22",
+    "drizzle-orm": "1.0.0-beta.22",
+    "esbuild": "0.27.4",
+    "jiti": "2.6.1",
+    "ora": "9.3.0",
+    "pg": "8.20.0",
+    "preferred-pm": "5.0.0",
+    "ts-morph": "27.0.2",
+    "ts-pattern": "5.9.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "24.1.0",
+    "@types/pg": "8.20.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

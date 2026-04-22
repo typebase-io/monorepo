@@ -1,0 +1,234 @@
+---
+title: Configuration
+description: Customize Typebase with the typebase.json configuration file.
+---
+
+Typebase uses a `typebase.json` file in your project root to store configuration. This file is created and updated automatically by CLI commands, but you can also edit it manually.
+
+## Example
+
+```json title="typebase.json"
+{
+  "projectPath": "src/lib/typebase/server/",
+  "serverProvider": "vercel",
+  "server": {
+    "output": "ts",
+    "adapter": "node",
+    "skipLoadEnv": false,
+    "outDir": "_server"
+  }
+}
+```
+
+## Reference
+
+### `projectPath`
+
+The path to your `typebase/` directory, relative to the project root.
+
+| Type     | Default                                                               |
+| -------- | --------------------------------------------------------------------- |
+| `string` | `"src/typebase"` if a `src/` directory exists, otherwise `"typebase"` |
+
+```json
+{
+  "projectPath": "src/lib/typebase/server/"
+}
+```
+
+This tells the CLI where to find your `db/`, `actions/`, `auth.ts`, and `_generated/` files.
+
+---
+
+### `serverProvider`
+
+The deployment provider to use with `npx typebase-io-cli deploy`.
+
+| Type     | Options                              |
+| -------- | ------------------------------------ |
+| `string` | `"vercel"`, `"cloudflare"`, `"deno"` |
+
+```json
+{
+  "serverProvider": "vercel"
+}
+```
+
+If not set, the CLI will ask you to choose a provider on the first deploy and save it here.
+
+---
+
+### `server`
+
+Configuration for `npx typebase-io-cli generate-server`. These are the defaults used when you don't pass CLI flags.
+
+```json
+{
+  "server": {
+    "output": "ts",
+    "adapter": "node",
+    "skipLoadEnv": false,
+    "outDir": "_server"
+  }
+}
+```
+
+#### `server.output`
+
+The output format for generated server files.
+
+| Type     | Options                  | Default |
+| -------- | ------------------------ | ------- |
+| `string` | `"ts"`, `"esm"`, `"cjs"` | `"ts"`  |
+
+- `"ts"` — TypeScript source files (you compile them yourself)
+- `"esm"` — JavaScript with `import`/`export` syntax
+- `"cjs"` — JavaScript with `require`/`module.exports` syntax
+
+#### `server.adapter`
+
+The HTTP adapter for the generated server.
+
+| Type     | Options                                                            | Default  |
+| -------- | ------------------------------------------------------------------ | -------- |
+| `string` | `"node"`, `"bun"`, `"hono"`, `"fastify"`, `"deno"`, `"cloudflare"` | `"node"` |
+
+#### `server.skipLoadEnv`
+
+Whether to omit the `dotenv/config` import from the generated server. Set to `true` if your runtime handles environment variables natively (e.g., Cloudflare Workers).
+
+| Type      | Default |
+| --------- | ------- |
+| `boolean` | `false` |
+
+#### `server.outDir`
+
+The output directory for generated server files, relative to your `typebase/` directory.
+
+| Type     | Default     |
+| -------- | ----------- |
+| `string` | `"_server"` |
+
+---
+
+### `vercel`
+
+Vercel deployment configuration. Managed automatically by the CLI after your first deploy to Vercel.
+
+```json
+{
+  "vercel": {
+    "projectId": "prj_abc123",
+    "projectName": "my-typebase-server",
+    "orgId": "team_xyz789"
+  }
+}
+```
+
+| Field         | Description                        |
+| ------------- | ---------------------------------- |
+| `projectId`   | Your Vercel project ID             |
+| `projectName` | Your Vercel project name           |
+| `orgId`       | Your Vercel team/org ID (optional) |
+
+---
+
+### `cloudflare`
+
+Cloudflare Workers deployment configuration. Managed automatically by the CLI.
+
+```json
+{
+  "cloudflare": {
+    "accountId": "abc123",
+    "workerName": "my-typebase-server",
+    "subdomain": "my-subdomain"
+  }
+}
+```
+
+| Field        | Description                        |
+| ------------ | ---------------------------------- |
+| `accountId`  | Your Cloudflare account ID         |
+| `workerName` | The name of your Cloudflare Worker |
+| `subdomain`  | Your `*.workers.dev` subdomain     |
+
+---
+
+### `deno`
+
+Deno Deploy configuration. Managed automatically by the CLI.
+
+```json
+{
+  "deno": {
+    "org": "my-org",
+    "projectId": "abc123",
+    "slug": "my-typebase-server"
+  }
+}
+```
+
+| Field       | Description                         |
+| ----------- | ----------------------------------- |
+| `org`       | Your Deno Deploy organization       |
+| `projectId` | Your Deno Deploy project ID         |
+| `slug`      | Your project slug (used in the URL) |
+
+---
+
+### `neon`
+
+Neon database configuration. Managed automatically by the CLI when you use a database.
+
+```json
+{
+  "neon": {
+    "orgId": "org-abc123",
+    "projectId": "proj-xyz789"
+  }
+}
+```
+
+| Field       | Description               |
+| ----------- | ------------------------- |
+| `orgId`     | Your Neon organization ID |
+| `projectId` | Your Neon project ID      |
+
+## Full schema
+
+Here is the complete `typebase.json` schema with all optional fields:
+
+```json
+{
+  "projectPath": "typebase",
+  "serverProvider": "vercel",
+  "server": {
+    "output": "ts",
+    "adapter": "node",
+    "skipLoadEnv": false,
+    "outDir": "_server"
+  },
+  "vercel": {
+    "projectId": "",
+    "projectName": "",
+    "orgId": ""
+  },
+  "cloudflare": {
+    "accountId": "",
+    "workerName": "",
+    "subdomain": ""
+  },
+  "deno": {
+    "org": "",
+    "projectId": "",
+    "slug": ""
+  },
+  "neon": {
+    "orgId": "",
+    "projectId": ""
+  }
+}
+```
+
+All fields are optional. The CLI will use sensible defaults and prompt you interactively when needed.

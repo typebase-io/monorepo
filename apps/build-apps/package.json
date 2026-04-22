@@ -1,0 +1,32 @@
+{
+  "name": "@typebase-io/build-apps",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node src/index.ts",
+    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint ."
+  },
+  "imports": {
+    "#commands/*": [
+      "./src/commands/*"
+    ],
+    "#helpers/*": [
+      "./src/helpers/*"
+    ]
+  },
+  "devDependencies": {
+    "@commander-js/extra-typings": "14.0.0",
+    "@inquirer/prompts": "8.3.0",
+    "@swc/cli": "0.7.10",
+    "@swc/core": "1.15.11",
+    "@swc/plugin-transform-imports": "12.5.0",
+    "@types/node": "24.1.0",
+    "chalk": "5.6.2",
+    "commander": "14.0.2",
+    "esbuild": "0.27.3",
+    "ora": "9.3.0",
+    "tsc-alias": "1.8.16",
+    "typescript": "5.9.3"
+  }
+}

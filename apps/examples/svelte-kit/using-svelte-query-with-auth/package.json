@@ -1,0 +1,45 @@
+{
+	"name": "using-svelte-query-with-auth",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"typebase": "typebase-io-cli"
+	},
+	"devDependencies": {
+		"@eslint/compat": "2.0.5",
+		"@eslint/js": "10.0.1",
+		"@sveltejs/adapter-auto": "7.0.1",
+		"@sveltejs/kit": "2.57.0",
+		"@sveltejs/vite-plugin-svelte": "7.0.0",
+		"@tailwindcss/vite": "4.2.2",
+		"@types/node": "24.12.0",
+		"eslint": "10.2.0",
+		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-svelte": "3.17.0",
+		"globals": "17.4.0",
+		"prettier": "3.8.2",
+		"prettier-plugin-svelte": "3.5.1",
+		"prettier-plugin-tailwindcss": "0.7.2",
+		"svelte": "5.55.3",
+		"svelte-check": "4.4.6",
+		"tailwindcss": "4.2.2",
+		"typebase-io-cli": "0.0.1",
+		"typescript": "6.0.2",
+		"typescript-eslint": "8.58.1",
+		"vite": "8.0.8"
+	},
+	"dependencies": {
+		"@tanstack/svelte-query": "6.1.16",
+		"typebase-io": "0.0.1",
+		"zod": "4.3.6"
+	}
+}

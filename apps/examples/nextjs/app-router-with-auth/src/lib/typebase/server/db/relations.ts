@@ -1,0 +1,35 @@
+import { q } from 'typebase-io/db';
+
+import * as schema from './schema.ts';
+
+export const relations = q.defineRelations(schema, (r) => ({
+  todos: {
+    user: r.one.users({
+      from: r.todos.userId,
+      to: r.users.id,
+    }),
+  },
+  sessions: {
+    users: r.one.users({
+      from: r.sessions.userId,
+      to: r.users.id,
+    }),
+  },
+  accounts: {
+    users: r.one.users({
+      from: r.accounts.userId,
+      to: r.users.id,
+    }),
+  },
+  users: {
+    sessions: r.many.sessions({
+      from: r.users.id,
+      to: r.sessions.userId,
+    }),
+    accounts: r.many.accounts({
+      from: r.users.id,
+      to: r.accounts.userId,
+    }),
+  },
+  verifications: {},
+}));

@@ -1,0 +1,9 @@
+{
+  "title": "Nuxt",
+  "pages": [
+    "[ExternalLink][Simple](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nuxt/simple)",
+    "[ExternalLink][Simple + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nuxt/simple-with-auth)",
+    "[ExternalLink][Vue Query](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nuxt/using-vue-query)",
+    "[ExternalLink][Vue Query + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nuxt/using-vue-query-with-auth)"
+  ]
+}

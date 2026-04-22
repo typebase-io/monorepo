@@ -1,0 +1,3 @@
+# Expo - React Query - Typebase
+
+This is a simple TODO App showing how you can use Typebase to request and update data using Expo and React Query.

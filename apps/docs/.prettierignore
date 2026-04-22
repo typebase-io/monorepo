@@ -1,0 +1,5 @@
+dist/
+.next/
+.source/
+content/docs/actions/index.mdx
+next-env.d.ts

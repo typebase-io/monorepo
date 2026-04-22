@@ -1,0 +1,9 @@
+{
+  "title": "Next.js",
+  "pages": [
+    "[ExternalLink][App Router](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nextjs/app-router)",
+    "[ExternalLink][App Router + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nextjs/app-router-with-auth)",
+    "[ExternalLink][React Query](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nextjs/using-react-query)",
+    "[ExternalLink][React Query + Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/nextjs/using-react-query-with-auth)"
+  ]
+}

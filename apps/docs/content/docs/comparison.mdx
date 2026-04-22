@@ -1,0 +1,44 @@
+---
+title: Comparison
+description: How Typebase compares to Supabase and Convex.
+---
+
+Typebase is best understood as the best of both worlds: the developer experience of Convex with the open, standard Postgres foundation of Supabase.
+
+|                    | Typebase                             | Supabase                         | Convex                |
+| ------------------ | ------------------------------------ | -------------------------------- | --------------------- |
+| **Backend logic**  | TypeScript functions                 | SQL + RLS                        | TypeScript functions  |
+| **Database**       | Postgres (Drizzle)                   | Postgres                         | Proprietary           |
+| **Type safety**    | End-to-end, always in sync           | Generated from schema, can drift | End-to-end            |
+| **Auth**           | better-auth                          | Built-in                         | Third-party providers |
+| **Realtime**       | Coming soon                          | Yes                              | Yes (core model)      |
+| **Storage**        | Coming soon (BYO via any TS library) | Built-in                         | Built-in              |
+| **Mailers**        | Coming soon (BYO via any TS library) | No                               | No                    |
+| **Infrastructure** | Your own or Vercel, Cloudflare, Deno | Supabase-hosted                  | Convex-hosted         |
+| **Vendor lock-in** | None                                 | Medium                           | High                  |
+
+## No vendor lock-in
+
+Typebase does not own any servers. You deploy to Vercel, Cloudflare Workers, or Deno Deploy — providers you already control and understand. If you ever want to move, run `npx typebase-io-cli generate-server` to get the raw server code and host it anywhere.
+
+Supabase and Convex host your backend on their infrastructure. Migrating away is a significant amount of work.
+
+## End-to-end type safety
+
+With Supabase, types are generated from your database schema as a separate step. They can drift out of sync, and Supabase doesn't have a strong concept of typed server functions — most logic lives in the database as SQL or RLS policies. Supabase does offer Edge Functions for TypeScript, but they aren't the core of the platform and most Supabase apps don't center on them.
+
+With Typebase, you write plain TypeScript functions and your client types are always in sync. Your editor always knows exactly what every action accepts and returns.
+
+## Standard Postgres, no proprietary database
+
+Convex gives you a great developer experience for writing backend functions, but it uses a proprietary database. Your data is tied to their platform, and you can't use the SQL knowledge, tooling, or ecosystem you already have.
+
+Typebase gives you the same experience of writing simple TypeScript functions, but backed by standard Postgres via Drizzle. Your data is yours, in a database you understand.
+
+## Auth
+
+Supabase ships its own auth system. Convex relies on third-party providers like Clerk. Typebase uses [better-auth](https://www.better-auth.com/), which supports every major auth strategy — email/password, OAuth, passkeys, multi-factor, and more — with first-class TypeScript support and active development.
+
+## Realtime
+
+Realtime is not yet supported in Typebase and is planned for the next release. Supabase supports realtime subscriptions, and Convex's entire model is built around reactive queries. If realtime is a hard requirement today, Convex or Supabase may be a better fit for now.

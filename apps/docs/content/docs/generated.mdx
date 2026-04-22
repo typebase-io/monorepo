@@ -1,0 +1,82 @@
+---
+title: Generated Code
+description: What lives in _generated/ and why it exists.
+---
+
+The `_generated/` folder is created and maintained by `npx typebase-io-cli codegen`. Do not edit these files — they are overwritten every time you run the command.
+
+## `_generated/server.ts`
+
+```ts
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { ActionBuilder, GetDBBuilder } from 'typebase-io/server';
+import type { relations } from '../db/relations.ts';
+import type { auth as authConfig } from '../auth.ts';
+
+import * as ActionModule0 from '../actions/mutations/todos.ts';
+import * as ActionModule1 from '../actions/queries/todos.ts';
+
+export const router = {
+  mutations: {
+    todos: { create: ActionModule0.create, toggle: ActionModule0.toggle },
+  },
+  queries: {
+    todos: { getMany: ActionModule1.getMany, getOne: ActionModule1.getOne },
+  },
+};
+
+export type Router = typeof router;
+export declare const action: ActionBuilder<typeof relations, typeof authConfig>;
+export declare const getDB: GetDBBuilder<typeof relations>;
+```
+
+**`router`** — An object that mirrors your `actions/` folder structure. Every file becomes a namespace, every exported action becomes a method. Non-action exports from the same file are not added to the router. This is what your client imports as `Router` to get full type safety.
+
+**`action`** — The builder you import in every action file to define your handler. It's typed with your schema relations and auth config, so the context object in `.handler()` is always accurate.
+
+**`getDB`** — A function that returns the Drizzle database instance. Use it when you need database access from code that runs outside of an action handler, such as a shared utility module:
+
+```ts
+import { getDB } from './_generated/server';
+
+const db = getDB();
+const todos = await db.query.todos.findMany();
+```
+
+Inside action handlers you should keep using the `db` passed into the context — it's the same client, just already wired up for you.
+
+## `_generated/db.d.ts`
+
+This file is only generated when your project has a `db/schema.ts` file.
+
+```ts
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { InferDB } from 'typebase-io/db';
+import type * as schema from '../db/schema.ts';
+import type { auth } from '../auth.ts';
+
+export type DB = InferDB<typeof schema>;
+export type AuthSession = typeof auth.$Infer.Session;
+```
+
+**`DB`** — A map of all your table names to their inferred row types. Use it to type variables without repeating your schema inline:
+
+```ts
+import type { DB } from './_generated/db';
+
+type Todo = DB['todos']['select'];
+type NewTodo = DB['todos']['insert'];
+```
+
+**`AuthSession`** — The inferred session type from better-auth. Only present when your project has an `auth.ts` file. Use it to type session objects in middleware or utility functions:
+
+```ts
+import type { AuthSession } from './_generated/db';
+
+function requireSession(session: AuthSession | null) {
+  if (!session) throw new ServerError('UNAUTHORIZED');
+  return session;
+}
+```

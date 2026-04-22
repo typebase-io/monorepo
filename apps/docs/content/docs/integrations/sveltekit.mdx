@@ -1,0 +1,559 @@
+---
+title: SvelteKit
+description: Set up Typebase with SvelteKit — client, TanStack Query, load functions, form actions, and authentication.
+---
+
+Typebase provides two client types for SvelteKit. **`createRouterClient`** is a simple promise-based client, best for load functions and form actions. **`createTanstackQueryClient`** is a [TanStack Query](https://tanstack.com/query/latest/docs/framework/svelte/overview) integration, best for components that need caching, loading states, and automatic refetching.
+
+Pick the one that fits your use case — or use both in the same project.
+
+## Simple client
+
+### Setup
+
+`createRouterClient` is a thin helper that creates a typed [oRPC](https://orpc.dev) client. If you need more control over the client configuration, you can build your own using oRPC directly — the full oRPC client docs apply here.
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: TYPEBASE_APP_URL,
+});
+```
+
+<details>
+<summary><strong>createRouterClient source</strong></summary>
+
+```ts
+export const createRouterClient = <TRouter>(options: RPCLinkOptions<ClientContext>): RouterClient<TRouter> => {
+  if (typeof options.url === 'string') {
+    options.url = `${options.url}/rpc`;
+  }
+
+  return createORPCClient(new RPCLink(options));
+};
+```
+
+</details>
+
+That's it — you're ready to call your actions anywhere on the server. Each call is just a regular async function call, fully typed based on the `.input()` and `.output()` you defined on the action. Here are two common patterns in SvelteKit:
+
+### Examples
+
+#### Load functions
+
+```ts title="routes/+page.server.ts"
+import { client } from '$lib/typebase/client';
+
+export async function load() {
+  const todos = await client.queries.todos.getMany();
+
+  return { todos };
+}
+```
+
+#### Form actions
+
+```ts title="routes/+page.server.ts"
+import { client } from '$lib/typebase/client';
+
+export const actions = {
+  addTodo: async ({ request }) => {
+    const formData = await request.formData();
+    const value = formData.get('value') as string;
+    await client.mutations.todos.create({ value: value.trim() });
+  },
+
+  toggleTodo: async ({ request }) => {
+    const formData = await request.formData();
+    const id = Number(formData.get('id'));
+    await client.mutations.todos.toggle({ id });
+  },
+};
+```
+
+---
+
+## Tanstack Query client
+
+### Setup
+
+`createTanstackQueryClient` is a thin helper that creates an [oRPC](https://orpc.dev) client wrapped with [TanStack Query](https://tanstack.com/query/latest/docs/framework/svelte/overview) utilities. If you need more control, you can build your own using oRPC and Tanstack Query directly.
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import { browser } from '$app/environment';
+import { getRequestEvent } from '$app/server';
+import { PUBLIC_TYPEBASE_APP_URL } from '$env/static/public';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: PUBLIC_TYPEBASE_APP_URL,
+  fetch: (input, init) => {
+    if (browser) {
+      return fetch(input, init);
+    }
+
+    return getRequestEvent().fetch(input, init);
+  },
+});
+```
+
+<Callout type="info">The environment variable must be prefixed with `PUBLIC_` so it's available in the browser.</Callout>
+
+<details>
+<summary><strong>createTanstackQueryClient source</strong></summary>
+
+```ts
+export const createTanstackQueryClient = <TRouter>(
+  options: RPCLinkOptions<ClientContext>,
+  utilsOptions?: CreateRouterUtilsOptions<RouterClient<TRouter>>
+): RouterUtils<RouterClient<TRouter>> => {
+  if (typeof options.url === 'string') {
+    options.url = `${options.url}/rpc`;
+  }
+
+  return createTanstackQueryUtils(createORPCClient(new RPCLink(options)), utilsOptions);
+};
+```
+
+</details>
+
+### QueryClientProvider
+
+Wrap your app with Tanstack Query's provider. Create the `QueryClient` in your root layout load function and pass it through to the layout component:
+
+```ts title="routes/+layout.ts"
+import { browser } from '$app/environment';
+import { QueryClient } from '@tanstack/svelte-query';
+import type { LayoutLoad } from './$types';
+
+export const load: LayoutLoad = async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        enabled: browser,
+      },
+    },
+  });
+
+  return { queryClient };
+};
+```
+
+```svelte title="routes/+layout.svelte"
+<script lang="ts">
+  import { QueryClientProvider } from '@tanstack/svelte-query';
+  import type { LayoutProps } from './$types';
+
+  let { children, data }: LayoutProps = $props();
+</script>
+
+<QueryClientProvider client={data.queryClient}>
+  {@render children()}
+</QueryClientProvider>
+```
+
+### Querying data
+
+```svelte title="components/Todos.svelte"
+<script>
+  import { createQuery } from '@tanstack/svelte-query';
+  import { client } from '$lib/typebase/client';
+
+  const todos = createQuery(() => client.queries.todos.getMany.queryOptions());
+</script>
+
+<ul>
+  {#each todos.data ?? [] as todo (todo.id)}
+    <li>{todo.value}</li>
+  {/each}
+</ul>
+```
+
+### Mutating data
+
+```svelte title="components/AddTodoForm.svelte"
+<script>
+  import { createMutation, getQueryClientContext } from '@tanstack/svelte-query';
+  import { client } from '$lib/typebase/client';
+
+  const queryClient = getQueryClientContext();
+
+  const addTodo = createMutation(
+    client.mutations.todos.create.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: client.queries.todos.getMany.key(),
+        });
+      },
+    })
+  );
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    addTodo.mutate({ value: formData.get('value') as string });
+  }
+</script>
+
+<form onsubmit={handleSubmit}>
+  <input name="value" placeholder="What needs to be done?" />
+  <button type="submit">Add</button>
+</form>
+```
+
+---
+
+## Authentication
+
+<Callout type="info">
+  Authentication requires an `auth.ts` file in your Typebase project. See the [Authentication guide](/docs/auth) to set it up.
+</Callout>
+
+### Setup
+
+#### Auth client
+
+Import `createAuthClient` from the Typebase package — it re-exports better-auth's client configured for your setup:
+
+```ts title="lib/typebase/auth-client.ts"
+import { browser } from '$app/environment';
+import { getRequestEvent } from '$app/server';
+import { createAuthClient } from 'typebase-io/client/auth/svelte';
+
+export const authClient = createAuthClient({
+  fetchOptions: {
+    customFetchImpl: (url, request) => {
+      if (browser) {
+        return fetch(url, request);
+      }
+
+      return getRequestEvent().fetch(url, request);
+    },
+  },
+});
+```
+
+The `customFetchImpl` override uses the SvelteKit request event's `fetch` on the server so auth requests go through the proxy (see below) and pick up the session cookie. In the browser, it falls back to the global `fetch`.
+
+The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference for everything `authClient` can do.
+
+#### Proxy setup
+
+When your Typebase server is deployed on a different domain than your SvelteKit app (which is the typical setup), you need to add a proxy in `hooks.server.ts` so that auth cookies are set on your app's domain. This is required for secure, `HttpOnly` cookies to work correctly.
+
+<Callout type="warn">
+  better-auth does support cookies across different domains, but it is less secure and may have problems on Safari due to third-party cookie
+  restrictions. The proxy approach is strongly recommended.
+</Callout>
+
+<Callout type="info">
+  Proxied requests hop through your SvelteKit host before reaching the Typebase server, so they add one extra network hop. In practice this is
+  negligible compared to the cost of the underlying RPC call, especially when both hosts are deployed to the same edge network.
+</Callout>
+
+Forward auth requests to your Typebase server in your `handle` hook:
+
+```ts title="hooks.server.ts"
+import { proxyToTypebase } from 'typebase-io/client/auth/svelte-kit';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+
+export async function handle({ event, resolve }) {
+  if (event.url.pathname.startsWith('/api/auth')) {
+    return proxyToTypebase(event, TYPEBASE_APP_URL);
+  }
+
+  return resolve(event);
+}
+```
+
+If you are using the Tanstack Query client, the proxy also needs to forward `/rpc` requests so that server-side calls include the session cookie:
+
+```ts title="hooks.server.ts"
+import { proxyToTypebase } from 'typebase-io/client/auth/svelte-kit';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+
+export async function handle({ event, resolve }) {
+  if (event.url.pathname.startsWith('/api/auth') || event.url.pathname.startsWith('/rpc')) {
+    return proxyToTypebase(event, TYPEBASE_APP_URL);
+  }
+
+  return resolve(event);
+}
+```
+
+#### Update your client
+
+With the proxy in place, update your client to forward the session cookie on server-side requests.
+
+**Simple client:**
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import { getServerAuthCookie } from 'typebase-io/client/auth/svelte-kit';
+import { getRequestEvent } from '$app/server';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: TYPEBASE_APP_URL,
+  headers: async () => getServerAuthCookie(getRequestEvent()),
+});
+```
+
+**Tanstack Query client:**
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import { browser } from '$app/environment';
+import { PUBLIC_TYPEBASE_APP_URL } from '$env/static/public';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: browser ? window.location.origin : PUBLIC_TYPEBASE_APP_URL,
+});
+```
+
+When running in the browser, the TanStack Query client points to the same origin so requests go through the proxy automatically. On the server, it forwards the session cookie directly to the Typebase server.
+
+### Examples
+
+#### Sign up
+
+```svelte
+<script>
+  import { authClient } from '$lib/typebase/auth-client';
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    await authClient.signUp.email({
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    });
+  }
+</script>
+
+<form onsubmit={handleSubmit}>
+  <input name="name" placeholder="Name" />
+  <input name="email" type="email" placeholder="Email" />
+  <input name="password" type="password" placeholder="Password" />
+  <button type="submit">Sign up</button>
+</form>
+```
+
+#### Sign in
+
+```svelte
+<script>
+  import { authClient } from '$lib/typebase/auth-client';
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    await authClient.signIn.email({
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+    });
+  }
+</script>
+
+<form onsubmit={handleSubmit}>
+  <input name="email" type="email" placeholder="Email" />
+  <input name="password" type="password" placeholder="Password" />
+  <button type="submit">Sign in</button>
+</form>
+```
+
+#### Sign out
+
+```svelte
+<script>
+  import { authClient } from '$lib/typebase/auth-client';
+</script>
+
+<button onclick={() => authClient.signOut()}>Sign out</button>
+```
+
+#### Get session on the server
+
+```ts title="routes/+page.server.ts"
+import { getServerSession } from 'typebase-io/client/auth/svelte-kit';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+
+export async function load(event) {
+  const session = await getServerSession(event, TYPEBASE_APP_URL);
+
+  return { session };
+}
+```
+
+#### Get session on the client
+
+```svelte
+<script>
+  import { authClient } from '$lib/typebase/auth-client';
+
+  const session = authClient.useSession();
+</script>
+
+{#if $session.data}
+  <p>Welcome, {$session.data.user.name}!</p>
+{:else}
+  <p>Not signed in</p>
+{/if}
+```
+
+#### Protect routes with hooks.server.ts
+
+Fetch the session once per request in `hooks.server.ts`, redirect unauthenticated traffic, and stash the session on `event.locals` so the rest of your server code can read it without another round trip:
+
+```ts title="hooks.server.ts"
+import { redirect } from '@sveltejs/kit';
+import { proxyToTypebase, getServerSession } from 'typebase-io/client/auth/svelte-kit';
+import { TYPEBASE_APP_URL } from '$env/static/private';
+
+export async function handle({ event, resolve }) {
+  const session = await getServerSession(event, TYPEBASE_APP_URL);
+
+  if (event.url.pathname.startsWith('/api/auth') || event.url.pathname.startsWith('/rpc')) {
+    return proxyToTypebase(event, TYPEBASE_APP_URL);
+  }
+
+  if (!session && event.url.pathname !== '/auth') {
+    redirect(307, new URL('/auth', event.request.url));
+  }
+
+  if (session && event.url.pathname === '/auth') {
+    redirect(307, new URL('/', event.request.url));
+  }
+
+  if (session) {
+    event.locals.session = session.session;
+    event.locals.user = session.user;
+  }
+
+  return resolve(event);
+}
+```
+
+<Callout type="info">
+  The `/rpc` match is only required for the TanStack Query client, where server-side calls come in on the app's origin and need to be forwarded to
+  your Typebase server. For the simple client, `/api/auth` on its own is enough.
+</Callout>
+
+Declare the types for `event.locals` so `session` and `user` are typed everywhere:
+
+```ts title="src/app.d.ts"
+import type { AuthSession } from '$lib/typebase/_generated/db';
+
+declare global {
+  namespace App {
+    interface Locals {
+      session: AuthSession['session'] | null;
+      user: AuthSession['user'] | null;
+    }
+  }
+}
+
+export {};
+```
+
+Then expose them to your layouts and pages via `+layout.server.ts`:
+
+```ts title="routes/+layout.server.ts"
+import type { LayoutServerLoad } from './$types';
+
+export const load: LayoutServerLoad = ({ locals }) => {
+  return {
+    session: locals.session,
+    user: locals.user,
+  };
+};
+```
+
+`AuthSession` is generated from your `auth.ts` by `npx typebase-io-cli codegen` and lives alongside the other generated types.
+
+---
+
+## How routing works
+
+The `Router` type is auto-generated by `npx typebase-io-cli codegen` and mirrors your `actions/` folder structure:
+
+```
+typebase/actions/
+  queries/
+    todos.ts     → client.queries.todos.*
+  mutations/
+    todos.ts     → client.mutations.todos.*
+```
+
+Each exported [action](/docs/actions) from your files becomes a callable method on the client.
+
+## Environment variables
+
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`. Use this for all server-side calls (load functions, form actions).
+
+If you use the Tanstack Query client, the variable also needs to be available in the browser with the `PUBLIC_` prefix. We recommend adding this to your `.env` file so you don't have to duplicate the value:
+
+```bash title=".env"
+PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
+```
+
+---
+
+## API Reference
+
+### `createRouterClient`
+
+```ts
+import { createRouterClient } from 'typebase-io/client';
+```
+
+Creates a simple promise-based client. Takes the same options as an oRPC `RPCLink`. Returns a fully typed client that mirrors your `actions/` folder structure.
+
+### `createTanstackQueryClient`
+
+```ts
+import { createTanstackQueryClient } from 'typebase-io/client';
+```
+
+Creates a Tanstack Query-wrapped client. Returns utilities (`queryOptions`, `mutationOptions`) for use with `createQuery`, `createMutation`, and more. Accepts the same options as `createRouterClient` plus an optional second argument for Tanstack Query configuration.
+
+### `createAuthClient`
+
+```ts
+import { createAuthClient } from 'typebase-io/client/auth/svelte';
+```
+
+Re-exports better-auth's `createAuthClient` from `better-auth/svelte`. Returns an `authClient` with methods like `signUp.email`, `signIn.email`, `signOut`, and `useSession`. The [better-auth client docs](https://www.better-auth.com/docs/concepts/client) are the full reference.
+
+### `getServerAuthCookie`
+
+```ts
+import { getServerAuthCookie } from 'typebase-io/client/auth/svelte-kit';
+```
+
+Reads the current session cookie from the incoming request event on the server and returns it as a headers object. Takes the SvelteKit request event as its argument. Used to forward the session when making server-side calls to your Typebase server.
+
+### `getServerSession`
+
+```ts
+import { getServerSession } from 'typebase-io/client/auth/svelte-kit';
+```
+
+Fetches the current user's session from the server. Takes the SvelteKit request event and your Typebase server URL. Can be called in load functions and `hooks.server.ts`. Returns the session object or `null` if the user is not authenticated.
+
+### `proxyToTypebase`
+
+```ts
+import { proxyToTypebase } from 'typebase-io/client/auth/svelte-kit';
+```
+
+Forwards an incoming SvelteKit request event to your Typebase server. Used in `hooks.server.ts` to proxy auth and RPC requests through your SvelteKit app's domain, enabling secure `HttpOnly` cookies.

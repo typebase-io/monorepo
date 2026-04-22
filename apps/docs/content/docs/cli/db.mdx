@@ -1,0 +1,52 @@
+---
+title: typebase-io-cli db
+description: Manage your database schema.
+---
+
+Push your Drizzle schema changes to your database.
+
+## `db dev push`
+
+Push your schema to the dev Neon database.
+
+```npm
+npx typebase-io-cli db dev push
+```
+
+## `db prod push`
+
+Push your schema to the production Neon database.
+
+```npm
+npx typebase-io-cli db prod push
+```
+
+## `db local push`
+
+Push your schema to a Postgres instance running on your own machine (Docker, Postgres.app, a managed Postgres you connect to directly, etc.).
+
+Pass the connection string with `--url`:
+
+```npm
+npx typebase-io-cli db local push --url postgres://localhost:5432/mydb
+```
+
+Or set `DATABASE_URL` (in your shell or in your project-root `.env`) and omit the flag:
+
+```npm
+npx typebase-io-cli db local push
+```
+
+## What happens
+
+These commands:
+
+1. Build your schema files
+2. Connect to your database
+3. Push the schema changes using Drizzle Kit
+
+<Callout type="warn">
+  `db push` applies schema changes directly to the database. Additive changes (new tables, new columns) are safe, but destructive changes (dropped
+  columns, renamed tables) cannot be undone — the CLI will detect these and prompt for confirmation before continuing. Treat `db prod push` with extra
+  care since dropped data is unrecoverable.
+</Callout>

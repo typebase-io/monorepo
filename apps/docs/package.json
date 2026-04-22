@@ -1,0 +1,51 @@
+{
+  "name": "@typebase-io/docs",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "start": "next start",
+    "lint": "fumadocs-mdx && next typegen && tsc --noEmit && prettier --check . && eslint .",
+    "postinstall": "fumadocs-mdx"
+  },
+  "imports": {
+    "#components/*": [
+      "./src/components/*"
+    ],
+    "#fumadocs-mdx:collections/*": [
+      "./.source/*"
+    ],
+    "#lib/*": [
+      "./src/lib/*"
+    ],
+    "#mdx-components": [
+      "./src/mdx-components.tsx"
+    ],
+    "#global-css": [
+      "./src/app/global.css"
+    ]
+  },
+  "dependencies": {
+    "fumadocs-core": "16.5.4",
+    "fumadocs-mdx": "14.2.7",
+    "fumadocs-ui": "16.5.4",
+    "lucide-react": "0.563.0",
+    "next": "16.1.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "tailwind-merge": "3.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.18",
+    "@types/mdx": "2.0.13",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.2",
+    "postcss": "8.5.6",
+    "tailwindcss": "4.1.18",
+    "typescript": "5.9.3",
+    "eslint-config-next": "16.1.6"
+  }
+}

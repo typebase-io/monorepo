@@ -1,0 +1,5 @@
+nodeLinker: hoisted
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild

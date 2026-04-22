@@ -1,0 +1,4 @@
+{
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
+  "projectPath": "src/lib/typebase/server/"
+}

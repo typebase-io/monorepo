@@ -1,0 +1,158 @@
+---
+title: Auth
+description: Add user authentication to your Typebase project.
+---
+
+Typebase uses [better-auth](https://www.better-auth.com/) for authentication. It supports email/password, social logins (Google, GitHub, etc.), and more — all configured through a simple TypeScript file.
+
+The `defineAuth` function in Typebase is a thin wrapper around better-auth, so anything you can do with better-auth you can do here. If you need features not covered in these docs — plugins, advanced session config, multi-factor auth, and more — the [better-auth documentation](https://www.better-auth.com/docs) is the full reference.
+
+<Callout type="info">
+  Authentication is optional. If your project doesn't need user accounts, you can skip this entirely. Typebase works just fine without it.
+</Callout>
+
+## Overview
+
+Adding authentication to a Typebase project involves four steps:
+
+1. **Create an `auth.ts` file** in your `typebase/` directory to configure authentication.
+2. **Run [`npx typebase-io-cli auth generate`](/docs/cli/auth)** to add the required authentication tables to your database schema.
+3. **Push the schema to your database** with [`npx typebase-io-cli db dev push`](/docs/cli/db) (or [`npx typebase-io-cli deploy dev`](/docs/cli/deploy), which pushes as part of deploying).
+4. **Create an auth client** on the frontend to handle sign-up, sign-in, and session management.
+
+<Callout type="info">
+  The commands below target `dev` because that's where you'll iterate. Every `dev` command has a `prod` twin — swap in `npx typebase-io-cli db prod
+  push` or `npx typebase-io-cli deploy prod` when you're ready to ship. Each target uses its own Neon branch and its own provider-side environment
+  variables, so dev and prod stay isolated.
+</Callout>
+
+## Step 1: Configure authentication
+
+Create an `auth.ts` file in the root of your `typebase/` directory:
+
+```ts title="typebase/auth.ts"
+import { defineAuth } from 'typebase-io/server';
+
+export const auth = defineAuth({
+  trustedOrigins: ['http://localhost:3000'],
+  emailAndPassword: {
+    enabled: true,
+  },
+});
+```
+
+### `defineAuth` options
+
+The `defineAuth` function accepts all [better-auth configuration options](https://www.better-auth.com/docs/concepts/auth-config) except `database` (Typebase handles that for you). Here are some common options:
+
+| Option                     | Description                                                           |
+| -------------------------- | --------------------------------------------------------------------- |
+| `trustedOrigins`           | URLs allowed to make authentication requests (e.g. your frontend URL) |
+| `emailAndPassword.enabled` | Enable email/password authentication                                  |
+| `socialProviders`          | Configure social login providers (Google, GitHub, etc.)               |
+
+### Social providers example
+
+```ts title="typebase/auth.ts"
+import { defineAuth } from 'typebase-io/server';
+
+export const auth = defineAuth({
+  trustedOrigins: ['http://localhost:3000'],
+  emailAndPassword: {
+    enabled: true,
+  },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+  },
+});
+```
+
+## Step 2: Generate auth tables
+
+Run the `auth generate` command to automatically add the required authentication tables (`users`, `sessions`, `accounts`, `verifications`) to your database schema:
+
+```npm
+npx typebase-io-cli auth generate
+```
+
+This command does two things:
+
+1. **Appends tables to `db/schema.ts`** — Adds the `users`, `sessions`, `accounts`, and `verifications` tables.
+2. **Updates `db/relations.ts`** — Registers the new tables and their relationships.
+
+<Callout type="warn">You must have a `db/schema.ts` and an `auth.ts` file before running this command.</Callout>
+
+After running the command, your schema will include something like this:
+
+```ts title="typebase/db/schema.ts"
+// ... your existing tables ...
+
+export const users = p.pgTable('users', {
+  id: p.text('id').primaryKey(),
+  name: p.text('name').notNull(),
+  email: p.text('email').notNull().unique(),
+  emailVerified: p.boolean('email_verified').default(false).notNull(),
+  image: p.text('image'),
+  createdAt: p.timestamp('created_at').defaultNow().notNull(),
+  updatedAt: p
+    .timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const sessions = p.pgTable('sessions', {
+  /* ... */
+});
+export const accounts = p.pgTable('accounts', {
+  /* ... */
+});
+export const verifications = p.pgTable('verifications', {
+  /* ... */
+});
+```
+
+## Step 3: Push the schema to your database
+
+[`npx typebase-io-cli auth generate`](/docs/cli/auth) only edits source files — it doesn't create the tables in Postgres. Push the schema to your dev database before trying to sign in:
+
+```npm
+npx typebase-io-cli db dev push
+```
+
+[`npx typebase-io-cli deploy dev`](/docs/cli/deploy) also runs a schema push as part of deploying, so if you're about to deploy you can skip the explicit `db push`.
+
+<Callout type="warn">
+  Skipping this step is the most common cause of "auth is configured but sign-in fails" — the auth client will hit your server, but the server will
+  fail to read/write `users`, `sessions`, etc. because the tables don't exist yet.
+</Callout>
+
+## Step 4: Set up the auth client
+
+Setting up the auth client depends on your frontend framework. Check the integrations section for detailed instructions on sign up, sign in, sign out, server-side sessions, and route protection for your framework.
+
+## Protecting actions with auth middleware
+
+Once authentication is set up, you can create protected actions that require a valid session. See the [Middleware](/docs/actions/middleware) page for details on creating authenticated actions.
+
+## Environment variables
+
+Typebase uses these auth-related environment variables:
+
+| Variable             | Description                                                                                                                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET` | A secret key used to sign session tokens. If it's missing, Typebase generates it locally the first time auth setup needs it. |
+
+<Callout type="info">
+  `npx typebase-io-cli auth generate` may create `BETTER_AUTH_SECRET` in your project root `.env` before your first deploy. Later, `npx
+  typebase-io-cli deploy` syncs that secret to your deployment provider.
+</Callout>
+
+You can also manage provider-side variables manually with the [`npx typebase-io-cli env`](/docs/cli/env) command.

@@ -1,0 +1,7 @@
+{
+  "title": "Expo",
+  "pages": [
+    "[ExternalLink][Basic](https://github.com/typebase-io/monorepo/tree/main/apps/examples/expo/app)",
+    "[ExternalLink][With Auth](https://github.com/typebase-io/monorepo/tree/main/apps/examples/expo/app-with-auth)"
+  ]
+}

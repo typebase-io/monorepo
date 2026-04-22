@@ -1,0 +1,26 @@
+{
+  "name": "using-vue-query-with-auth",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "typebase": "typebase-io-cli"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "4.2.2",
+    "@tanstack/vue-query": "5.99.0",
+    "nuxt": "4.4.2",
+    "tailwindcss": "4.2.2",
+    "typebase-io": "0.0.1",
+    "vue": "3.5.32",
+    "vue-router": "5.0.4",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "typebase-io-cli": "0.0.1"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "name": "@typebase-io/core",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "typebase",
+    "typebase-io",
+    "typescript",
+    "backend",
+    "api",
+    "database",
+    "auth",
+    "drizzle",
+    "better-auth",
+    "orpc"
+  ],
+  "scripts": {
+    "build": "node ../build-apps/src/index.ts build --app core",
+    "dev": "node src/index.ts",
+    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint ."
+  },
+  "imports": {
+    "#client/*": [
+      "./src/client/*"
+    ],
+    "#db/*": [
+      "./src/db/*"
+    ],
+    "#server/*": [
+      "./src/server/*"
+    ]
+  },
+  "exports": {
+    "./client": {
+      "types": "./dist/types/src/client/index.d.ts",
+      "import": "./dist/esm/src/client/index.js",
+      "require": "./dist/cjs/src/client/index.js"
+    },
+    "./client/auth/nextjs": {
+      "types": "./dist/types/src/client/auth/nextjs/index.d.ts",
+      "import": "./dist/esm/src/client/auth/nextjs/index.js",
+      "require": "./dist/cjs/src/client/auth/nextjs/index.js"
+    },
+    "./client/auth/react": {
+      "types": "./dist/types/src/client/auth/react/index.d.ts",
+      "import": "./dist/esm/src/client/auth/react/index.js",
+      "require": "./dist/cjs/src/client/auth/react/index.js"
+    },
+    "./client/auth/svelte": {
+      "types": "./dist/types/src/client/auth/svelte/index.d.ts",
+      "import": "./dist/esm/src/client/auth/svelte/index.js",
+      "require": "./dist/cjs/src/client/auth/svelte/index.js"
+    },
+    "./client/auth/svelte-kit": {
+      "types": "./dist/types/src/client/auth/svelte-kit/index.d.ts",
+      "import": "./dist/esm/src/client/auth/svelte-kit/index.js",
+      "require": "./dist/cjs/src/client/auth/svelte-kit/index.js"
+    },
+    "./client/auth/vue": {
+      "types": "./dist/types/src/client/auth/vue/index.d.ts",
+      "import": "./dist/esm/src/client/auth/vue/index.js",
+      "require": "./dist/cjs/src/client/auth/vue/index.js"
+    },
+    "./client/auth/nuxt": {
+      "types": "./dist/types/src/client/auth/nuxt/index.d.ts",
+      "import": "./dist/esm/src/client/auth/nuxt/index.js",
+      "require": "./dist/cjs/src/client/auth/nuxt/index.js"
+    },
+    "./db": {
+      "types": "./dist/types/src/db/index.d.ts",
+      "import": "./dist/esm/src/db/index.js",
+      "require": "./dist/cjs/src/db/index.js"
+    },
+    "./server": {
+      "types": "./dist/types/src/server/index.d.ts",
+      "import": "./dist/esm/src/server/index.js",
+      "require": "./dist/cjs/src/server/index.js"
+    }
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.6.8",
+    "@orpc/client": "1.14.0",
+    "@orpc/server": "1.14.0",
+    "@orpc/tanstack-query": "1.14.0",
+    "@types/pg": "8.20.0",
+    "better-auth": "1.6.8",
+    "drizzle-orm": "1.0.0-beta.22"
+  },
+  "peerDependencies": {
+    "@sveltejs/kit": ">=2.20.0",
+    "h3": ">=1.0.0",
+    "next": ">=15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@sveltejs/kit": {
+      "optional": true
+    },
+    "h3": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist"
+  ]
+}

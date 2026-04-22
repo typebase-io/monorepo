@@ -1,0 +1,85 @@
+---
+title: Introduction
+description: What Typebase is and how it works.
+---
+
+**Typebase** is a library that gives you a type-safe backend without external services or complex setup. You get an API, a database, and authentication — all in one place, all fully typed.
+
+You define your database schema, server actions, and authentication inside a `typebase/` directory. The CLI generates type definitions, pushes schema changes to your database, and deploys everything to the cloud. Your frontend calls your actions like functions — fully typed, zero REST boilerplate.
+
+## The mental model
+
+Your project has two parts:
+
+```
+your-app/
+├── src/                        ← your frontend (Next.js, SvelteKit, Nuxt, Expo, ...)
+│   └── ...
+└── typebase/                   ← your backend (deployed as a server)
+    ├── db/
+    │   ├── schema.ts           ← database tables
+    │   └── relations.ts        ← table relationships
+    └── actions/
+        ├── queries/            ← read operations
+        └── mutations/          ← write operations
+```
+
+The `typebase/` directory is your **server code**. When you run `npx typebase-io-cli deploy`, it gets built and deployed as a standalone HTTP server. Your frontend communicates with it over the network, but calls look and feel like local function calls — with full autocomplete and type checking.
+
+<Callout type="warn">
+**The server/client boundary**
+
+Everything inside `typebase/` runs on the server. You cannot import runtime code from it into your frontend, and your `typebase/` code cannot import anything from your frontend.
+
+You can import **types** from `typebase/` into your client code — that's how the client stays type-safe. But the actual implementation only ever runs on the server.
+
+</Callout>
+
+## What goes inside typebase/
+
+You can put any server-side code you want inside `typebase/`. The CLI looks for a few special names to wire things up automatically:
+
+**`actions/`** — Files in this folder can export [actions](/docs/actions), which are typed server functions defined using the `action` builder. Each exported action becomes a callable endpoint on your client. The folder structure maps directly to the client API — `actions/queries/todos.ts` becomes `client.queries.todos.*`. You can also export helpers, types, or constants alongside your actions — they're tolerated and usable from other server code, but only actions show up on the client.
+
+**`db/schema.ts`** — Defines your PostgreSQL tables using Drizzle ORM. When this file exists, a typed `db` client is automatically injected into your action handlers.
+
+**`db/relations.ts`** — Defines the relationships between your tables (one-to-one, one-to-many). Required if you have a schema — every table must be registered here, even if it has no relations.
+
+**`auth.ts`** — Configures authentication using better-auth. When this file exists alongside `db/schema.ts`, the CLI can generate the required auth tables and the auth object becomes available in your actions and middlewares.
+
+Everything else is up to you. You can add utilities, helpers, shared types, or any other server-side code alongside these files.
+
+## Built on
+
+Typebase is built on top of three well-established open-source libraries. If you ever need something that isn't covered in these docs, their documentation is a great place to look.
+
+**[oRPC](https://orpc.dev)** handles the type-safe RPC layer. It takes your action definitions and generates a fully typed client so your frontend calls are validated at compile time — no manual type declarations, no drift between server and client.
+
+**[Drizzle ORM](https://orm.drizzle.team/)** is used for the database layer. It gives you a SQL-like query API in TypeScript, with full type inference for your schema. If you need to write complex queries or use Drizzle features not covered here, their docs apply directly.
+
+**[better-auth](https://www.better-auth.com/)** powers authentication. It supports email/password, social providers (Google, GitHub, and more), sessions, and a plugin system for advanced use cases. The `defineAuth` function in Typebase is a thin wrapper around it, so the better-auth docs are the full reference.
+
+## Works with any JS/TS project
+
+The Typebase client is a plain TypeScript library that works in any JavaScript or TypeScript project. We have guides and examples for the most common setups:
+
+- [Next.js](/docs/integrations/nextjs)
+- [SvelteKit](/docs/integrations/sveltekit)
+- [Nuxt](/docs/integrations/nuxt)
+- [Expo](/docs/integrations/expo)
+
+If you're using a different framework, the [Next.js guide](/docs/integrations/nextjs) is a good reference for the patterns that apply everywhere.
+
+## Deployment targets
+
+The Typebase CLI can build and deploy your server to the following providers:
+
+- [Vercel](https://vercel.com)
+- [Cloudflare Workers](https://workers.cloudflare.com)
+- [Deno Deploy](https://deno.com/deploy)
+
+For the database, [Neon](https://neon.tech) is currently the only supported target. The CLI provisions and manages your Neon database automatically during deployment.
+
+<Cards>
+  <Card title="Get Started" href="/docs/getting-started" description="Install Typebase and make your first server call." />
+</Cards>

@@ -1,0 +1,132 @@
+---
+title: Middleware
+description: Add custom logic, authentication checks, and shared context to your actions.
+---
+
+Middleware lets you run shared logic before your action handler executes. Common use cases include checking authentication, adding data to the context, and logging.
+
+## The `.use()` method
+
+The `action` builder has a `.use()` method that accepts a function. This function receives the current context and returns new context values that are merged in for downstream handlers.
+
+```ts
+import { action } from '../_generated/server.ts';
+
+const myAction = action
+  .use(async (ctx) => {
+    // Run some logic here...
+    return {
+      // Return additional context values
+      someValue: 'hello',
+    };
+  })
+  .handler(async ({ someValue }) => {
+    // `someValue` is available here
+    return { message: someValue };
+  });
+```
+
+The object you return from `.use()` is merged into the context. Your handler (and any subsequent `.use()` calls) will have access to the new values.
+
+## Creating an authenticated action
+
+The most common use of middleware is to check if the user is authenticated and add the user object to the context. Here's how to create a reusable `authedAction` builder:
+
+```ts title="typebase/actions/custom-actions.ts"
+import { ServerError } from 'typebase-io/server';
+import { action } from '../_generated/server';
+
+export const authedAction = action.use(async ({ reqHeaders, auth }) => {
+  if (!reqHeaders) {
+    throw new ServerError('UNAUTHORIZED');
+  }
+
+  const sessionData = await auth.api.getSession({
+    headers: reqHeaders,
+  });
+
+  if (!sessionData?.session || !sessionData?.user) {
+    throw new ServerError('UNAUTHORIZED');
+  }
+
+  return {
+    user: sessionData.user,
+  };
+});
+```
+
+Let's break this down:
+
+1. **`reqHeaders`** — The request headers are automatically available in the context (provided by Typebase's built-in `RequestHeadersPlugin`). This contains the cookies needed to verify the session.
+2. **`auth.api.getSession()`** — Uses better-auth to validate the session from the request headers.
+3. **`throw new ServerError('UNAUTHORIZED')`** — If the session is invalid, the action returns a 401 error and the handler never runs.
+4. **`return { user }`** — If the session is valid, the user object is added to the context for the handler to use.
+
+## Using the authenticated action
+
+Once you have `authedAction`, use it instead of `action` in any endpoint that requires authentication:
+
+```ts title="typebase/actions/mutations/todos.ts"
+import { z } from 'zod';
+import { authedAction } from '../custom-actions';
+import { todos } from '../../db/schema';
+
+export const create = authedAction
+  .input(
+    z.object({
+      value: z.string(),
+    })
+  )
+  .handler(async ({ db, input, user }) => {
+    // `user` is available because of the middleware
+    const result = await db
+      .insert(todos)
+      .values({
+        value: input.value,
+        completed: false,
+        userId: user.id,
+      })
+      .returning();
+
+    return result[0]!;
+  });
+```
+
+The `user` property is fully typed — your IDE will autocomplete the user fields like `user.id`, `user.name`, `user.email`, etc.
+
+## Chaining middleware
+
+You can chain multiple `.use()` calls. Each one receives the context from the previous step:
+
+```ts
+const myAction = action
+  .use(async (ctx) => {
+    // First middleware: add a timestamp
+    return {
+      startTime: Date.now(),
+    };
+  })
+  .use(async ({ startTime, reqHeaders }) => {
+    // Second middleware: can access `startTime` from the first middleware
+    console.log(`Request started at ${startTime}`);
+    return {};
+  })
+  .handler(async ({ startTime, db }) => {
+    // Handler: can access everything from all middleware
+    return { startTime };
+  });
+```
+
+## Available context properties
+
+The base context available in every `.use()` function is built from your project setup:
+
+| Property     | Available when              | Description                   |
+| ------------ | --------------------------- | ----------------------------- |
+| `db`         | `db/schema.ts` exists       | Typed Drizzle database client |
+| `auth`       | `auth.ts` exists            | The better-auth instance      |
+| `reqHeaders` | Always (may be `undefined`) | Incoming request headers      |
+
+Note that `input` is not available in middleware — it is only injected into `.handler()` when `.input()` has been defined on the action.
+
+Any properties you return from a `.use()` function are merged into the context and become available in all subsequent `.use()` calls and the final `.handler()`.

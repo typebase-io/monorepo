@@ -1,0 +1,193 @@
+---
+title: typebase-io-cli deploy
+description: Deploy your Typebase server to the cloud with a single command.
+---
+
+The `npx typebase-io-cli deploy` command builds your server, pushes your database schema, and deploys everything to the cloud. Typebase supports three deployment providers:
+
+- **[Vercel](https://vercel.com/)** — Serverless functions
+- **[Cloudflare Workers](https://workers.cloudflare.com/)** — Edge computing
+- **[Deno Deploy](https://deno.com/deploy)** — Edge runtime
+
+## Quick start
+
+Deploy to your dev environment:
+
+```npm
+npx typebase-io-cli deploy dev
+```
+
+Deploy to production:
+
+```npm
+npx typebase-io-cli deploy prod
+```
+
+The first time you run this, the CLI will ask you to:
+
+1. **Select a deployment provider** (Vercel, Cloudflare, or Deno)
+2. **Authenticate** with the provider
+3. **Select or create a project** on the provider
+4. **Select or create a database** on [Neon](https://neon.tech) (if your project has a database schema)
+
+After the first deploy, the CLI remembers your choices in `typebase.json`, so future deploys are a single command.
+
+## What happens during deploy
+
+When you run `npx typebase-io-cli deploy`, the CLI performs these steps automatically:
+
+1. **Validates your TypeScript**: Checks for type errors in your `typebase/` directory.
+2. **Generates server files**: Builds the server code from your actions, schema, and auth config.
+3. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
+4. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
+5. **Deploys the server**: Uploads the built server to your chosen provider.
+6. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target — each environment (`dev`, `prod`) holds its own value.
+7. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` as `TYPEBASE_APP_URL`, along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
+
+<Callout type="warn">
+  Schema changes are applied (step 4) before the new server code is live (step 5). This is normal for most deployment workflows, but it means the
+  previous version of your server briefly runs against the new schema. For destructive changes in `prod` (dropped columns, renamed tables), design
+  your schema migrations so the old code keeps working — typically by rolling out additive changes first, then removing the old fields in a later
+  deploy.
+</Callout>
+
+## Options
+
+| Argument              | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `target` _(required)_ | The environment to deploy to. Must be `dev` or `prod`. |
+
+| Flag                    | Description                                            |
+| ----------------------- | ------------------------------------------------------ |
+| `--provider <provider>` | Deployment provider: `vercel`, `cloudflare`, or `deno` |
+
+## Dev vs Prod environments
+
+Typebase supports two separate environments:
+
+| Environment | Use case                                                  |
+| ----------- | --------------------------------------------------------- |
+| `dev`       | Development and testing. Uses a separate database branch. |
+| `prod`      | Production. Uses the main database.                       |
+
+Each environment gets its own:
+
+- Deployment URL
+- Database (or database branch)
+- Environment variables
+
+Deploy to dev:
+
+```npm
+npx typebase-io-cli deploy dev
+```
+
+Deploy to production:
+
+```npm
+npx typebase-io-cli deploy prod
+```
+
+## Provider setup
+
+### Vercel
+
+When you deploy to Vercel for the first time:
+
+1. The CLI asks you to log in to Vercel (opens a browser).
+2. You select an existing Vercel project or create a new one.
+3. Your server is deployed as a Vercel Serverless Function using [Hono](https://hono.dev/) as the HTTP adapter.
+
+The deployment URL looks like: `https://your-project.vercel.app`
+
+### Cloudflare Workers
+
+When you deploy to Cloudflare for the first time:
+
+1. The CLI asks you to log in to Cloudflare (opens a browser).
+2. You select or create a Cloudflare Worker.
+3. Your server is deployed as a Cloudflare Worker.
+
+The deployment URL looks like: `https://your-worker.your-subdomain.workers.dev`
+
+<Callout type="info">
+  Cloudflare Workers use the Fetch API natively, so environment variables are handled through Cloudflare's secrets system rather than `process.env`.
+</Callout>
+
+### Deno Deploy
+
+When you deploy to Deno Deploy for the first time:
+
+1. The CLI asks you to log in to Deno Deploy.
+2. You select or create a Deno Deploy project.
+3. Your server is deployed as a Deno Deploy application.
+
+The deployment URL looks like: `https://your-project.deno.dev`
+
+## Database provisioning
+
+If your project has a `db/schema.ts`, the CLI will set up a [Neon](https://neon.tech) PostgreSQL database for you:
+
+1. **First deploy**: The CLI asks you to authenticate with Neon, then creates (or selects) a project.
+2. **Schema push**: Your Drizzle schema is pushed to the database.
+3. **Environment variable**: The connection string is set on your deployment provider under the key `DATABASE_URL`, and mirrored into your project-root `.env` as `DATABASE_URL` for prod or `DATABASE_URL_DEV`.
+
+Dev and prod deployments use separate Neon branches, so your development data doesn't affect production.
+
+## Specifying the provider
+
+You can skip the interactive prompt by passing the `--provider` flag:
+
+```npm
+npx typebase-io-cli deploy dev --provider vercel
+```
+
+```npm
+npx typebase-io-cli deploy dev --provider cloudflare
+```
+
+```npm
+npx typebase-io-cli deploy dev --provider deno
+```
+
+Or set the provider in `typebase.json` so it's always used:
+
+```json title="typebase.json"
+{
+  "serverProvider": "vercel"
+}
+```
+
+## After deploying
+
+After a successful deploy, the CLI prints the deployment URL:
+
+```
+Deployment URL: https://your-project.vercel.app
+```
+
+This URL is also saved to your `.env` file:
+
+```
+TYPEBASE_APP_URL=https://your-project.vercel.app
+```
+
+Use this URL when setting up your [client](/docs/integrations/nextjs).
+
+## Managing environment variables
+
+Use the `npx typebase-io-cli env` command to manage environment variables on your deployment provider.
+
+Add a variable:
+
+```npm
+npx typebase-io-cli env dev add MY_KEY my-value
+```
+
+Get a variable:
+
+```npm
+npx typebase-io-cli env dev get MY_KEY
+```
+
+See the [env command](/docs/cli/env) for more details.

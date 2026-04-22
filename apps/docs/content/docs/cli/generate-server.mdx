@@ -1,0 +1,136 @@
+---
+title: typebase-io-cli generate-server
+description: Generate server files locally for custom hosting or inspection.
+---
+
+The `generate-server` command builds your server files locally instead of deploying them. This is useful when you want to:
+
+- **Self-host** your server on your own infrastructure
+- **Inspect** the generated code to understand what Typebase produces
+- **Customize** the deployment process beyond what `npx typebase-io-cli deploy` offers
+
+## Quick start
+
+```npm
+npx typebase-io-cli generate-server
+```
+
+This generates a complete, runnable server in the `typebase/_server/` directory (by default).
+
+## Output formats
+
+You can choose between three output formats:
+
+### TypeScript (default)
+
+```npm
+npx typebase-io-cli generate-server --output ts
+```
+
+Generates TypeScript source files. You'll need to compile them yourself before running.
+
+### ESM (ECMAScript Modules)
+
+```npm
+npx typebase-io-cli generate-server --output esm
+```
+
+Generates JavaScript files using `import`/`export` syntax. Ready to run with Node.js (with `"type": "module"`) or Deno.
+
+### CommonJS
+
+```npm
+npx typebase-io-cli generate-server --output cjs
+```
+
+Generates JavaScript files using `require`/`module.exports` syntax. Ready to run with Node.js without `"type": "module"`.
+
+## HTTP adapters
+
+Typebase supports multiple HTTP adapters. The adapter determines how your server handles incoming HTTP requests:
+
+| Adapter      | Description                               | Best for                            |
+| ------------ | ----------------------------------------- | ----------------------------------- |
+| `node`       | Node.js built-in `http.createServer`      | Self-hosting with Node.js (default) |
+| `bun`        | Bun's built-in HTTP server                | Self-hosting with Bun               |
+| `hono`       | [Hono](https://hono.dev/) framework       | Vercel, general-purpose             |
+| `fastify`    | [Fastify](https://fastify.dev/) framework | High-performance Node.js            |
+| `deno`       | Deno's built-in `Deno.serve`              | Deno Deploy                         |
+| `cloudflare` | Cloudflare Workers fetch handler          | Cloudflare Workers                  |
+
+```npm
+npx typebase-io-cli generate-server --adapter hono
+```
+
+```npm
+npx typebase-io-cli generate-server --adapter node
+```
+
+```npm
+npx typebase-io-cli generate-server --adapter fastify
+```
+
+## Options
+
+| Flag                  | Description                                                          | Default   |
+| --------------------- | -------------------------------------------------------------------- | --------- |
+| `--output <type>`     | Output format: `ts`, `esm`, or `cjs`                                 | `ts`      |
+| `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
+| `--skip-load-env`     | Don't include `dotenv/config` import                                 | `false`   |
+| `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
+
+## Default configuration
+
+You can set defaults in your `typebase.json` so you don't have to pass flags every time:
+
+```json title="typebase.json"
+{
+  "server": {
+    "output": "esm",
+    "adapter": "hono",
+    "skipLoadEnv": false,
+    "outDir": "_server"
+  }
+}
+```
+
+See the [Configuration](/docs/configuration) page for all available options.
+
+## What gets generated
+
+The generated server directory contains:
+
+```
+_server/
+  src/
+    index.ts          # Server entry point (with the chosen adapter)
+    _generated/
+      server.ts       # Action builder and middleware setup
+    actions/          # Your action files (copied and processed)
+    db/               # Your schema and relations (if applicable)
+    auth.ts           # Your auth config (if applicable)
+  package.json        # Dependencies for the server
+  tsconfig.json       # TypeScript config
+```
+
+## Running the generated server
+
+After generating the server, you can run it like any Node.js project:
+
+```bash
+cd typebase/_server
+
+# Install dependencies
+npm install
+
+# Run (if TypeScript output)
+npx tsx src/index.ts
+
+# Run (if ESM output)
+node src/index.js
+
+# Run (if CJS output)
+node src/index.js
+```
+
+The server starts on port 3000 by default.

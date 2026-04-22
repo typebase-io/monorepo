@@ -1,0 +1,111 @@
+name: Bug report
+description: Report something that is not working as expected.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out the sections below so we can reproduce the issue quickly.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Ideally a minimal example or a link to a repository that reproduces the problem.
+      placeholder: |
+        1. Run `npx typebase-io-cli ...`
+        2. Observe error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: input
+    id: typebase-version
+    attributes:
+      label: Typebase version
+      placeholder: '1.0.0'
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      placeholder: '20.11.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package-manager
+    attributes:
+      label: Package manager
+      options:
+        - npm
+        - pnpm
+        - yarn
+        - bun
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: package-manager-version
+    attributes:
+      label: Package manager version
+      placeholder: '10.28.0'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Frontend framework
+      options:
+        - Next.js
+        - SvelteKit
+        - Nuxt
+        - Expo
+        - Other / none
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy-target
+    attributes:
+      label: Deploy target
+      options:
+        - Vercel
+        - Cloudflare Workers
+        - Deno Deploy
+        - Not deployed / local only
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or stack traces
+      description: Paste relevant CLI output or browser errors here.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anything else that might help — screenshots, related issues, theories.

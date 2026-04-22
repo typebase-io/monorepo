@@ -1,0 +1,28 @@
+---
+title: typebase-io-cli auth
+description: Manage authentication tables.
+---
+
+## `auth generate`
+
+Add authentication tables to your database schema.
+
+```npm
+npx typebase-io-cli auth generate
+```
+
+This command:
+
+1. Reads your `auth.ts` configuration
+2. Generates the required tables (`users`, `sessions`, `accounts`, `verifications`)
+3. Appends them to `db/schema.ts`
+4. Updates `db/relations.ts`
+5. Generates and saves `BETTER_AUTH_SECRET` in your local `.env` if it doesn't already exist
+6. Regenerates type definitions
+
+### Prerequisites
+
+- A `typebase/auth.ts` file must exist
+- A `typebase/db/schema.ts` file must exist
+
+See the [Authentication](/docs/auth) page for full details on setting up auth.

@@ -1,0 +1,21 @@
+---
+title: typebase-io-cli codegen
+description: Regenerate type definitions for your project.
+---
+
+Regenerate the type definitions in `_generated/`.
+
+```npm
+npx typebase-io-cli codegen
+```
+
+Only run this after you:
+
+- Add, remove, or rename a file inside `actions/`
+- Add or remove `auth.ts`
+- Add or remove `db/schema.ts` or `db/relations.ts`
+
+You do not need to run it when editing the contents of existing files. This command updates:
+
+- `_generated/server.ts` — The router type and action builder
+- `_generated/db.d.ts` — The database types

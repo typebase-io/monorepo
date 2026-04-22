@@ -1,0 +1,32 @@
+---
+title: typebase-io-cli init
+description: Scaffold a new Typebase project structure.
+---
+
+Scaffold a new Typebase project structure.
+
+```npm
+npx typebase-io-cli init
+```
+
+Creates a `typebase/` directory with:
+
+- `tsconfig.json` — TypeScript config
+- `db/schema.ts` — Example database schema
+- `db/relations.ts` — Example relations
+- `actions/queries/todos.ts` — Example query actions
+- `actions/mutations/todos.ts` — Example mutation actions
+- `_generated/` — Auto-generated type files
+
+## Options
+
+| Flag             | Description                                                           |
+| ---------------- | --------------------------------------------------------------------- |
+| `-f, --force`    | Overwrite `tsconfig.json` and regenerate the scaffolded example files |
+| `--with-auth`    | Include an example `auth.ts` with email/password authentication       |
+| `--skip-example` | Skip generating the example schema and actions                        |
+
+<Callout type="warn">
+  `init --force` does more than recreate `tsconfig.json`. It reruns the scaffold step and overwrites the generated example files too, including
+  `db/schema.ts`, `db/relations.ts`, `actions/queries/todos.ts`, `actions/mutations/todos.ts`, and the example `auth.ts` when `--with-auth` is used.
+</Callout>
