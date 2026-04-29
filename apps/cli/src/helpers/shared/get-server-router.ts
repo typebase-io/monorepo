@@ -27,28 +27,25 @@ export const getServerRouter = async ({
   const actionFiles = await walk(actionsDirPath, { recursive: true, filter: isTsFile });
 
   const imports: string[] = [];
+  let hasAnyAction = false;
 
   const routes = actionFiles
     .flatMap((filePath, index) => {
       const sourceFile = project.getSourceFile(filePath) ?? project.addSourceFileAtPath(filePath);
 
-      const actions = sourceFile
+      const fileHasORPC = sourceFile
         .getVariableStatements()
         .filter((vs) => vs.isExported())
         .flatMap((vs) => vs.getDeclarations())
         .filter((decl) => decl.getVariableStatementOrThrow().getDeclarationKind() === VariableDeclarationKind.Const)
-        .flatMap((decl) => {
-          const hasORPC = decl
+        .some((decl) =>
+          decl
             .getType()
             .getProperties()
-            .some((p) => p.getName() === '~orpc');
+            .some((p) => p.getName() === '~orpc')
+        );
 
-          if (!hasORPC) return [];
-
-          return decl.getName();
-        });
-
-      if (actions.length === 0) {
+      if (!fileHasORPC) {
         return [];
       }
 
@@ -66,21 +63,21 @@ export const getServerRouter = async ({
       }
 
       imports.push(`import * as ${importAlias} from "${importPath}";`);
+      hasAnyAction = true;
 
       const segments = relativeActionPath.split('/');
       const fileName = segments.pop() ?? '';
 
-      const routerLeaf = `{ ${actions
-        .toSorted()
-        .map((actionName) => `${JSON.stringify(actionName)}: ${importAlias}.${actionName}`)
-        .join(', ')} }`;
-
       return {
         pathSegments: segments,
-        leaves: { [fileName]: routerLeaf },
+        leaves: { [fileName]: `filterActions(${importAlias})` },
       };
     })
     .sort((a, b) => a.pathSegments.join('/').localeCompare(b.pathSegments.join('/')));
+
+  if (hasAnyAction as boolean) {
+    imports.push(`\nimport { filterActions } from "typebase-io/server";`);
+  }
 
   const routerTree = buildRouterTree(routes);
   const importsBlock = imports.toSorted().join('\n');
