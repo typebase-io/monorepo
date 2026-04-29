@@ -93,5 +93,9 @@ export const generatePackageJson = async ({
     packageJson.packageManager = `${PACKAGE_MANAGER_FIELD_NAMES[packageManager]}@${PACKAGE_MANAGER_VERSIONS[packageManager]}`;
   }
 
+  if (packageManager === 'pnpm') {
+    packageJson.pnpm = { onlyBuiltDependencies: ['esbuild'] };
+  }
+
   await fs.writeFile(path.join(outputDirPath, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`);
 };

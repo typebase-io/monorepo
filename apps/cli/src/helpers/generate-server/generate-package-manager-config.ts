@@ -6,13 +6,6 @@ import { getPackageManager } from '#helpers/shared/get-package-manager.ts';
 export const generatePackageManagerConfig = async ({ outputDirPath }: { outputDirPath: string }): Promise<string | undefined> => {
   const packageManager = await getPackageManager();
 
-  if (packageManager === 'pnpm') {
-    const content = 'onlyBuiltDependencies:\n  - esbuild\n';
-    await fs.writeFile(path.join(outputDirPath, 'pnpm-workspace.yaml'), content);
-
-    return 'pnpm-workspace.yaml';
-  }
-
   if (packageManager === 'yarn-berry') {
     const content = 'enableScripts: true\n';
     await fs.writeFile(path.join(outputDirPath, '.yarnrc.yml'), content);
