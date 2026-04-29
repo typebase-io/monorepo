@@ -1,6 +1,8 @@
 import { EndpointType, type createApiClient } from '@neondatabase/api-client';
 import ora from 'ora';
 
+import { waitForDeployment } from '#helpers/db/neon/wait-for-deployment.ts';
+
 export const getNeonBranch = async ({
   apiClient,
   projectId,
@@ -41,6 +43,8 @@ export const getNeonBranch = async ({
     branch: { name: 'dev', parent_id: mainBranch.id },
     endpoints: [{ type: EndpointType.ReadWrite }],
   });
+
+  await waitForDeployment({ apiClient, projectId, operations: createRes.data.operations });
 
   createSpinner.succeed('Branch "dev" created on Neon.');
 
