@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { DEPS, type ServerAdapter } from '#helpers/constants.ts';
+import { DEPS, PACKAGE_MANAGER_FIELD_NAMES, PACKAGE_MANAGER_VERSIONS, type ServerAdapter } from '#helpers/constants.ts';
 import { getPackageDeps } from '#helpers/shared/get-package-deps.ts';
+import { getPackageManager } from '#helpers/shared/get-package-manager.ts';
 import { getUserPackageJson } from '#helpers/shared/get-user-package-json.ts';
 
 export const generatePackageJson = async ({
@@ -74,6 +75,8 @@ export const generatePackageJson = async ({
     devDependencies[DEPS.typescript.name] = DEPS.typescript.version;
   }
 
+  const packageManager = await getPackageManager();
+
   const packageJson: Record<string, unknown> = {
     name: '@typebase-io/server',
     type: generation === 'cjs' ? 'commonjs' : 'module',
@@ -85,6 +88,10 @@ export const generatePackageJson = async ({
     dependencies: Object.fromEntries(Object.entries({ ...userDependencies, ...dependencies }).sort(([a], [b]) => a.localeCompare(b))),
     devDependencies: Object.fromEntries(Object.entries(devDependencies).sort(([a], [b]) => a.localeCompare(b))),
   };
+
+  if (packageManager !== 'unknown') {
+    packageJson.packageManager = `${PACKAGE_MANAGER_FIELD_NAMES[packageManager]}@${PACKAGE_MANAGER_VERSIONS[packageManager]}`;
+  }
 
   await fs.writeFile(path.join(outputDirPath, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`);
 };

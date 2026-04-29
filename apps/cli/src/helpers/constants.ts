@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import type { PackageManager } from '#helpers/shared/get-package-manager.ts';
+
 export const TYPEBASE_CONFIG_FILE_NAME = 'typebase.json';
 export const TYPEBASE_CONFIG_SCHEMA_URL =
   'https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json';
@@ -68,6 +70,22 @@ export const DEPS = {
     version: '5.9.3',
   },
 };
+
+export const PACKAGE_MANAGER_VERSIONS = {
+  npm: '10.9.2',
+  pnpm: '10.0.0',
+  'yarn-classic': '1.22.22',
+  'yarn-berry': '4.5.0',
+  bun: '1.1.38',
+} as const satisfies Record<Exclude<PackageManager, 'unknown'>, string>;
+
+export const PACKAGE_MANAGER_FIELD_NAMES = {
+  npm: 'npm',
+  pnpm: 'pnpm',
+  'yarn-classic': 'yarn',
+  'yarn-berry': 'yarn',
+  bun: 'bun',
+} as const satisfies Record<Exclude<PackageManager, 'unknown'>, string>;
 
 export const typebaseConfigSchema = z.object({
   projectPath: z.optional(z.string().trim().min(1)),
