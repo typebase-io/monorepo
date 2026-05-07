@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { Command, Option } from '@commander-js/extra-typings';
-import { chalkStderr } from 'chalk';
+import chalk, { chalkStderr } from 'chalk';
 import ora from 'ora';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
@@ -89,4 +89,8 @@ export const init = new Command('init')
     ]);
 
     spinner.succeed(`Typebase project initialized at \`${path.relative(process.cwd(), typebaseDirPath) || '.'}\`.`);
+
+    console.log(chalk.cyan('\nWorking with an AI agent? Install the Typebase skill so it picks up the conventions automatically:'));
+    console.log(chalk.bold('npx skills add typebase-io/monorepo'));
+    console.log(chalk.underline('https://typebase.io/docs/skill\n'));
   });

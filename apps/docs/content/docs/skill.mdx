@@ -1,0 +1,18 @@
+---
+title: AI Skill
+description: Install the Typebase skill so coding agents pick up the conventions instantly.
+---
+
+Typebase ships an agent skill. This is a single `SKILL.md` that teaches an AI assistant the project's mental model, file layout, CLI commands, and common failure modes. With the skill installed, the agent can add actions, edit the schema, wire up auth, and deploy without re-reading the docs every time.
+
+## Install via skills.sh
+
+The fastest way is the `skills` CLI from [skills.sh](https://skills.sh). It pulls the skill straight from this repo on GitHub:
+
+```npm
+npx skills add typebase-io/monorepo
+```
+
+## Install manually
+
+If you'd rather copy the file in by hand, grab the raw markdown from [GitHub](https://raw.githubusercontent.com/typebase-io/monorepo/main/apps/docs/public/SKILL.md) and drop it into the directory your agent reads skills from.

@@ -11,7 +11,8 @@
 <p align="center">
   <a href="https://typebase.io"><strong>Documentation</strong></a> ·
   <a href="https://typebase.io/docs/getting-started"><strong>Getting started</strong></a> ·
-  <a href="https://github.com/typebase-io/monorepo/tree/main/apps/examples"><strong>Examples</strong></a>
+  <a href="https://github.com/typebase-io/monorepo/tree/main/apps/examples"><strong>Examples</strong></a> ·
+  <a href="https://typebase.io/docs/skill"><strong>AI skill</strong></a>
 </p>
 
 ## Repository layout
