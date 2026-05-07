@@ -65,19 +65,22 @@ export const getDenoProject = async (token: string) => {
 
   getAppsSpinner.stop();
 
-  const selectedApp = await select({
-    message: 'Select an app to deploy to:',
-    choices: [
-      {
-        name: '+ Create a new app',
-        value: '__create_new__',
-      },
-      ...allProjects.map((app) => ({
-        name: app.slug,
-        value: app.id,
-      })),
-    ],
-  });
+  const selectedApp =
+    allProjects.length === 0
+      ? '__create_new__'
+      : await select({
+          message: 'Select an app to deploy to:',
+          choices: [
+            {
+              name: '+ Create a new app',
+              value: '__create_new__',
+            },
+            ...allProjects.map((app) => ({
+              name: app.slug,
+              value: app.id,
+            })),
+          ],
+        });
 
   const app = await match(selectedApp)
     .with('__create_new__', async () => {

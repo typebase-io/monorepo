@@ -66,19 +66,22 @@ export const getCloudflareWorker = async (token: string) => {
 
   workersSpinner.stop();
 
-  const selectedWorker = await select({
-    message: 'Select a worker to deploy to:',
-    choices: [
-      {
-        name: '+ Create a new worker',
-        value: '__create_new__',
-      },
-      ...workers.map((worker) => ({
-        name: worker.id,
-        value: worker.id,
-      })),
-    ],
-  });
+  const selectedWorker =
+    workers.length === 0
+      ? '__create_new__'
+      : await select({
+          message: 'Select a worker to deploy to:',
+          choices: [
+            {
+              name: '+ Create a new worker',
+              value: '__create_new__',
+            },
+            ...workers.map((worker) => ({
+              name: worker.id,
+              value: worker.id,
+            })),
+          ],
+        });
 
   const workerName = await match(selectedWorker)
     .with('__create_new__', async () => {

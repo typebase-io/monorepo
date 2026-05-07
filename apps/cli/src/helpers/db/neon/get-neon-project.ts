@@ -30,19 +30,22 @@ export const getNeonProject = async (token: string) => {
 
   projectsSpinner.stop();
 
-  const selectedProject = await select({
-    message: 'Select a Neon project:',
-    choices: [
-      {
-        name: '+ Create a new project',
-        value: '__create_new__',
-      },
-      ...projects.map((project) => ({
-        name: project.name,
-        value: project.id,
-      })),
-    ],
-  });
+  const selectedProject =
+    projects.length === 0
+      ? '__create_new__'
+      : await select({
+          message: 'Select a Neon project:',
+          choices: [
+            {
+              name: '+ Create a new project',
+              value: '__create_new__',
+            },
+            ...projects.map((project) => ({
+              name: project.name,
+              value: project.id,
+            })),
+          ],
+        });
 
   const result = await match(selectedProject)
     .with('__create_new__', async () => {
