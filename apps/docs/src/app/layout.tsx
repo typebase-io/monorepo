@@ -12,6 +12,12 @@ const SITE_URL = 'https://typebase.io';
 const DESCRIPTION =
   'Write your actions, database schema, and auth as TypeScript files. Run one command. Your frontend calls them like local functions — end-to-end typed, zero REST boilerplate.';
 const DEFAULT_TITLE = 'Typebase — your backend, in a folder';
+const OG_IMAGE = {
+  url: '/og/site',
+  width: 1200,
+  height: 630,
+  alt: 'Typebase — your backend, in a folder',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -22,6 +28,23 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   applicationName: 'Typebase',
   manifest: '/manifest.json',
+  keywords: [
+    'Typebase',
+    'TypeScript backend',
+    'type-safe backend',
+    'oRPC',
+    'Drizzle ORM',
+    'better-auth',
+    'Next.js backend',
+    'SvelteKit backend',
+    'Nuxt backend',
+    'Expo backend',
+    'end-to-end typed',
+    'server actions',
+  ],
+  alternates: {
+    canonical: '/',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -40,11 +63,13 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: SITE_URL,
     locale: 'en_US',
+    images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: DEFAULT_TITLE,
     description: DESCRIPTION,
+    images: [OG_IMAGE.url],
   },
 };
 
