@@ -9,13 +9,18 @@ export const waitForDeployment = async ({
   token,
   deploymentId,
   orgId,
+  type,
 }: {
   token: string;
   deploymentId: string;
   orgId: string | undefined;
+  type: 'normal' | 'placeholder';
 }): Promise<void> => {
   const vercel = new VercelClient({ token, orgId });
-  const spinner = ora('Waiting for deployment to be ready...').start();
+  const lower = type === 'placeholder' ? 'placeholder deployment' : 'deployment';
+  const upper = type === 'placeholder' ? 'Placeholder deployment' : 'Deployment';
+
+  const spinner = ora(`Waiting for ${lower} to be ready...`).start();
   const deadline = Date.now() + TIMEOUT_MS;
 
   while (Date.now() < deadline) {
@@ -24,24 +29,24 @@ export const waitForDeployment = async ({
     const deploymentState = await vercel.getDeploymentState({ deploymentId });
 
     if (deploymentState === 'READY') {
-      spinner.succeed('Deployment is ready!');
+      spinner.succeed(`${upper} is ready!`);
       return;
     }
 
     if (deploymentState === 'ERROR') {
-      spinner.fail('Deployment failed.');
-      throw new Error(`Deployment ${deploymentId} ended in ERROR state.`);
+      spinner.fail(`${upper} failed.`);
+      throw new Error(`${upper} ${deploymentId} ended in ERROR state.`);
     }
 
     if (deploymentState === 'CANCELED') {
-      spinner.fail('Deployment was canceled.');
-      throw new Error(`Deployment ${deploymentId} was canceled.`);
+      spinner.fail(`${upper} was canceled.`);
+      throw new Error(`${upper} ${deploymentId} was canceled.`);
     }
 
-    spinner.text = `Deployment state: ${deploymentState}...`;
+    spinner.text = `${upper} state: ${deploymentState}...`;
   }
 
-  spinner.fail('Deployment timed out.');
+  spinner.fail(`${upper} timed out.`);
 
-  throw new Error('Deployment did not become ready within the time limit.');
+  throw new Error(`${lower} did not become ready within the time limit.`);
 };

@@ -23,6 +23,27 @@ export class VercelClient {
     }
   }
 
+  public async hasAnyDeployment({ projectId }: { projectId: string }): Promise<boolean> {
+    const params = new URLSearchParams({ projectId, limit: '1' });
+
+    if (this.#orgId) {
+      params.set('teamId', this.#orgId);
+    }
+
+    const response = await fetch(`https://api.vercel.com/v6/deployments?${params}`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as { deployments: unknown[] };
+
+    return data.deployments.length > 0;
+  }
+
   public async getDeploymentState({ deploymentId }: { deploymentId: string }): Promise<string> {
     const response = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}${this.query}`, {
       method: 'GET',
@@ -151,7 +172,7 @@ export class VercelClient {
     name: string;
     target: 'dev' | 'prod';
     files: { file: string; sha: string; size: number }[];
-    projectSettings: { installCommand: string; framework: string };
+    projectSettings: { installCommand: string; framework: string | null };
   }): Promise<{ status: 'ok'; id: string; url: string } | { status: 'missing_files'; missing: string[] }> {
     const response = await fetch(`https://api.vercel.com/v13/deployments${this.query}`, {
       method: 'POST',
