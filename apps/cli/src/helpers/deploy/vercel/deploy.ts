@@ -29,7 +29,7 @@ export const deploy = async ({
   const hashSpinner = ora('Preparing files...').start();
   const skipDirs = new Set(['node_modules', 'dist', 'build', ...(server.outDir ? [server.outDir] : [])]);
   const filePaths = await walk(serverDirPath, { skipDirs: (name) => skipDirs.has(name) });
-  const installCommand = await getPackageManagerInstallCommand();
+  const installCommand = await getPackageManagerInstallCommand('npm');
 
   const fileRefs = await Promise.all(
     filePaths.map(async (absPath) => {
