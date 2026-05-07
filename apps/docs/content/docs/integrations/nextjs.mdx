@@ -18,7 +18,7 @@ import { createRouterClient } from 'typebase-io/client';
 import type { Router } from '../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
-  url: process.env.TYPEBASE_APP_URL ?? '',
+  url: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '',
 });
 ```
 
@@ -289,7 +289,7 @@ export async function proxy(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
   if (requestUrl.pathname.startsWith('/api/auth')) {
-    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
   }
 
   return NextResponse.next();
@@ -310,7 +310,7 @@ export async function proxy(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
   if (requestUrl.pathname.startsWith('/api/auth') || requestUrl.pathname.startsWith('/rpc')) {
-    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
   }
 
   return NextResponse.next();
@@ -333,7 +333,7 @@ import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
 import type { Router } from '../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
-  url: process.env.TYPEBASE_APP_URL ?? '',
+  url: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '',
   headers: async () => getServerAuthCookie(),
 });
 ```
@@ -346,7 +346,10 @@ import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
 import type { Router } from '../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
-  url: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_TYPEBASE_APP_URL ?? ''),
+  url:
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : (process.env.NEXT_PUBLIC_TYPEBASE_APP_URL_DEV ?? process.env.NEXT_PUBLIC_TYPEBASE_APP_URL ?? ''),
   headers: async () => {
     if (typeof window !== 'undefined') {
       return {};
@@ -437,7 +440,7 @@ export function SignOutButton() {
 import { getServerSession } from 'typebase-io/client/auth/nextjs';
 
 export default async function Page() {
-  const session = await getServerSession(process.env.TYPEBASE_APP_URL ?? '');
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
 
   if (!session) {
     return <p>Not signed in</p>;
@@ -475,10 +478,10 @@ export async function proxy(request: NextRequest) {
   const requestUrl = new URL(request.url);
 
   if (requestUrl.pathname.startsWith('/api/auth') || requestUrl.pathname.startsWith('/rpc')) {
-    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
   }
 
-  const session = await getServerSession(process.env.TYPEBASE_APP_URL ?? '');
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
 
   if (!session && requestUrl.pathname !== '/auth') {
     return NextResponse.redirect(new URL('/auth', request.url));
@@ -519,12 +522,18 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env` as `TYPEBASE_APP_URL`. Use this for all server-side calls (Server Components, Server Actions).
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target — `TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev` — so both can coexist. Use this for all server-side calls (Server Components, Server Actions).
 
 If you use the TanStack Query client, the variable also needs to be available in the browser with the `NEXT_PUBLIC_` prefix. We recommend adding this to your `.env` file so you don't have to duplicate the value:
 
 ```bash title=".env"
 NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
+```
+
+When developing locally, set `NEXT_PUBLIC_TYPEBASE_APP_URL` to whichever target your frontend should hit — typically the dev deployment:
+
+```bash title=".env"
+NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_DEV
 ```
 
 ---

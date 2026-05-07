@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 import { getServerSession, proxyToTypebase } from 'typebase-io/client/auth/nextjs';
 
 export async function proxy(request: NextRequest) {
-  const session = await getServerSession(process.env.TYPEBASE_APP_URL ?? '');
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
   const requestUrl = new URL(request.url);
 
   if (requestUrl.pathname.startsWith('/api/auth') || requestUrl.pathname.startsWith('/rpc')) {
-    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL ?? '');
+    return proxyToTypebase(request, process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
   }
 
   if (!session && requestUrl.pathname !== '/auth') {

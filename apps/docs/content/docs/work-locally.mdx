@@ -94,7 +94,20 @@ In your frontend project's `.env`, override the server URL so your client hits l
 
 ```bash title=".env"
 TYPEBASE_APP_URL=http://localhost:3000
+
+# Or
+
+TYPEBASE_APP_URL_DEV=http://localhost:3000
 ```
+
+<Callout type="info">
+  The CLI stores both deployment URLs in your project-root `.env` under different keys so they
+  can coexist:
+
+- `TYPEBASE_APP_URL` → prod deployment
+- `TYPEBASE_APP_URL_DEV` → dev deployment
+
+</Callout>
 
 ## Trusted origins for auth
 

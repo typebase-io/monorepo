@@ -210,7 +210,7 @@ export const deploy = new Command('deploy')
         ora().succeed(`BETTER_AUTH_SECRET set on ${provider}.`);
       }
 
-      await writeEnvFile('TYPEBASE_APP_URL', url);
+      await writeEnvFile(target === 'prod' ? 'TYPEBASE_APP_URL' : 'TYPEBASE_APP_URL_DEV', url);
 
       console.log(chalk.green(`\nDeployment Id: ${deploymentId}`));
       console.log(chalk.green(`Deployment URL: ${url}`));
