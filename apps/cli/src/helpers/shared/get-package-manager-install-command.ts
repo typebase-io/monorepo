@@ -1,9 +1,9 @@
 import { match } from 'ts-pattern';
 
-import { getPackageManager } from '#helpers/shared/get-package-manager.ts';
+import { type PackageManager, getPackageManager } from '#helpers/shared/get-package-manager.ts';
 
-export const getPackageManagerInstallCommand = async () => {
-  const packageManager = await getPackageManager();
+export const getPackageManagerInstallCommand = async (customPackageManager?: PackageManager) => {
+  const packageManager = customPackageManager ?? (await getPackageManager());
 
   return match(packageManager)
     .with('npm', () => 'npm install --force')
