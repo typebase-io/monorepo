@@ -25,6 +25,10 @@ export const pushSchema = async ({ serverDistDirPath, connectionUri }: { serverD
     const schema = (await import(pathToFileURL(schemaPath).href)) as Record<string, unknown>;
     const db = drizzle(connectionUri);
 
+    db.$client.on('error', () => {
+      // Do nothing
+    });
+
     try {
       const spinner = ora('Analyzing schema changes...').start();
       const { sqlStatements, hints, apply } = await drizzlePush(schema, db, 'snake_case');
