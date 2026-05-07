@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { Command, Option } from '@commander-js/extra-typings';
+import { Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
 import ora from 'ora';
 
 import { serverAdapters } from '#helpers/constants.ts';
@@ -29,6 +29,15 @@ export const generateServer = new Command('generate-server')
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
   .addOption(new Option('--skip-load-env', 'Omit dotenv/config import from generated server'))
   .option('--out-dir <path>', 'Output directory for generated server files')
+  .option('--port <number>', 'Port the generated server listens on', (value) => {
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new InvalidArgumentError('Port must be a positive integer.');
+    }
+
+    return parsed;
+  })
   .action(async (params) => {
     const { projectPath, server } = await getTypebaseConfig();
 
@@ -36,6 +45,7 @@ export const generateServer = new Command('generate-server')
     const adapter = params.adapter ?? server.adapter;
     const skipLoadEnv = params.skipLoadEnv ?? server.skipLoadEnv;
     const outDir = params.outDir ?? server.outDir;
+    const port = params.port ?? server.port;
 
     const typebaseDirPath = path.resolve(projectPath);
 
@@ -92,7 +102,7 @@ export const generateServer = new Command('generate-server')
 
       await generateIndex({
         adapter,
-        port: 3000,
+        port,
         skipLoadEnv,
         tsConfigFilePath,
         actionsDirPath,

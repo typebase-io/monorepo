@@ -41,6 +41,7 @@ export const getTypebaseConfig = async () => {
       adapter: config.data.server?.adapter ?? 'node',
       skipLoadEnv: config.data.server?.skipLoadEnv ?? false,
       outDir: config.data.server?.outDir ?? '_server',
+      port: config.data.server?.port ?? 8080,
     },
     vercel: config.data.vercel,
     cloudflare: config.data.cloudflare,

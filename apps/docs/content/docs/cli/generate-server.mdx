@@ -78,6 +78,7 @@ npx typebase-io-cli generate-server --adapter fastify
 | `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
 | `--skip-load-env`     | Don't include `dotenv/config` import                                 | `false`   |
 | `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
+| `--port <number>`     | Port the generated server listens on                                 | `8080`    |
 
 ## Default configuration
 
@@ -89,7 +90,8 @@ You can set defaults in your `typebase.json` so you don't have to pass flags eve
     "output": "esm",
     "adapter": "hono",
     "skipLoadEnv": false,
-    "outDir": "_server"
+    "outDir": "_server",
+    "port": 8080
   }
 }
 ```
@@ -133,4 +135,4 @@ node src/index.js
 node src/index.js
 ```
 
-The server starts on port 3000 by default.
+The server starts on port 8080 by default. Override it with `--port` or the `server.port` field in `typebase.json`.

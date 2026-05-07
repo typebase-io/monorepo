@@ -28,7 +28,7 @@ npm install
 npx tsx src/index.ts
 ```
 
-The server listens on `http://localhost:3000` by default.
+The server listens on `http://localhost:8080` by default. Pass `--port` to `generate-server` (or set `server.port` in `typebase.json`) to use a different port.
 
 <Callout type="info">
   `generate-server` defaults to TypeScript output and the `node` adapter. If you'd rather run plain JavaScript, pass `--output esm` or `--output cjs`
@@ -93,11 +93,11 @@ If a command prints `ENCRYPTED`, that provider is hiding the raw secret value. I
 In your frontend project's `.env`, override the server URL so your client hits localhost instead of the deployed server:
 
 ```bash title=".env"
-TYPEBASE_APP_URL=http://localhost:3000
+TYPEBASE_APP_URL=http://localhost:8080
 
 # Or
 
-TYPEBASE_APP_URL_DEV=http://localhost:3000
+TYPEBASE_APP_URL_DEV=http://localhost:8080
 ```
 
 <Callout type="info">

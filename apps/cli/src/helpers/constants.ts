@@ -96,6 +96,7 @@ export const typebaseConfigSchema = z.object({
       adapter: z.optional(z.enum(serverAdapters)),
       skipLoadEnv: z.optional(z.boolean()),
       outDir: z.optional(z.string().trim().min(1)),
+      port: z.optional(z.number().int().positive()),
     })
   ),
   vercel: z.optional(

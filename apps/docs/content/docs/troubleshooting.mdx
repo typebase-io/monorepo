@@ -229,7 +229,7 @@ The generated server in `typebase/_server/` is a snapshot — it doesn't watch y
 
 Three things to check:
 
-1. `TYPEBASE_APP_URL` in your frontend's `.env` points to `http://localhost:3000` (or whichever port your local server uses).
+1. `TYPEBASE_APP_URL` in your frontend's `.env` points to `http://localhost:8080` (or whichever port your local server uses).
 2. If you have an `auth.ts`, your frontend's local origin is in `trustedOrigins`.
 3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` — `DATABASE_URL` (prod branch) and `DATABASE_URL_DEV` (dev branch) — so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL` — if that returns `ENCRYPTED`, grab the value from the Neon console instead.
 
