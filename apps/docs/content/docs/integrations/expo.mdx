@@ -5,6 +5,11 @@ description: Set up Typebase with Expo — TanStack Query client setup and authe
 
 Expo is a client-only environment — there's no server-side rendering, so all calls to your Typebase server happen from the device. Typebase uses `createTanstackQueryClient` as the standard client for Expo, giving you caching, loading states, and automatic refetching via [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview).
 
+<Callout type="info">
+  The examples below show one common way to integrate Typebase with Expo. They're a starting point, not a requirement — Typebase doesn't impose any
+  project structure, so feel free to adapt the patterns to fit your app's conventions or pick only what's useful.
+</Callout>
+
 ## Setup
 
 ### Client
