@@ -5,17 +5,18 @@ description: How Typebase compares to Supabase and Convex.
 
 Typebase is best understood as the best of both worlds: the developer experience of Convex with the open, standard Postgres foundation of Supabase.
 
-|                    | Typebase                             | Supabase                         | Convex                |
-| ------------------ | ------------------------------------ | -------------------------------- | --------------------- |
-| **Backend logic**  | TypeScript functions                 | SQL + RLS                        | TypeScript functions  |
-| **Database**       | Postgres (Drizzle)                   | Postgres                         | Proprietary           |
-| **Type safety**    | End-to-end, always in sync           | Generated from schema, can drift | End-to-end            |
-| **Auth**           | better-auth                          | Built-in                         | Third-party providers |
-| **Realtime**       | Coming soon                          | Yes                              | Yes (core model)      |
-| **Storage**        | Coming soon (BYO via any TS library) | Built-in                         | Built-in              |
-| **Mailers**        | Coming soon (BYO via any TS library) | No                               | No                    |
-| **Infrastructure** | Your own or Vercel, Cloudflare, Deno | Supabase-hosted                  | Convex-hosted         |
-| **Vendor lock-in** | None                                 | Medium                           | High                  |
+|                    | Typebase                             | Supabase                         | Convex                          |
+| ------------------ | ------------------------------------ | -------------------------------- | ------------------------------- |
+| **Backend logic**  | TypeScript functions                 | SQL + RLS                        | TypeScript functions            |
+| **Database**       | Postgres (Drizzle)                   | Postgres                         | Proprietary                     |
+| **Type safety**    | End-to-end, always in sync           | Generated from schema, can drift | End-to-end                      |
+| **Auth**           | better-auth                          | Built-in                         | Third-party providers           |
+| **Realtime**       | Coming soon                          | Yes                              | Yes (core model)                |
+| **Storage**        | Coming soon (BYO via any TS library) | Built-in                         | Built-in                        |
+| **Mailers**        | Coming soon (BYO via any TS library) | No                               | No                              |
+| **Infrastructure** | Your own or Vercel, Cloudflare, Deno | Supabase-hosted                  | Convex-hosted                   |
+| **Vendor lock-in** | None                                 | Medium                           | High                            |
+| **AI-friendly**    | Known stack, end-to-end types        | Types drift, logic in SQL/RLS    | Newer stack, less in AI corpora |
 
 ## No vendor lock-in
 
@@ -42,3 +43,11 @@ Supabase ships its own auth system. Convex relies on third-party providers like 
 ## Realtime
 
 Realtime is not yet supported in Typebase and is planned for the next release. Supabase supports realtime subscriptions, and Convex's entire model is built around reactive queries. If realtime is a hard requirement today, Convex or Supabase may be a better fit for now.
+
+## AI-friendly
+
+Coding agents do their best work on stacks they have seen before, with fast and reliable feedback when something is wrong. Typebase is built on Drizzle, oRPC, and better-auth — libraries that already have years of training data and community examples behind them — and the end-to-end TypeScript types give the agent a tight compile-error loop after every edit. Adding a new endpoint is dropping a file in `actions/`; there is no DSL, no generated client to keep in sync, and no hidden registration step.
+
+With Supabase, much of the business logic lives in SQL and Row Level Security policies, where the agent can't lean on the TypeScript compiler at all. The generated types drift out of sync with the schema until you remember to regenerate them, so the editor will happily accept code that breaks at runtime.
+
+Convex has strong types, but it's a newer platform with a smaller footprint in AI training data and a proprietary database/runtime model. Agents are more likely to invent APIs or apply patterns from other tools that don't quite fit.

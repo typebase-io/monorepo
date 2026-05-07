@@ -1,4 +1,4 @@
-import { Database, FileCode, KeyRound, Rocket, Sparkles, Unplug } from 'lucide-react';
+import { Bot, Database, FileCode, KeyRound, Rocket, Sparkles } from 'lucide-react';
 
 import { Code } from '#components/home/code.tsx';
 
@@ -53,12 +53,12 @@ const features = [
     ),
   },
   {
-    icon: Unplug,
-    title: 'Nothing is magic.',
+    icon: Bot,
+    title: 'Built for AI.',
     body: (
       <>
-        The deployed server is readable TypeScript built on libraries you already know. Eject, fork, or uninstall the CLI — the running server keeps
-        doing its job. No lock-in.
+        Conventions are file-based and types flow end-to-end. Coding agents get a tight loop: drop a file in <Code>actions/</Code>, the typecheck
+        catches mistakes immediately, and there&rsquo;s no hidden DSL or registration step to learn.
       </>
     ),
   },
