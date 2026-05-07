@@ -20,6 +20,12 @@ export function baseOptions(): BaseLayoutProps {
     themeSwitch: {
       enabled: false,
     },
+    links: [
+      {
+        text: 'Documentation',
+        url: '/docs',
+      },
+    ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }
