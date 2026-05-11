@@ -40,8 +40,6 @@ export const getDenoProject = async (token: string) => {
   while (true) {
     const url = new URL(`https://api.deno.com/v2/apps`);
 
-    url.searchParams.set('limit', '100');
-
     if (cursor) {
       url.searchParams.set('cursor', cursor);
     }
@@ -66,7 +64,7 @@ export const getDenoProject = async (token: string) => {
       break;
     }
 
-    cursor = nextMatch[1];
+    cursor = decodeURIComponent(nextMatch[1] ?? '');
   }
 
   getAppsSpinner.stop();
