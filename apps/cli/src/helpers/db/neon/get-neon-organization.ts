@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 export const getNeonOrganization = async (apiClient: ReturnType<typeof createApiClient>): Promise<string> => {
-  const orgsSpinner = ora('Fetching organizations...').start();
+  const orgsSpinner = ora('Fetching Neon organizations...').start();
   const orgsRes = await apiClient.getCurrentUserOrganizations();
   const orgs = orgsRes.data.organizations;
 
@@ -18,7 +18,7 @@ export const getNeonOrganization = async (apiClient: ReturnType<typeof createApi
   if (orgs.length === 1) {
     const org = orgs[0] ?? { name: '', id: '' };
 
-    console.log(chalk.gray(`Using organization: ${org.name}`));
+    console.log(chalk.gray(`Using Neon organization: ${org.name}`));
 
     return org.id;
   }

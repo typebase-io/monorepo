@@ -12,7 +12,7 @@ export const getNeonBranch = async ({
   projectId: string;
   target: 'dev' | 'prod';
 }): Promise<string> => {
-  const spinner = ora('Fetching branches...').start();
+  const spinner = ora('Fetching Neon branches...').start();
 
   const branchesRes = await apiClient.listProjectBranches({ projectId });
   const branches = branchesRes.data.branches;
@@ -23,7 +23,7 @@ export const getNeonBranch = async ({
 
   if (target === 'prod') {
     if (!mainBranch) {
-      throw new Error('No default branch found for this project.');
+      throw new Error('No default branch found for this Neon project.');
     }
 
     return mainBranch.id;
@@ -34,7 +34,7 @@ export const getNeonBranch = async ({
   }
 
   if (!mainBranch) {
-    throw new Error('No default branch found for this project.');
+    throw new Error('No default branch found for this Neon project.');
   }
 
   const createSpinner = ora('Creating "dev" branch on Neon...').start();

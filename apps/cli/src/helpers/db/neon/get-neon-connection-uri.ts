@@ -24,7 +24,7 @@ export const getNeonConnectionUri = async ({
 
   const apiClient = createApiClient({ apiKey: token });
 
-  const spinner = ora('Fetching connection URI...').start();
+  const spinner = ora('Fetching Neon connection URI...').start();
 
   const uriRes = await apiClient.getConnectionUri({
     projectId,

@@ -19,8 +19,14 @@ export const getDenoProject = async (token: string) => {
     };
   }
 
+  console.log(
+    chalk.dim(
+      'Find your Deno Deploy organization slug at console.deno.com — it\'s the last segment of the URL (e.g. "typebase-io" in https://console.deno.com/typebase-io), or the name shown above "Organization overview" in the dashboard.'
+    )
+  );
+
   const org = await input({
-    message: 'Deno Deploy organization slug (visible at console.deno.com):',
+    message: 'Deno Deploy organization slug:',
     required: true,
     validate: (val) => val.trim() !== '',
   });
@@ -85,7 +91,7 @@ export const getDenoProject = async (token: string) => {
   const app = await match(selectedApp)
     .with('__create_new__', async () => {
       const slug = await input({
-        message: 'App slug:',
+        message: 'New app name:',
         default: path.basename(process.cwd()),
         prefill: 'editable',
         required: true,

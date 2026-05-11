@@ -23,7 +23,7 @@ export const getNeonProject = async (token: string) => {
   const apiClient = createApiClient({ apiKey: token });
   const orgId = await getNeonOrganization(apiClient);
 
-  const projectsSpinner = ora('Fetching projects...').start();
+  const projectsSpinner = ora('Fetching Neon projects...').start();
 
   const projectsRes = await apiClient.listProjects(orgId ? { org_id: orgId } : {});
   const projects = projectsRes.data.projects;
@@ -37,7 +37,7 @@ export const getNeonProject = async (token: string) => {
           message: 'Select a Neon project:',
           choices: [
             {
-              name: '+ Create a new project',
+              name: '+ Create a new Neon project',
               value: '__create_new__',
             },
             ...projects.map((project) => ({
@@ -50,7 +50,7 @@ export const getNeonProject = async (token: string) => {
   const result = await match(selectedProject)
     .with('__create_new__', async () => {
       const name = await input({
-        message: 'Project name:',
+        message: 'Neon project name:',
         default: path.basename(process.cwd()),
         prefill: 'editable',
         required: true,
@@ -58,7 +58,7 @@ export const getNeonProject = async (token: string) => {
       });
 
       const regionId = await select({
-        message: 'Select a region:',
+        message: 'Select a Neon region:',
         choices: [
           { name: 'US East (Ohio)', value: 'aws-us-east-2' },
           { name: 'US East (N. Virginia)', value: 'aws-us-east-1' },
@@ -69,7 +69,7 @@ export const getNeonProject = async (token: string) => {
         ],
       });
 
-      const createSpinner = ora(`Creating project "${name}"...`).start();
+      const createSpinner = ora(`Creating Neon project "${name}"...`).start();
 
       const createRes = await apiClient.createProject({
         project: {
@@ -83,7 +83,7 @@ export const getNeonProject = async (token: string) => {
 
       await waitForDeployment({ apiClient, projectId, operations: createRes.data.operations });
 
-      createSpinner.succeed(`Project "${name}" created.`);
+      createSpinner.succeed(`Neon project "${name}" created.`);
 
       return { orgId, projectId };
     })
