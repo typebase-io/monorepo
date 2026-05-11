@@ -40,7 +40,7 @@ export const getNeonBranch = async ({
   const createSpinner = ora('Creating "dev" branch on Neon...').start();
 
   const createRes = await apiClient.createProjectBranch(projectId, {
-    branch: { name: 'dev', parent_id: mainBranch.id },
+    branch: { name: 'dev', parent_id: mainBranch.id, init_source: 'schema-only' },
     endpoints: [{ type: EndpointType.ReadWrite }],
   });
 
