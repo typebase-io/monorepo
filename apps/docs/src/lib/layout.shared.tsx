@@ -24,6 +24,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: 'Documentation',
         url: '/docs',
+        on: 'nav',
       },
     ],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
