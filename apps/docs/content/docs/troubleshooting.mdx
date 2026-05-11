@@ -173,6 +173,29 @@ If it keeps failing on the same step, run that step in isolation to see the unde
 
 Vercel, Cloudflare, and Deno all use short-lived tokens. If you suddenly get 401s during deploy, log in again — the CLI will prompt you. There's no separate "logout" step; just re-run `npx typebase-io-cli deploy` and authenticate when asked.
 
+### Deno Deploy returns "502 Server Error"
+
+When deploying to Deno Deploy you may occasionally see an HTML response like this:
+
+```html
+<html>
+  <head>
+    <title>502 Server Error</title>
+  </head>
+  <body>
+    <h1>Error: Server Error</h1>
+    <h2>
+      The server encountered a temporary error and could not complete your request.
+      <p>Please try again in 30 seconds.</p>
+    </h2>
+  </body>
+</html>
+```
+
+This is returned by Deno Deploy's API gateway, typically when you've hit a rate limit on their side. Wait ~30 seconds and re-run the command — most of the time the next attempt goes through.
+
+If you're hitting this repeatedly and it's blocking your workflow, the simplest fix is to switch to another provider. Typebase also supports [Vercel](/docs/cli/deploy#vercel) and [Cloudflare Workers](/docs/cli/deploy#cloudflare-workers) — point your `typebase.json` at one of them and re-deploy.
+
 ## Database
 
 ### "Relation does not exist" when querying
