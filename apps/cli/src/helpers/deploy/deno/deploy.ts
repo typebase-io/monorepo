@@ -46,7 +46,7 @@ export const deploy = async ({
   prepareSpinner.succeed(`Prepared ${filePaths.length} file(s).`);
 
   const deploySpinner = ora('Creating deployment...').start();
-  const installCommand = await getPackageManagerInstallCommand();
+  const installCommand = await getPackageManagerInstallCommand('npm');
 
   const res = await fetch(`https://api.deno.com/v2/apps/${projectId}/deploy`, {
     method: 'POST',

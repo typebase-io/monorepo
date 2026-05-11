@@ -45,6 +45,9 @@ export const deno = async ({
 
   return {
     deploymentId: deployment.revisionId,
-    url: target === 'prod' ? `https://${project.slug}.deno.dev` : `https://${project.slug}-${deployment.revisionId}.${project.org}.deno.net`,
+    url:
+      target === 'prod'
+        ? `https://${project.slug}.${project.org}.deno.net`
+        : `https://${project.slug}-${deployment.revisionId}.${project.org}.deno.net`,
   };
 };
