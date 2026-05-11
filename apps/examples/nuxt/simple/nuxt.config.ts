@@ -18,7 +18,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL,
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL,
     },
   },
 });

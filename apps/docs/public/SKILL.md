@@ -212,7 +212,7 @@ The provider always reads `DATABASE_URL` (one value per env). The project root `
 - `DATABASE_URL` → prod branch
 - `DATABASE_URL_DEV` → dev branch
 
-Frontend code typically prefers `TYPEBASE_APP_URL_DEV ?? TYPEBASE_APP_URL` so a dev deploy overrides prod when both are set.
+Frontend code typically prefers `TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL` so a dev deploy overrides prod when both are set.
 
 Schema push runs **before** the new server code goes live during deploy. For destructive prod changes, roll out additively first (add nullable column, backfill, deploy code that uses it, then a later deploy drops the old column).
 
@@ -226,7 +226,7 @@ import { createRouterClient } from 'typebase-io/client';
 import type { Router } from '../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
-  url: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '',
+  url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
 });
 
 await client.queries.todos.getMany();

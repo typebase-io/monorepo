@@ -3,7 +3,7 @@ import { getServerSession } from 'typebase-io/client/auth/nextjs';
 import SignOutButton from './sign-out-button';
 
 export default async function Navbar() {
-  const session = await getServerSession(process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL ?? '');
+  const session = await getServerSession(process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '');
 
   if (!session) {
     return (

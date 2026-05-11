@@ -26,7 +26,7 @@ Expose your Typebase server URL as a public runtime config value so it's availab
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
-      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL,
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL,
     },
   },
 });
@@ -119,7 +119,7 @@ Same as the simple client — expose your server URL as a public runtime config 
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
-      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV ?? process.env.TYPEBASE_APP_URL,
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL,
     },
   },
 });
