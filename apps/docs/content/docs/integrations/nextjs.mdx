@@ -354,7 +354,7 @@ export const client = createTanstackQueryClient<Router>({
   url:
     typeof window !== 'undefined'
       ? window.location.origin
-      : (process.env.NEXT_PUBLIC_TYPEBASE_APP_URL_DEV || process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || ''),
+      : process.env.NEXT_PUBLIC_TYPEBASE_APP_URL_DEV || process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
   headers: async () => {
     if (typeof window !== 'undefined') {
       return {};
