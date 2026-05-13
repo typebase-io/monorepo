@@ -196,6 +196,73 @@ This is returned by Deno Deploy's API gateway, typically when you've hit a rate 
 
 If you're hitting this repeatedly and it's blocking your workflow, the simplest fix is to switch to another provider. Typebase also supports [Vercel](/docs/cli/deploy#vercel) and [Cloudflare Workers](/docs/cli/deploy#cloudflare-workers) — point your `typebase.json` at one of them and re-deploy.
 
+### Cloudflare Workers: "Worker exceeded CPU time limit."
+
+When calling a deployed route on Cloudflare Workers you may see a response like:
+
+```json
+{
+  "message": "Worker exceeded CPU time limit.",
+  "outcome": "exceededCpu",
+  "statusCode": 503
+}
+```
+
+Cloudflare enforces a hard CPU-time budget per request, separate from wall-clock time. The Workers Free plan caps requests at **10ms of CPU time**, and the Paid plan at **30s**. The error is returned when your handler burns more CPU than the cap, regardless of how fast the I/O around it was.
+
+You'll find the actual CPU time used per request in the Cloudflare dashboard under **Workers & Pages → your worker → Observability → Logs**, or via `npx wrangler tail <worker-name>`.
+
+The three usual fixes, in order of how aggressive you want to be:
+
+#### 1. Upgrade your Workers plan
+
+The Free plan's 10ms limit is genuinely impractical for anything CPU-heavy. The Paid plan ($5/month at the time of writing) raises the limit to 30s, which fits any normal workload. If you're shipping a real app on Cloudflare, this is the expected baseline.
+
+#### 2. Check if your action is doing CPU-intensive work
+
+If you're on the Paid plan and still hitting the limit, your handler is doing something expensive on the hot path. Common culprits:
+
+- Large JSON parses or stringifies
+- Big in-memory loops over collections
+- Synchronous compression/encryption
+- Heavy template or markdown rendering
+
+Move the expensive part off the request path (queue + Durable Object + scheduled job) or do it on the client.
+
+#### 3. Replace the auth password hasher with Node's `scrypt`
+
+The most common cause of this error is **password hashing during sign-up / sign-in**. better-auth's default scrypt implementation is pure JavaScript, which burns a lot of CPU time on Workers. Node's built-in `node:crypto.scryptSync` is implemented in native code via OpenSSL and runs orders of magnitude faster — fast enough to fit comfortably under the Workers Paid limit (and sometimes even under the Free limit).
+
+Cloudflare Workers expose `node:crypto` via the Node.js compatibility flag, which Typebase enables by default for Cloudflare deployments.
+
+Override the hasher in your `auth.ts`:
+
+```ts title="typebase/auth.ts"
+import { defineAuth } from 'typebase-io/server';
+import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
+
+export const auth = defineAuth({
+  // ...
+  emailAndPassword: {
+    enabled: true,
+    password: {
+      async hash(password: string) {
+        const salt = randomBytes(16).toString('hex');
+        const derivedKey = scryptSync(password, salt, 64);
+        return `${salt}:${derivedKey.toString('hex')}`;
+      },
+      async verify({ hash, password }) {
+        const [salt, key] = hash.split(':');
+        const derivedKey = scryptSync(password, salt, 64);
+        return timingSafeEqual(Buffer.from(key, 'hex'), derivedKey);
+      },
+    },
+  },
+});
+```
+
+Note that swapping the hasher means existing users hashed with the old implementation won't be able to log in until they reset their password — so do this before you have real users.
+
 ## Database
 
 ### "Relation does not exist" when querying
