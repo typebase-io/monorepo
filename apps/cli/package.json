@@ -20,7 +20,7 @@
   "scripts": {
     "build": "node ../build-apps/src/index.ts build --app cli",
     "dev": "node src/index.ts",
-    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint ."
+    "lint": "tsc --build --noEmit && ../../node_modules/.bin/prettier --check . --ignore-path ../../.prettierignore && eslint ."
   },
   "bin": {
     "typebase-io-cli": "dist/esm/src/index.js",
@@ -36,22 +36,22 @@
   },
   "dependencies": {
     "@commander-js/extra-typings": "14.0.0",
-    "@inquirer/prompts": "8.4.2",
+    "@inquirer/prompts": "8.4.3",
     "@neondatabase/api-client": "2.7.1",
-    "auth": "1.6.8",
+    "auth": "1.6.11",
     "chalk": "5.6.2",
     "commander": "14.0.3",
     "dotenv": "17.4.2",
     "drizzle-kit": "1.0.0-beta.22",
     "drizzle-orm": "1.0.0-beta.22",
-    "esbuild": "0.27.4",
-    "jiti": "2.6.1",
-    "ora": "9.3.0",
+    "esbuild": "0.28.0",
+    "jiti": "2.7.0",
+    "ora": "9.4.0",
     "pg": "8.20.0",
     "preferred-pm": "5.0.0",
     "ts-morph": "27.0.2",
     "ts-pattern": "5.9.0",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "24.1.0",

@@ -15,7 +15,7 @@ export type ServerProvider = (typeof serverProviders)[number];
 export const DEPS = {
   '@better-auth/drizzle-adapter': {
     name: '@better-auth/drizzle-adapter',
-    version: '1.6.8',
+    version: '1.6.11',
   },
   '@fastify/cors': {
     name: '@fastify/cors',
@@ -27,7 +27,7 @@ export const DEPS = {
   },
   '@orpc/server': {
     name: '@orpc/server',
-    version: '1.14.0',
+    version: '1.14.3',
   },
   '@types/node': {
     name: '@types/node',
@@ -39,7 +39,7 @@ export const DEPS = {
   },
   'better-auth': {
     name: 'better-auth',
-    version: '1.6.8',
+    version: '1.6.11',
   },
   dotenv: {
     name: 'dotenv',
@@ -59,7 +59,7 @@ export const DEPS = {
   },
   hono: {
     name: 'hono',
-    version: '4.12.14',
+    version: '4.12.18',
   },
   pg: {
     name: 'pg',

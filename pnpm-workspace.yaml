@@ -1,13 +1,8 @@
 packages:
   - apps/*
 
-ignoredBuiltDependencies:
-  - '@prisma/client'
-  - '@prisma/engines'
-  - prisma
-  - sharp
-
-onlyBuiltDependencies:
-  - '@swc/core'
-  - esbuild
-  - unrs-resolver
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  sharp: false
+  unrs-resolver: true

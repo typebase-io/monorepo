@@ -80,12 +80,12 @@
     }
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "1.6.8",
-    "@orpc/client": "1.14.0",
-    "@orpc/server": "1.14.0",
-    "@orpc/tanstack-query": "1.14.0",
+    "@better-auth/drizzle-adapter": "1.6.11",
+    "@orpc/client": "1.14.3",
+    "@orpc/server": "1.14.3",
+    "@orpc/tanstack-query": "1.14.3",
     "@types/pg": "8.20.0",
-    "better-auth": "1.6.8",
+    "better-auth": "1.6.11",
     "drizzle-orm": "1.0.0-beta.22"
   },
   "peerDependencies": {

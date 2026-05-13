@@ -15,6 +15,7 @@ export const createMockAdapter = (): DBAdapter => {
     updateMany: noop,
     delete: noop,
     deleteMany: noop,
+    consumeOne: noop,
     transaction: noop,
     options: {
       adapterConfig: { adapterId: 'drizzle', usePlural: true },
