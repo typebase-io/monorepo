@@ -311,7 +311,7 @@ Editing the contents of an existing file does **not** require codegen — types 
 
 ## What Typebase does not include yet
 
-Storage, mailers, realtime queries, custom domains per environment, migration files (push-only today), and oRPC plugin escape hatches are on the v0.0.2/v0.0.3 roadmap. Don't fabricate APIs for these; instead, suggest a plain TS library called from a handler (e.g., Resend in an action for email) until the official surface lands.
+Storage, mailers, realtime queries, custom domains per environment, migration files (push-only today), and oRPC plugin escape hatches are on the v0.2.0/v0.3.0 roadmap. Don't fabricate APIs for these; instead, suggest a plain TS library called from a handler (e.g., Resend in an action for email) until the official surface lands.
 
 ## Authoritative references
 
