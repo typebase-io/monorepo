@@ -76,7 +76,7 @@ export const getServerRouter = async ({
     .sort((a, b) => a.pathSegments.join('/').localeCompare(b.pathSegments.join('/')));
 
   if (hasAnyAction as boolean) {
-    imports.push(`\nimport { filterActions } from "typebase-io/server";`);
+    imports.push(`import { filterActions } from "typebase-io/server";`);
   }
 
   const routerTree = buildRouterTree(routes);
