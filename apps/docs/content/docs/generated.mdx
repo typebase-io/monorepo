@@ -11,18 +11,19 @@ The `_generated/` folder is created and maintained by `npx typebase-io-cli codeg
 // ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
 
 import type { ActionBuilder, GetDBBuilder } from 'typebase-io/server';
-import type { relations } from '../db/relations.ts';
 import type { auth as authConfig } from '../auth.ts';
+import type { relations } from '../db/relations.ts';
 
-import * as ActionModule0 from '../actions/mutations/todos.ts';
-import * as ActionModule1 from '../actions/queries/todos.ts';
+import { filterActions } from 'typebase-io/server';
+import * as ActionModule1 from '../actions/mutations/todos.ts';
+import * as ActionModule2 from '../actions/queries/todos.ts';
 
 export const router = {
   mutations: {
-    todos: { create: ActionModule0.create, toggle: ActionModule0.toggle },
+    todos: filterActions(ActionModule1),
   },
   queries: {
-    todos: { getMany: ActionModule1.getMany, getOne: ActionModule1.getOne },
+    todos: filterActions(ActionModule2),
   },
 };
 
