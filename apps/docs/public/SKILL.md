@@ -298,6 +298,30 @@ Editing the contents of an existing file does **not** require codegen — types 
 - **pnpm refuses to install** → drizzle peer mismatch with better-auth is benign. Add `strict-peer-dependencies=false` to `.npmrc` and reinstall.
 - **"esbuild binary missing"** → pnpm/yarn-berry blocked the post-install. `pnpm approve-builds` (pick `esbuild`) or add `pnpm.onlyBuiltDependencies: ["esbuild"]` to `package.json`.
 - **Renamed a column and got a destructive-changes prompt** → Drizzle reads renames as drop+add. Cancel, restore the original name, and only then run the rename inside Drizzle's intended workflow (or accept data loss intentionally).
+- **Cloudflare Workers `"Worker exceeded CPU time limit"` (503, `outcome: "exceededCpu"`)** → CPU-time budget per request hit. Free plan caps at 10ms, Paid at 30s. Most common cause is **password hashing** during sign-up/sign-in: better-auth's default scrypt is pure JS. Override it in `auth.ts` to use Node's native `scryptSync` (Cloudflare exposes `node:crypto` via the nodejs_compat flag, which Typebase enables by default):
+
+  ```ts
+  import { defineAuth } from 'typebase-io/server';
+  import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
+
+  export const auth = defineAuth({
+    emailAndPassword: {
+      enabled: true,
+      password: {
+        async hash(password) {
+          const salt = randomBytes(16).toString('hex');
+          return `${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
+        },
+        async verify({ hash, password }) {
+          const [salt, key] = hash.split(':');
+          return timingSafeEqual(Buffer.from(key, 'hex'), scryptSync(password, salt, 64));
+        },
+      },
+    },
+  });
+  ```
+
+  Swapping the hasher invalidates any existing users' passwords — do this before you have real users, or upgrade to the Paid plan instead.
 
 ## Decision flowchart for common asks
 
