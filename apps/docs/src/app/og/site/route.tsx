@@ -1,18 +1,10 @@
-import { generate as DefaultImage } from 'fumadocs-ui/og';
-import { ImageResponse } from 'next/og';
+import { brandedOgImage } from '#lib/og.tsx';
 
 export const revalidate = false;
 
 export function GET() {
-  return new ImageResponse(
-    <DefaultImage
-      title="Typebase — your backend, in a folder"
-      description="A type-safe backend you write as TypeScript files inside your existing repo."
-      site="Typebase"
-    />,
-    {
-      width: 1200,
-      height: 630,
-    }
-  );
+  return brandedOgImage({
+    title: 'Your backend, in a folder.',
+    description: 'A type-safe backend you write as TypeScript files inside your existing repo.',
+  });
 }
