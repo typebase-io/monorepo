@@ -26,9 +26,9 @@ export function Hero() {
           </span>
 
           <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
-            Your backend,
+            Just use code
             <br />
-            <span className="text-fd-primary">in a folder.</span>
+            <span className="text-fd-primary">AI loves code</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">

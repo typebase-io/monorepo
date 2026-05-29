@@ -17,7 +17,7 @@ const OG_IMAGE = {
   url: '/og/site',
   width: 1200,
   height: 630,
-  alt: 'Typebase — your backend, in a folder',
+  alt: 'Typebase — just use code. AI loves code.',
 };
 
 export const metadata: Metadata = {
