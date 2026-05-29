@@ -7,8 +7,8 @@ export function FinalCTA() {
   return (
     <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-3xl px-6 text-center">
-        <h2 className="text-4xl font-bold tracking-tight text-fd-foreground sm:text-5xl">Make your backend a folder.</h2>
-        <p className="mt-4 text-fd-muted-foreground">
+        <h2 className="text-4xl font-bold tracking-tight text-fd-foreground sm:text-5xl text-balance">Give your agent a backend it can read.</h2>
+        <p className="mt-4 text-fd-muted-foreground text-balance">
           It takes about ninety seconds. Most of that is <Code>npm install</Code>.
         </p>
 
