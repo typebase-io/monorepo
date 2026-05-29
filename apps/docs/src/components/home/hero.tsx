@@ -20,11 +20,6 @@ export function Hero() {
 
       <div className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-24 sm:pb-28">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-muted/40 px-3 py-1 text-xs font-medium text-fd-muted-foreground">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-fd-primary" />
-            Database · API · Auth
-          </span>
-
           <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
             Just use code
             <br />
