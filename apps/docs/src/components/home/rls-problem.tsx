@@ -2,7 +2,7 @@ import { Bug, Database } from 'lucide-react';
 
 export function RlsProblem() {
   return (
-    <section className="relative overflow-hidden border-y border-fd-border bg-fd-background py-24 sm:py-32">
+    <section className="relative overflow-hidden border-y border-fd-border bg-fd-background py-16 sm:py-24">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -left-40 top-1/3 h-112 w-md rounded-full bg-red-500/[0.07] blur-3xl" />
         <div className="absolute -right-32 bottom-0 h-96 w-[24rem] rounded-full bg-fd-primary/8 blur-3xl" />

@@ -18,7 +18,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-150 bg-[radial-gradient(ellipse_at_top,rgba(37,134,201,0.18),transparent_60%)]"
       />
 
-      <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
+      <div className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-24 sm:pb-28">
         <div className="mx-auto max-w-3xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-muted/40 px-3 py-1 text-xs font-medium text-fd-muted-foreground">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-fd-primary" />

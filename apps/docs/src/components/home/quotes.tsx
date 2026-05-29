@@ -36,7 +36,7 @@ const quotes = [
 
 export function Quotes() {
   return (
-    <section className="border-t border-fd-border bg-fd-muted/20 py-24">
+    <section className="border-t border-fd-border bg-fd-muted/20 py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-fd-foreground sm:text-4xl">Industry-shaking testimonials*</h2>

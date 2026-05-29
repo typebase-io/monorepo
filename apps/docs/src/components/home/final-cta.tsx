@@ -5,7 +5,7 @@ import { Code } from '#components/home/code.tsx';
 
 export function FinalCTA() {
   return (
-    <section className="py-24">
+    <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-4xl font-bold tracking-tight text-fd-foreground sm:text-5xl">Make your backend a folder.</h2>
         <p className="mt-4 text-fd-muted-foreground">
