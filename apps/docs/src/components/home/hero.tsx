@@ -32,8 +32,8 @@ export function Hero() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">
-            Write your actions, database schema, and auth as TypeScript files. Run one command. Your frontend calls them like local functions —
-            end-to-end typed, zero REST boilerplate.
+            Write your actions, database schema, and auth as TypeScript files in a <code>typebase/</code> folder. Your frontend calls them like local
+            functions — end-to-end typed, zero REST boilerplate.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

@@ -11,8 +11,8 @@ const inter = Inter({
 
 const SITE_URL = 'https://typebase.io';
 const DESCRIPTION =
-  'Write your actions, database schema, and auth as TypeScript files. Run one command. Your frontend calls them like local functions — end-to-end typed, zero REST boilerplate.';
-const DEFAULT_TITLE = 'Typebase — your backend, in a folder';
+  'Write your actions, database schema, and auth as TypeScript files in a typebase/ folder. Your frontend calls them like local functions — end-to-end typed, zero REST boilerplate.';
+const DEFAULT_TITLE = 'Typebase — just use code. AI loves code.';
 const OG_IMAGE = {
   url: '/og/site',
   width: 1200,
