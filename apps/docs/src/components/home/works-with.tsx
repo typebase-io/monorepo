@@ -6,14 +6,18 @@ export function WorksWith() {
     <section className="border-y border-fd-border bg-fd-muted/20 py-10">
       <div className="mx-auto max-w-6xl px-6">
         <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-fd-muted-foreground">Ships with first-class guides for</p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-xl font-semibold text-fd-foreground/85 sm:text-2xl">
-          <span>Next.js</span>
-          <Dot />
-          <span>SvelteKit</span>
-          <Dot />
-          <span>Nuxt</span>
-          <Dot />
-          <span>Expo</span>
+        <div className="mt-5 flex flex-col items-center gap-y-1 text-xl font-semibold text-fd-foreground/85 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-10 sm:gap-y-3 sm:text-2xl">
+          <div className="flex items-center gap-x-5 sm:contents">
+            <span>Next.js</span>
+            <Dot />
+            <span>SvelteKit</span>
+          </div>
+          <span className="hidden text-fd-muted-foreground/60 sm:inline">·</span>
+          <div className="flex items-center gap-x-5 sm:contents">
+            <span>Nuxt</span>
+            <Dot />
+            <span>Expo</span>
+          </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-fd-muted-foreground">
           <span>Built on</span>
