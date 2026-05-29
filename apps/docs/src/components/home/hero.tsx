@@ -22,8 +22,7 @@ export function Hero() {
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
             Just use code
-            <br />
-            <span className="text-fd-primary">AI loves code</span>
+            <span className="mt-2 block text-5xl text-fd-primary sm:mt-3 sm:text-7xl">AI loves code</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">
