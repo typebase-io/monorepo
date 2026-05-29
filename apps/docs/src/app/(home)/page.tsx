@@ -2,6 +2,7 @@ import { Features } from '#components/home/features.tsx';
 import { FinalCTA } from '#components/home/final-cta.tsx';
 import { Hero } from '#components/home/hero.tsx';
 import { Quotes } from '#components/home/quotes.tsx';
+import { RlsProblem } from '#components/home/rls-problem.tsx';
 import { WorksWith } from '#components/home/works-with.tsx';
 
 const SITE_URL = 'https://typebase.io';
@@ -48,6 +49,7 @@ export default function HomePage() {
     <main className="flex flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Hero />
+      <RlsProblem />
       <WorksWith />
       <Features />
       <Quotes />
