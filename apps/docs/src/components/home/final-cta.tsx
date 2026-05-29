@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { Code } from '#components/home/code.tsx';
+import { CopyCommand } from '#components/home/copy-command.tsx';
 
 export function FinalCTA() {
   return (
@@ -12,12 +13,10 @@ export function FinalCTA() {
           It takes about ninety seconds. Most of that is <Code>npm install</Code>.
         </p>
 
-        <div className="mx-auto mt-8 w-fit max-w-full overflow-x-auto rounded-lg border border-fd-border bg-fd-card px-4 py-3 text-left font-mono text-sm text-fd-foreground/90">
-          <code className="whitespace-nowrap">
-            <span className="text-fd-muted-foreground select-none">$ </span>
-            npm i typebase-io <span className="text-fd-muted-foreground">&amp;&amp;</span> npm i -D typebase-io-cli
-          </code>
-        </div>
+        <CopyCommand command="npm i typebase-io && npm i -D typebase-io-cli">
+          <span className="select-none text-fd-muted-foreground">$ </span>
+          npm i typebase-io <span className="text-fd-muted-foreground">&amp;&amp;</span> npm i -D typebase-io-cli
+        </CopyCommand>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
