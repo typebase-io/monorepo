@@ -18,7 +18,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-150 bg-[radial-gradient(ellipse_at_top,rgba(37,134,201,0.18),transparent_60%)]"
       />
 
-      <div className="mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-24 sm:pb-28">
+      <div className="mx-auto max-w-6xl px-6 pt-12 pb-16 sm:pb-28">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
             Just use code
