@@ -74,8 +74,9 @@ export function ViewOptions({
   githubUrl: string;
 }) {
   const items = useMemo(() => {
-    const fullMarkdownUrl = typeof window !== 'undefined' ? new URL(markdownUrl, window.location.origin) : 'loading';
-    const q = `Read ${fullMarkdownUrl}, I want to ask questions about it.`;
+    const fullMarkdownUrl = typeof window !== 'undefined' ? new URL(markdownUrl, window.location.origin).toString() : 'loading';
+    const promptUrl = fullMarkdownUrl.replace(/\.mdx(\?|#|$)/, '$1');
+    const q = `Read ${promptUrl}, I want to ask questions about it.`;
 
     return [
       {
