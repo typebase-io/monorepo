@@ -3,9 +3,9 @@ title: Introduction
 description: What Typebase is and how it works.
 ---
 
-**Typebase** is a library that gives you a type-safe backend without external services or complex setup. You get an API, a database, and authentication — all in one place, all fully typed.
+**Typebase** is a library you add to your existing app to get a fully typed backend — no separate project, no external services.
 
-You define your database schema, server actions, and authentication inside a `typebase/` directory. The CLI generates type definitions, pushes schema changes to your database, and deploys everything to the cloud. Your frontend calls your actions like functions — fully typed, zero REST boilerplate.
+You write actions, a database schema, and auth as TypeScript files in a `typebase/` folder inside your project. The CLI generates types, pushes schema changes, and deploys that folder as a server. Your frontend — in the same repo — calls your actions like local functions, fully typed.
 
 ## The mental model
 
