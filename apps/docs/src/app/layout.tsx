@@ -11,13 +11,13 @@ const inter = Inter({
 
 const SITE_URL = 'https://typebase.io';
 const DESCRIPTION =
-  'Write your actions, database schema, and auth as TypeScript files in a typebase/ folder. Your frontend calls them like local functions — end-to-end typed, zero REST boilerplate.';
-const DEFAULT_TITLE = 'Typebase — just use code. AI loves code.';
+  'Write actions, a database schema, and auth as TypeScript files in a typebase/ folder inside your app. Your frontend calls them like local functions, end-to-end typed, zero REST boilerplate.';
+const DEFAULT_TITLE = 'Typebase: just use code. AI loves code.';
 const OG_IMAGE = {
   url: '/og/site',
   width: 1200,
   height: 630,
-  alt: 'Typebase — just use code. AI loves code.',
+  alt: 'Typebase: just use code. AI loves code.',
 };
 
 export const metadata: Metadata = {

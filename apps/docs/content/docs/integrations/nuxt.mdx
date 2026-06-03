@@ -1,16 +1,16 @@
 ---
 title: Nuxt
-description: Set up Typebase with Nuxt — client, Tanstack Query, composables, and authentication.
+description: Set up Typebase with Nuxt, covering the client, Tanstack Query, composables, and authentication.
 ---
 
 Typebase provides two client types for Nuxt. **`createRouterClient`** is a simple promise-based client, best for `useLazyAsyncData` and server-side calls. **`createTanstackQueryClient`** is a [Tanstack Query](https://tanstack.com/query/latest/docs/framework/vue/overview) integration, best for components that need caching, loading states, and automatic refetching.
 
 Both clients are set up as Nuxt plugins and injected into the app via `provide`, making them available anywhere via `useNuxtApp()`.
 
-Pick the one that fits your use case — or use both in the same project.
+Pick the one that fits your use case, or use both in the same project.
 
 <Callout type="info">
-  The examples below show one common way to integrate Typebase with Nuxt. They're a starting point, not a requirement — Typebase doesn't impose any
+  The examples below show one common way to integrate Typebase with Nuxt. They're a starting point, not a requirement. Typebase doesn't impose any
   project structure, so feel free to adapt the patterns to fit your app's conventions or pick only what's useful.
 </Callout>
 
@@ -57,7 +57,7 @@ export default defineNuxtPlugin(() => {
 
 `useRequestEvent()` gives you the incoming H3 request on the server. Passing its headers to the client forwards cookies on SSR requests so they reach your Typebase server.
 
-That's it — `$client` is now available anywhere via `useNuxtApp()`, fully typed based on the `.input()` and `.output()` you defined on each action.
+That's it. `$client` is now available anywhere via `useNuxtApp()`, fully typed based on the `.input()` and `.output()` you defined on each action.
 
 ### Examples
 
@@ -113,7 +113,7 @@ const addTodo = async (e: SubmitEvent) => {
 
 #### nuxt.config.ts
 
-Same as the simple client — expose your server URL as a public runtime config value:
+Same as the simple client: expose your server URL as a public runtime config value.
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({
@@ -448,7 +448,7 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target — `TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev` — so both can coexist. Expose it in `nuxt.config.ts` under `runtimeConfig.public` so it's available on both server and client:
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist. Expose it in `nuxt.config.ts` under `runtimeConfig.public` so it's available on both server and client:
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({
@@ -460,7 +460,7 @@ export default defineNuxtConfig({
 });
 ```
 
-When developing locally, set `TYPEBASE_APP_URL` to whichever target your frontend should hit — typically the dev deployment:
+When developing locally, set `TYPEBASE_APP_URL` to whichever target your frontend should hit, typically the dev deployment:
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({

@@ -20,13 +20,13 @@ Typebase is best understood as the best of both worlds: the developer experience
 
 ## No vendor lock-in
 
-Typebase does not own any servers. You deploy to Vercel, Cloudflare Workers, or Deno Deploy — providers you already control and understand. If you ever want to move, run `npx typebase-io-cli generate-server` to get the raw server code and host it anywhere.
+Typebase does not own any servers. You deploy to Vercel, Cloudflare Workers, or Deno Deploy, providers you already control and understand. If you ever want to move, run `npx typebase-io-cli generate-server` to get the raw server code and host it anywhere.
 
 Supabase and Convex host your backend on their infrastructure. Migrating away is a significant amount of work.
 
 ## End-to-end type safety
 
-With Supabase, types are generated from your database schema as a separate step. They can drift out of sync, and Supabase doesn't have a strong concept of typed server functions — most logic lives in the database as SQL or RLS policies. Supabase does offer Edge Functions for TypeScript, but they aren't the core of the platform and most Supabase apps don't center on them.
+With Supabase, types are generated from your database schema as a separate step. They can drift out of sync, and Supabase doesn't have a strong concept of typed server functions; most logic lives in the database as SQL or RLS policies. Supabase does offer Edge Functions for TypeScript, but they aren't the core of the platform and most Supabase apps don't center on them.
 
 With Typebase, you write plain TypeScript functions and your client types are always in sync. Your editor always knows exactly what every action accepts and returns.
 
@@ -38,7 +38,7 @@ Typebase gives you the same experience of writing simple TypeScript functions, b
 
 ## Auth
 
-Supabase ships its own auth system. Convex relies on third-party providers like Clerk. Typebase uses [better-auth](https://www.better-auth.com/), which supports every major auth strategy — email/password, OAuth, passkeys, multi-factor, and more — with first-class TypeScript support and active development.
+Supabase ships its own auth system. Convex relies on third-party providers like Clerk. Typebase uses [better-auth](https://www.better-auth.com/), which supports every major auth strategy (email/password, OAuth, passkeys, multi-factor, and more) with first-class TypeScript support and active development.
 
 ## Realtime
 
@@ -46,7 +46,7 @@ Realtime is not yet supported in Typebase and is planned for the next release. S
 
 ## AI-friendly
 
-Coding agents do their best work on stacks they have seen before, with fast and reliable feedback when something is wrong. Typebase is built on Drizzle, oRPC, and better-auth — libraries that already have years of training data and community examples behind them — and the end-to-end TypeScript types give the agent a tight compile-error loop after every edit. Adding a new endpoint is dropping a file in `actions/`; there is no DSL, no generated client to keep in sync, and no hidden registration step.
+Coding agents do their best work on stacks they have seen before, with fast and reliable feedback when something is wrong. Typebase is built on Drizzle, oRPC, and better-auth, libraries that already have years of training data and community examples behind them. The end-to-end TypeScript types give the agent a tight compile-error loop after every edit. Adding a new endpoint is dropping a file in `actions/`; there is no DSL, no generated client to keep in sync, and no hidden registration step.
 
 With Supabase, much of the business logic lives in SQL and Row Level Security policies, where the agent can't lean on the TypeScript compiler at all. The generated types drift out of sync with the schema until you remember to regenerate them, so the editor will happily accept code that breaks at runtime.
 

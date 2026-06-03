@@ -47,6 +47,6 @@ These commands:
 
 <Callout type="warn">
   `db push` applies schema changes directly to the database. Additive changes (new tables, new columns) are safe, but destructive changes (dropped
-  columns, renamed tables) cannot be undone — the CLI will detect these and prompt for confirmation before continuing. Treat `db prod push` with extra
+  columns, renamed tables) cannot be undone. The CLI will detect these and prompt for confirmation before continuing. Treat `db prod push` with extra
   care since dropped data is unrecoverable.
 </Callout>

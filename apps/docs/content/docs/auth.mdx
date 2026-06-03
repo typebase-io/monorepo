@@ -3,9 +3,9 @@ title: Auth
 description: Add user authentication to your Typebase project.
 ---
 
-Typebase uses [better-auth](https://www.better-auth.com/) for authentication. It supports email/password, social logins (Google, GitHub, etc.), and more — all configured through a simple TypeScript file.
+Typebase uses [better-auth](https://www.better-auth.com/) for authentication. It supports email/password, social logins (Google, GitHub, etc.), and more, all configured through a simple TypeScript file.
 
-The `defineAuth` function in Typebase is a thin wrapper around better-auth, so anything you can do with better-auth you can do here. If you need features not covered in these docs — plugins, advanced session config, multi-factor auth, and more — the [better-auth documentation](https://www.better-auth.com/docs) is the full reference.
+The `defineAuth` function in Typebase is a thin wrapper around better-auth, so anything you can do with better-auth you can do here. If you need features not covered in these docs (plugins, advanced session config, multi-factor auth, and more), the [better-auth documentation](https://www.better-auth.com/docs) is the full reference.
 
 <Callout type="info">
   Authentication is optional. If your project doesn't need user accounts, you can skip this entirely. Typebase works just fine without it.
@@ -21,7 +21,7 @@ Adding authentication to a Typebase project involves four steps:
 4. **Create an auth client** on the frontend to handle sign-up, sign-in, and session management.
 
 <Callout type="info">
-  The commands below target `dev` because that's where you'll iterate. Every `dev` command has a `prod` twin — swap in `npx typebase-io-cli db prod
+  The commands below target `dev` because that's where you'll iterate. Every `dev` command has a `prod` twin. Swap in `npx typebase-io-cli db prod
   push` or `npx typebase-io-cli deploy prod` when you're ready to ship. Each target uses its own Neon branch and its own provider-side environment
   variables, so dev and prod stay isolated.
 </Callout>
@@ -84,8 +84,8 @@ npx typebase-io-cli auth generate
 
 This command does two things:
 
-1. **Appends tables to `db/schema.ts`** — Adds the `users`, `sessions`, `accounts`, and `verifications` tables.
-2. **Updates `db/relations.ts`** — Registers the new tables and their relationships.
+1. **Appends tables to `db/schema.ts`**: adds the `users`, `sessions`, `accounts`, and `verifications` tables.
+2. **Updates `db/relations.ts`**: registers the new tables and their relationships.
 
 <Callout type="warn">You must have a `db/schema.ts` and an `auth.ts` file before running this command.</Callout>
 
@@ -121,7 +121,7 @@ export const verifications = p.pgTable('verifications', {
 
 ## Step 3: Push the schema to your database
 
-[`npx typebase-io-cli auth generate`](/docs/cli/auth) only edits source files — it doesn't create the tables in Postgres. Push the schema to your dev database before trying to sign in:
+[`npx typebase-io-cli auth generate`](/docs/cli/auth) only edits source files. It doesn't create the tables in Postgres, so push the schema to your dev database before trying to sign in:
 
 ```npm
 npx typebase-io-cli db dev push
@@ -130,7 +130,7 @@ npx typebase-io-cli db dev push
 [`npx typebase-io-cli deploy dev`](/docs/cli/deploy) also runs a schema push as part of deploying, so if you're about to deploy you can skip the explicit `db push`.
 
 <Callout type="warn">
-  Skipping this step is the most common cause of "auth is configured but sign-in fails" — the auth client will hit your server, but the server will
+  Skipping this step is the most common cause of "auth is configured but sign-in fails". The auth client will hit your server, but the server will
   fail to read/write `users`, `sessions`, etc. because the tables don't exist yet.
 </Callout>
 

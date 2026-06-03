@@ -1,14 +1,14 @@
 ---
 title: Next.js
-description: Set up Typebase with Next.js — client, TanStack Query, Server Components, Server Actions, and authentication.
+description: Set up Typebase with Next.js, covering the client, TanStack Query, Server Components, Server Actions, and authentication.
 ---
 
 Typebase provides two client types for Next.js. **`createRouterClient`** is a simple promise-based client, best for Server Components and Server Actions. **`createTanstackQueryClient`** is a [TanStack Query](https://tanstack.com/query) integration, best for Client Components that need caching, loading states, and automatic refetching.
 
-Pick the one that fits your use case — or use both in the same project.
+Pick the one that fits your use case, or use both in the same project.
 
 <Callout type="info">
-  The examples below show one common way to integrate Typebase with Next.js. They're a starting point, not a requirement — Typebase doesn't impose any
+  The examples below show one common way to integrate Typebase with Next.js. They're a starting point, not a requirement. Typebase doesn't impose any
   project structure, so feel free to adapt the patterns to fit your app's conventions or pick only what's useful.
 </Callout>
 
@@ -16,7 +16,7 @@ Pick the one that fits your use case — or use both in the same project.
 
 ### Setup
 
-`createRouterClient` is a thin helper that creates a typed [oRPC](https://orpc.dev) client. If you need more control over the client configuration, you can build your own using oRPC directly — the full oRPC client docs apply here.
+`createRouterClient` is a thin helper that creates a typed [oRPC](https://orpc.dev) client. If you need more control over the client configuration, you can build your own using oRPC directly; the full oRPC client docs apply here.
 
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
@@ -42,7 +42,7 @@ export const createRouterClient = <TRouter>(options: RPCLinkOptions<ClientContex
 
 </details>
 
-That's it — you're ready to call your actions anywhere on the server. Each call is just a regular async function call, fully typed based on the `.input()` and `.output()` you defined on the action. Here are two common patterns in Next.js:
+That's it. You're ready to call your actions anywhere on the server. Each call is just a regular async function call, fully typed based on the `.input()` and `.output()` you defined on the action. Here are two common patterns in Next.js:
 
 ### Examples
 
@@ -254,7 +254,7 @@ export function AddTodoForm() {
 
 #### Auth client
 
-Import `createAuthClient` from the Typebase package — it re-exports better-auth's client configured for your setup:
+Import `createAuthClient` from the Typebase package. It re-exports better-auth's client configured for your setup:
 
 ```ts title="lib/typebase/auth-client.ts"
 import { createAuthClient } from 'typebase-io/client/auth/react';
@@ -281,7 +281,7 @@ When your Typebase server is deployed on a different domain than your Next.js ap
 Create a `proxy.ts` file that forwards auth requests to your Typebase server:
 
 <Callout type="info">
-  `proxy.ts` is the renamed version of `middleware.ts` — same file location, same API, same behavior. If your project is on an older Next.js version
+  `proxy.ts` is the renamed version of `middleware.ts` (same file location, same API, same behavior). If your project is on an older Next.js version
   that only recognizes `middleware.ts`, use that filename and rename the exported function from `proxy` to `middleware`. Everything else in this guide
   stays the same.
 </Callout>
@@ -527,7 +527,7 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target — `TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev` — so both can coexist. Use this for all server-side calls (Server Components, Server Actions).
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist. Use this for all server-side calls (Server Components, Server Actions).
 
 If you use the TanStack Query client, the variable also needs to be available in the browser with the `NEXT_PUBLIC_` prefix. We recommend adding this to your `.env` file so you don't have to duplicate the value:
 
@@ -535,7 +535,7 @@ If you use the TanStack Query client, the variable also needs to be available in
 NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
 ```
 
-When developing locally, set `NEXT_PUBLIC_TYPEBASE_APP_URL` to whichever target your frontend should hit — typically the dev deployment:
+When developing locally, set `NEXT_PUBLIC_TYPEBASE_APP_URL` to whichever target your frontend should hit, typically the dev deployment:
 
 ```bash title=".env"
 NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_DEV

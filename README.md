@@ -5,7 +5,7 @@
 <h1 align="center">Typebase</h1>
 
 <p align="center">
-  A type-safe backend you write as TypeScript files inside your existing repo. Define database tables, server actions, and auth inside a <code>typebase/</code> directory. One command ships them as a fully typed server your frontend calls like local functions.
+  A type-safe backend you write as TypeScript files inside your existing app. Define database tables, server actions, and auth inside a <code>typebase/</code> directory. One command ships them as a fully typed server your frontend calls like local functions.
 </p>
 
 <p align="center">

@@ -5,7 +5,7 @@ description: Run your Typebase server on localhost during development.
 
 For most day-to-day work, the simplest setup is to deploy your server to `dev` once and point your frontend at the deployed URL. Your frontend hot-reloads instantly, and you redeploy the backend with `npx typebase-io-cli deploy dev` whenever you change it.
 
-But sometimes you want to iterate on server code without redeploying — for debugging, working offline, or just a faster feedback loop. In those cases you can run the server on your own machine.
+But sometimes you want to iterate on server code without redeploying (for debugging, working offline, or just a faster feedback loop). In those cases you can run the server on your own machine.
 
 ## Generate the server
 
@@ -16,7 +16,7 @@ npx typebase-io-cli generate-server
 This writes a runnable server to `typebase/_server/`. See the [generate-server reference](/docs/cli/generate-server) for output formats and adapters.
 
 <Callout type="warn">
-  The generated server is a snapshot of your `typebase/` directory — it isn't watching your files. Re-run `generate-server` (and restart the local
+  The generated server is a snapshot of your `typebase/` directory. It isn't watching your files. Re-run `generate-server` (and restart the local
   server) any time you change anything inside `typebase/`, whether that's an action, your schema, or your auth config.
 </Callout>
 
@@ -44,7 +44,7 @@ DATABASE_URL=postgresql://...   # only if your project has a db/schema.ts
 BETTER_AUTH_SECRET=...          # only if your project has an auth.ts
 ```
 
-The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`) once — it provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
+The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`) once. That provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
 
 <Callout type="info">
   The generated server reads a plain `DATABASE_URL`, but the CLI stores both connection strings in your project-root `.env` under different keys so
@@ -56,7 +56,7 @@ The easiest way to get these values is to run `npx typebase-io-cli deploy dev` o
 For local development, copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`:
 
 ```bash title="typebase/_server/.env"
-# running against the dev branch — paste DATABASE_URL_DEV from your project-root .env
+# running against the dev branch: paste DATABASE_URL_DEV from your project-root .env
 DATABASE_URL=postgresql://...
 ```
 
@@ -64,7 +64,7 @@ Most of the time you'll want the dev branch so local experiments don't touch pro
 
 </Callout>
 
-If the value isn't in your project root yet (for example, on a fresh machine), you can fetch it from the provider — pick the target that matches the branch you want.
+If the value isn't in your project root yet (for example, on a fresh machine), you can fetch it from the provider. Pick the target that matches the branch you want.
 
 Dev branch:
 
@@ -86,7 +86,7 @@ npx typebase-io-cli env prod get DATABASE_URL
 npx typebase-io-cli env prod get BETTER_AUTH_SECRET
 ```
 
-If a command prints `ENCRYPTED`, that provider is hiding the raw secret value. In that case, copy the value from the original source instead — the Neon console for `DATABASE_URL`, or the provider dashboard for `BETTER_AUTH_SECRET`.
+If a command prints `ENCRYPTED`, that provider is hiding the raw secret value. In that case, copy the value from the original source instead: the Neon console for `DATABASE_URL`, or the provider dashboard for `BETTER_AUTH_SECRET`.
 
 ## Point your frontend at localhost
 

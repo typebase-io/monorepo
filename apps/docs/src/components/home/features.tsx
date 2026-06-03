@@ -74,7 +74,7 @@ export function Features() {
             <span className="whitespace-nowrap">Enough auth.</span>
           </h2>
           <p className="mt-4 text-fd-muted-foreground">
-            Typebase is built on three libraries you already trust — Drizzle ORM, oRPC, and better-auth — wired together so you stop writing glue and
+            Typebase is built on three libraries you already trust (Drizzle ORM, oRPC, and better-auth) wired together so you stop writing glue and
             start writing the app.
           </p>
         </div>

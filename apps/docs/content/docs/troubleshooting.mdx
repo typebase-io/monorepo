@@ -3,7 +3,7 @@ title: Troubleshooting
 description: Solutions for the most common issues you might run into with Typebase.
 ---
 
-This page covers the issues users hit most often, grouped by the area they show up in. If you don't find your problem here, the underlying libraries are well-documented — start with [oRPC](https://orpc.dev), [Drizzle](https://orm.drizzle.team/), or [better-auth](https://www.better-auth.com/) depending on which layer is failing.
+This page covers the issues users hit most often, grouped by the area they show up in. If you don't find your problem here, the underlying libraries are well-documented. Start with [oRPC](https://orpc.dev), [Drizzle](https://orm.drizzle.team/), or [better-auth](https://www.better-auth.com/) depending on which layer is failing.
 
 ## Installation
 
@@ -21,13 +21,13 @@ When you install Typebase you may see a warning like this:
     └── ✕ unmet peer drizzle-orm@^0.45.2: found 1.0.0-beta.22
 ```
 
-Typebase pins `drizzle-orm` to the `1.0.0-beta` line to get the newer query builder, while `better-auth` and `@better-auth/drizzle-adapter` still declare `^0.45.2` as their peer range. The APIs Typebase relies on are compatible, so this is safe to ignore — the warning is just the package manager noticing the version mismatch on paper.
+Typebase pins `drizzle-orm` to the `1.0.0-beta` line to get the newer query builder, while `better-auth` and `@better-auth/drizzle-adapter` still declare `^0.45.2` as their peer range. The APIs Typebase relies on are compatible, so this is safe to ignore. The warning is just the package manager noticing the version mismatch on paper.
 
 Most package managers only warn and continue:
 
-- **npm** (v7+) — warns, installs everything.
-- **yarn classic** (v1) — warns, installs everything.
-- **bun** — warns, installs everything.
+- **npm** (v7+): warns, installs everything.
+- **yarn classic** (v1): warns, installs everything.
+- **bun**: warns, installs everything.
 
 **pnpm** is the exception: with `strict-peer-dependencies=true` (the default in some setups), it will refuse to install. If that happens, add this to the root of your project:
 
@@ -55,7 +55,7 @@ Then run `yarn install` again. Once `better-auth` bumps its peer range to the Dr
 
 The Typebase CLI uses `esbuild` to transpile your server before deploying. `esbuild` ships a native binary and runs a post-install script to place the right one for your platform. Some package managers block post-install scripts by default, so the binary never lands and the CLI errors out the first time you run `npx typebase-io-cli deploy` or `npx typebase-io-cli generate-server`.
 
-**pnpm** (v9+) is the most common case — it prints something like:
+**pnpm** (v9+) is the most common case. It prints something like:
 
 ```
 ╭ Warning ─────────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ Then re-run `pnpm install` so the binary downloads.
 enableScripts: true
 ```
 
-Or, more scoped, use `supportedArchitectures` / `packageExtensions` to whitelist `esbuild` specifically — see the [Yarn docs](https://yarnpkg.com/configuration/yarnrc#enableScripts) for the narrower options.
+Or, more scoped, use `supportedArchitectures` / `packageExtensions` to whitelist `esbuild` specifically. See the [Yarn docs](https://yarnpkg.com/configuration/yarnrc#enableScripts) for the narrower options.
 
 **bun** allows build scripts by default, but if you've locked them down with `trustedDependencies`, add `esbuild`:
 
@@ -114,7 +114,7 @@ The `_generated/` folder is a snapshot taken the last time you ran `npx typebase
 npx typebase-io-cli codegen
 ```
 
-You don't need to re-run codegen when you only change the contents of an existing file — the action body, schema columns, or auth options will pick up automatically the next time you build.
+You don't need to re-run codegen when you only change the contents of an existing file. The action body, schema columns, or auth options will pick up automatically the next time you build.
 
 ### Codegen fails with "cannot find module" or path errors
 
@@ -127,17 +127,17 @@ Two things to check:
 1. You have a `typebase/db/schema.ts` file. The `db` client is only injected when one exists.
 2. You ran `npx typebase-io-cli codegen` after creating it. The action builder is regenerated based on what files exist.
 
-The same applies to `auth` — it requires a `typebase/auth.ts` file plus a fresh codegen run.
+The same applies to `auth`. It requires a `typebase/auth.ts` file plus a fresh codegen run.
 
 ## Deployment
 
 ### "Schema changes are destructive" prompt I didn't expect
 
-The CLI flags any change that drops a table, drops a column, or renames a column. If you're seeing this when you didn't intend to lose data, it usually means a schema edit was unintentional — for example, you renamed a column without telling Drizzle (Drizzle sees this as a drop + add). Cancel the prompt, restore the old name, and run `npx typebase-io-cli deploy` again.
+The CLI flags any change that drops a table, drops a column, or renames a column. If you're seeing this when you didn't intend to lose data, it usually means a schema edit was unintentional. For example, you renamed a column without telling Drizzle (Drizzle sees this as a drop + add). Cancel the prompt, restore the old name, and run `npx typebase-io-cli deploy` again.
 
 ### Deploy succeeds but my server can't reach the database
 
-The CLI sets `DATABASE_URL` on your provider on the first deploy. If you've rotated the Neon connection string or moved branches manually, the value on your provider may be stale. Check the current value — use `dev` or `prod` depending on the environment that's failing:
+The CLI sets `DATABASE_URL` on your provider on the first deploy. If you've rotated the Neon connection string or moved branches manually, the value on your provider may be stale. Check the current value with `dev` or `prod` depending on the environment that's failing:
 
 ```npm
 npx typebase-io-cli env dev get DATABASE_URL
@@ -157,11 +157,11 @@ npx typebase-io-cli env dev add DATABASE_URL <new-value>
 npx typebase-io-cli env prod add DATABASE_URL <new-value>
 ```
 
-If `env get` prints `ENCRYPTED`, the provider is hiding the raw secret. In that case, check or replace the value from the original source instead — usually your provider dashboard or Neon project settings.
+If `env get` prints `ENCRYPTED`, the provider is hiding the raw secret. In that case, check or replace the value from the original source instead, usually your provider dashboard or Neon project settings.
 
 ### Deploy fails partway through
 
-`npx typebase-io-cli deploy` runs several steps in sequence. If it fails between steps, the partial state is usually safe to retry — the CLI is idempotent for the early steps (codegen, generate-server, transpile) and the destructive ones (schema push, deploy) are gated on the previous step succeeding. Re-run the same command.
+`npx typebase-io-cli deploy` runs several steps in sequence. If it fails between steps, the partial state is usually safe to retry. The CLI is idempotent for the early steps (codegen, generate-server, transpile) and the destructive ones (schema push, deploy) are gated on the previous step succeeding. Re-run the same command.
 
 If it keeps failing on the same step, run that step in isolation to see the underlying error:
 
@@ -171,7 +171,7 @@ If it keeps failing on the same step, run that step in isolation to see the unde
 
 ### Provider authentication expired
 
-Vercel, Cloudflare, and Deno all use short-lived tokens. If you suddenly get 401s during deploy, log in again — the CLI will prompt you. There's no separate "logout" step; just re-run `npx typebase-io-cli deploy` and authenticate when asked.
+Vercel, Cloudflare, and Deno all use short-lived tokens. If you suddenly get 401s during deploy, log in again. The CLI will prompt you. There's no separate "logout" step; just re-run `npx typebase-io-cli deploy` and authenticate when asked.
 
 ### Deno Deploy returns "502 Server Error"
 
@@ -192,9 +192,9 @@ When deploying to Deno Deploy you may occasionally see an HTML response like thi
 </html>
 ```
 
-This is returned by Deno Deploy's API gateway, typically when you've hit a rate limit on their side. Wait ~30 seconds and re-run the command — most of the time the next attempt goes through.
+This is returned by Deno Deploy's API gateway, typically when you've hit a rate limit on their side. Wait ~30 seconds and re-run the command. Most of the time the next attempt goes through.
 
-If you're hitting this repeatedly and it's blocking your workflow, the simplest fix is to switch to another provider. Typebase also supports [Vercel](/docs/cli/deploy#vercel) and [Cloudflare Workers](/docs/cli/deploy#cloudflare-workers) — point your `typebase.json` at one of them and re-deploy.
+If you're hitting this repeatedly and it's blocking your workflow, the simplest fix is to switch to another provider. Typebase also supports [Vercel](/docs/cli/deploy#vercel) and [Cloudflare Workers](/docs/cli/deploy#cloudflare-workers). Point your `typebase.json` at one of them and re-deploy.
 
 ### Cloudflare Workers: "Worker exceeded CPU time limit."
 
@@ -231,7 +231,7 @@ Move the expensive part off the request path (queue + Durable Object + scheduled
 
 #### 3. Replace the auth password hasher with Node's `scrypt`
 
-The most common cause of this error is **password hashing during sign-up / sign-in**. better-auth's default scrypt implementation is pure JavaScript, which burns a lot of CPU time on Workers. Node's built-in `node:crypto.scryptSync` is implemented in native code via OpenSSL and runs orders of magnitude faster — fast enough to fit comfortably under the Workers Paid limit (and sometimes even under the Free limit).
+The most common cause of this error is **password hashing during sign-up / sign-in**. better-auth's default scrypt implementation is pure JavaScript, which burns a lot of CPU time on Workers. Node's built-in `node:crypto.scryptSync` is implemented in native code via OpenSSL and runs orders of magnitude faster, fast enough to fit comfortably under the Workers Paid limit (and sometimes even under the Free limit).
 
 Cloudflare Workers expose `node:crypto` via the Node.js compatibility flag, which Typebase enables by default for Cloudflare deployments.
 
@@ -261,13 +261,13 @@ export const auth = defineAuth({
 });
 ```
 
-Note that swapping the hasher means existing users hashed with the old implementation won't be able to log in until they reset their password — so do this before you have real users.
+Note that swapping the hasher means existing users hashed with the old implementation won't be able to log in until they reset their password, so do this before you have real users.
 
 ## Database
 
 ### "Relation does not exist" when querying
 
-You added a table to `schema.ts` but haven't pushed the schema to the database branch you're querying. Push to the target that's failing — `dev` is the common case, but the same issue happens on `prod` if you deploy code that references a table you never pushed there:
+You added a table to `schema.ts` but haven't pushed the schema to the database branch you're querying. Push to the target that's failing. `dev` is the common case, but the same issue happens on `prod` if you deploy code that references a table you never pushed there:
 
 ```npm
 npx typebase-io-cli db dev push
@@ -277,7 +277,7 @@ npx typebase-io-cli db dev push
 npx typebase-io-cli db prod push
 ```
 
-Or just deploy — `npx typebase-io-cli deploy dev` / `npx typebase-io-cli deploy prod` runs the push automatically for each target.
+Or just deploy: `npx typebase-io-cli deploy dev` / `npx typebase-io-cli deploy prod` runs the push automatically for each target.
 
 ### "No relations found" when using `db.query.X`
 
@@ -285,7 +285,7 @@ Every table exported from `schema.ts` must also appear in `db/relations.ts`, eve
 
 ### Schema push hangs or times out
 
-Neon free-tier branches sleep when idle and take a few seconds to wake up. The first push after a long gap can be slow. If it hangs for more than ~30 seconds, cancel and retry — the second attempt will hit the awake branch.
+Neon free-tier branches sleep when idle and take a few seconds to wake up. The first push after a long gap can be slow. If it hangs for more than ~30 seconds, cancel and retry. The second attempt will hit the awake branch.
 
 ## Auth
 
@@ -295,9 +295,9 @@ You need both `typebase/auth.ts` and `typebase/db/schema.ts` before running `aut
 
 ### Sessions don't persist on the frontend
 
-The most common cause is a missing or misconfigured proxy. Auth cookies must be set on your frontend's domain, not on your Typebase server's domain — see the proxy setup section in your framework's integration guide ([Next.js](/docs/integrations/nextjs#proxy-setup), [SvelteKit](/docs/integrations/sveltekit#proxy-setup), [Nuxt](/docs/integrations/nuxt#proxy-setup)).
+The most common cause is a missing or misconfigured proxy. Auth cookies must be set on your frontend's domain, not on your Typebase server's domain. See the proxy setup section in your framework's integration guide ([Next.js](/docs/integrations/nextjs#proxy-setup), [SvelteKit](/docs/integrations/sveltekit#proxy-setup), [Nuxt](/docs/integrations/nuxt#proxy-setup)).
 
-If you're using Expo, sessions are stored in `SecureStore` instead of cookies — make sure the `expoClient` plugin is wired up on the client and the `expo()` plugin is in your `auth.ts`.
+If you're using Expo, sessions are stored in `SecureStore` instead of cookies. Make sure the `expoClient` plugin is wired up on the client and the `expo()` plugin is in your `auth.ts`.
 
 ### "Origin not trusted" errors
 
@@ -313,7 +313,7 @@ For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://*
 
 ### `generate-server` output is stale
 
-The generated server in `typebase/_server/` is a snapshot — it doesn't watch your files. Re-run `npx typebase-io-cli generate-server` and restart the local server every time you change anything inside `typebase/`. If you find yourself doing this constantly, deploying to dev is usually the smoother loop — see [Work locally](/docs/work-locally).
+The generated server in `typebase/_server/` is a snapshot. It doesn't watch your files. Re-run `npx typebase-io-cli generate-server` and restart the local server every time you change anything inside `typebase/`. If you find yourself doing this constantly, deploying to dev is usually the smoother loop. See [Work locally](/docs/work-locally).
 
 ### Local server starts but my frontend can't reach it
 
@@ -321,7 +321,7 @@ Three things to check:
 
 1. `TYPEBASE_APP_URL` in your frontend's `.env` points to `http://localhost:8080` (or whichever port your local server uses).
 2. If you have an `auth.ts`, your frontend's local origin is in `trustedOrigins`.
-3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` — `DATABASE_URL` (prod branch) and `DATABASE_URL_DEV` (dev branch) — so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL` — if that returns `ENCRYPTED`, grab the value from the Neon console instead.
+3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` (`DATABASE_URL` for the prod branch and `DATABASE_URL_DEV` for the dev branch) so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL`. If that returns `ENCRYPTED`, grab the value from the Neon console instead.
 
 ## Still stuck?
 

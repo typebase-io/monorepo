@@ -1,12 +1,12 @@
 ---
 title: Expo
-description: Set up Typebase with Expo — TanStack Query client setup and authentication with SecureStore.
+description: Set up Typebase with Expo, including TanStack Query client setup and authentication with SecureStore.
 ---
 
-Expo is a client-only environment — there's no server-side rendering, so all calls to your Typebase server happen from the device. Typebase uses `createTanstackQueryClient` as the standard client for Expo, giving you caching, loading states, and automatic refetching via [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview).
+Expo is a client-only environment: there's no server-side rendering, so all calls to your Typebase server happen from the device. Typebase uses `createTanstackQueryClient` as the standard client for Expo, giving you caching, loading states, and automatic refetching via [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview).
 
 <Callout type="info">
-  The examples below show one common way to integrate Typebase with Expo. They're a starting point, not a requirement — Typebase doesn't impose any
+  The examples below show one common way to integrate Typebase with Expo. They're a starting point, not a requirement. Typebase doesn't impose any
   project structure, so feel free to adapt the patterns to fit your app's conventions or pick only what's useful.
 </Callout>
 
@@ -118,13 +118,13 @@ export default function AddTodoScreen() {
   Authentication requires an `auth.ts` file in your Typebase project. See the [Authentication guide](/docs/auth) to set it up.
 </Callout>
 
-Expo uses better-auth's `expoClient` plugin, which handles session storage using `expo-secure-store` instead of cookies. There's no proxy needed — the auth client talks directly to your Typebase server.
+Expo uses better-auth's `expoClient` plugin, which handles session storage using `expo-secure-store` instead of cookies. There's no proxy needed: the auth client talks directly to your Typebase server.
 
 ### Setup
 
 <Callout type="warn">
   The Expo scheme you set in `app.json` (for example `"scheme": "myapp"`) must match `trustedOrigins` in `auth.ts` (`'myapp://'`) **and** the `scheme`
-  / `storagePrefix` values passed to `expoClient` below. If any of the three drifts, auth will fail silently — the snippets in this section use
+  / `storagePrefix` values passed to `expoClient` below. If any of the three drifts, auth will fail silently. The snippets in this section use
   `myapp` everywhere; replace it with your own scheme in all three places.
 </Callout>
 
@@ -174,7 +174,7 @@ export const authClient = createAuthClient({
 });
 ```
 
-The `expoClient` plugin handles session persistence in `SecureStore`. `scheme` and `storagePrefix` must match the scheme you set in `app.json` — see the callout at the top of this section.
+The `expoClient` plugin handles session persistence in `SecureStore`. `scheme` and `storagePrefix` must match the scheme you set in `app.json`; see the callout at the top of this section.
 
 #### Update your client
 
@@ -273,13 +273,13 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target — `TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev` — so both can coexist. Expo requires a different prefix for variables exposed to the app — add this to your `.env` file:
+After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist. Expo requires a different prefix for variables exposed to the app, so add this to your `.env` file:
 
 ```bash title=".env"
 EXPO_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
 ```
 
-When developing locally, point the public variable at whichever target you want — typically the dev deployment:
+When developing locally, point the public variable at whichever target you want, typically the dev deployment:
 
 ```bash title=".env"
 EXPO_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_DEV

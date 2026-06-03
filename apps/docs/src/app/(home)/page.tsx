@@ -23,7 +23,7 @@ const jsonLd = {
       '@id': `${SITE_URL}/#website`,
       url: SITE_URL,
       name: 'Typebase',
-      description: 'A type-safe backend you write as TypeScript files inside your existing repo.',
+      description: 'A type-safe backend you write as TypeScript files inside your existing app.',
       publisher: { '@id': `${SITE_URL}/#organization` },
       inLanguage: 'en-US',
     },
@@ -33,7 +33,7 @@ const jsonLd = {
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Cross-platform',
       description:
-        'Write your actions, database schema, and auth as TypeScript files. Run one command. Your frontend calls them like local functions — end-to-end typed, zero REST boilerplate.',
+        'Write your actions, database schema, and auth as TypeScript files. Run one command. Your frontend calls them like local functions, end-to-end typed, zero REST boilerplate.',
       url: SITE_URL,
       offers: {
         '@type': 'Offer',

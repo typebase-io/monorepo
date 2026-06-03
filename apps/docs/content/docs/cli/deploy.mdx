@@ -5,9 +5,9 @@ description: Deploy your Typebase server to the cloud with a single command.
 
 The `npx typebase-io-cli deploy` command builds your server, pushes your database schema, and deploys everything to the cloud. Typebase supports three deployment providers:
 
-- **[Vercel](https://vercel.com/)** — Serverless functions
-- **[Cloudflare Workers](https://workers.cloudflare.com/)** — Edge computing
-- **[Deno Deploy](https://deno.com/deploy)** — Edge runtime
+- **[Vercel](https://vercel.com/)**: serverless functions
+- **[Cloudflare Workers](https://workers.cloudflare.com/)**: edge computing
+- **[Deno Deploy](https://deno.com/deploy)**: edge runtime
 
 ## Quick start
 
@@ -41,13 +41,13 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 3. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
 4. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
 5. **Deploys the server**: Uploads the built server to your chosen provider.
-6. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target — each environment (`dev`, `prod`) holds its own value.
+6. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value.
 7. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
 
 <Callout type="warn">
   Schema changes are applied (step 4) before the new server code is live (step 5). This is normal for most deployment workflows, but it means the
   previous version of your server briefly runs against the new schema. For destructive changes in `prod` (dropped columns, renamed tables), design
-  your schema migrations so the old code keeps working — typically by rolling out additive changes first, then removing the old fields in a later
+  your schema migrations so the old code keeps working, typically by rolling out additive changes first, then removing the old fields in a later
   deploy.
 </Callout>
 
@@ -166,7 +166,7 @@ After a successful deploy, the CLI prints the deployment URL:
 Deployment URL: https://your-project.vercel.app
 ```
 
-This URL is also saved to your `.env` file. The key depends on the target — `TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev` — so both can coexist:
+This URL is also saved to your `.env` file. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist:
 
 ```
 TYPEBASE_APP_URL=https://your-project.vercel.app

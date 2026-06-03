@@ -9,17 +9,17 @@ description: Install Typebase and make your first server call.
   <Card
     href="https://nodejs.org"
     title="Node.js 20+"
-    description="18 works, 20+ recommended. The latest LTS is ideal — it matches what the CLI, Neon, and the popular deploy targets are tested against."
+    description="18 works, 20+ recommended. The latest LTS is ideal. It matches what the CLI, Neon, and the popular deploy targets are tested against."
   />
   <Card
     title="A package manager"
-    description="npm, pnpm, yarn, or bun — anything that reads a package.json. The CLI auto-detects which one your project uses."
+    description="npm, pnpm, yarn, or bun. Anything that reads a package.json works. The CLI auto-detects which one your project uses."
   />
 </Cards>
 
 ## Install
 
-Typebase is split into two packages. **`typebase-io`** is the core library — it provides the `action` builder for your server code and the client utilities for your frontend. **`typebase-io-cli`** is the CLI tool that handles code generation, schema pushes to your database, and deployment.
+Typebase is split into two packages. **`typebase-io`** is the core library. It provides the `action` builder for your server code and the client utilities for your frontend. **`typebase-io-cli`** is the CLI tool that handles code generation, schema pushes to your database, and deployment.
 
 ```package-install
 typebase-io
@@ -49,9 +49,9 @@ This lets you run CLI commands through your package manager (`npx typebase-io-cl
       <strong>Using CommonJS?</strong>
     </summary>
 
-    Typebase ships two CLI binaries: `typebase-io-cli` (ESM) and `typebase-io-cli-cjs` (CommonJS). Use `typebase-io-cli` if your project has `"type": "module"` in `package.json` — this is the default for most modern setups (Next.js 14+, Vite, SvelteKit, Nuxt 3).
+    Typebase ships two CLI binaries: `typebase-io-cli` (ESM) and `typebase-io-cli-cjs` (CommonJS). Use `typebase-io-cli` if your project has `"type": "module"` in `package.json`. This is the default for most modern setups (Next.js 14+, Vite, SvelteKit, Nuxt 3).
 
-If your project still uses CommonJS — either you don't set `"type"` in `package.json`, or you set it to `"commonjs"` explicitly — use `typebase-io-cli-cjs` instead. The two binaries are functionally identical; the only difference is which module system they're built with, so they can interop cleanly with the rest of your project.
+If your project still uses CommonJS (either you don't set `"type"` in `package.json`, or you set it to `"commonjs"` explicitly), use `typebase-io-cli-cjs` instead. The two binaries are functionally identical; the only difference is which module system they're built with, so they can interop cleanly with the rest of your project.
 
 ```json title="package.json"
 {
@@ -61,7 +61,7 @@ If your project still uses CommonJS — either you don't set `"type"` in `packag
 }
 ```
 
-You only need to make this choice once. Everything inside your `typebase/` directory (actions, schema, auth) is always written in TypeScript and is compiled to whatever your deployment target needs — your project's module system doesn't change anything there.
+You only need to make this choice once. Everything inside your `typebase/` directory (actions, schema, auth) is always written in TypeScript and is compiled to whatever your deployment target needs. Your project's module system doesn't change anything there.
 
   </details>
 </Callout>

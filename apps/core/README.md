@@ -6,7 +6,7 @@
 
 ## What is Typebase?
 
-Typebase lets you write your backend as a `typebase/` folder inside your existing repo. You define:
+Typebase lets you write your backend as a `typebase/` folder inside your existing app. You define:
 
 - **Tables** in `db/schema.ts` (Drizzle ORM)
 - **Actions** in `actions/` — typed server functions with input and output validation

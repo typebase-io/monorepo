@@ -7,7 +7,7 @@ After modifying your schema, you need to push the changes to your database so th
 
 ## Dev and prod are separate branches
 
-Typebase provisions two independent Neon branches inside the same project — one for `dev` and one for `prod`. Each branch has its own data, so you can iterate on your schema freely in development without risking your production data. Always test schema changes in dev before pushing to prod.
+Typebase provisions two independent Neon branches inside the same project: one for `dev` and one for `prod`. Each branch has its own data, so you can iterate on your schema freely in development without risking your production data. Always test schema changes in dev before pushing to prod.
 
 ## Pushing changes
 
@@ -23,19 +23,19 @@ Push to your prod database:
 npx typebase-io-cli db prod push
 ```
 
-You don't need to run this manually every time — `npx typebase-io-cli deploy dev` and `npx typebase-io-cli deploy prod` automatically push your schema changes as part of the deployment process. So if you're deploying anyway, your database will always be in sync with your schema without any extra steps.
+You don't need to run this manually every time. `npx typebase-io-cli deploy dev` and `npx typebase-io-cli deploy prod` automatically push your schema changes as part of the deployment process. So if you're deploying anyway, your database will always be in sync with your schema without any extra steps.
 
 ## Environment variables
 
 The first time you push, the CLI provisions a Neon project (and the target branch if it doesn't exist yet) and stores the connection string in your project-root `.env`:
 
-- **In your project-root `.env`** — under `DATABASE_URL` for prod and `DATABASE_URL_DEV` for dev, so both connection strings can coexist in a single local file.
+- **In your project-root `.env`**: under `DATABASE_URL` for prod and `DATABASE_URL_DEV` for dev, so both connection strings can coexist in a single local file.
 
 Provider environment variables are synced during [`npx typebase-io-cli deploy`](/docs/cli/deploy). On the provider, the deployed server always reads `DATABASE_URL`; each environment (`dev`, `prod`) gets its own value.
 
 ## Destructive changes
 
-If a schema change would destroy existing data — such as dropping a table or removing a column — the CLI will detect this and warn you before proceeding:
+If a schema change would destroy existing data (such as dropping a table or removing a column), the CLI will detect this and warn you before proceeding:
 
 ```
 ⚠ The following changes are destructive:
@@ -44,19 +44,19 @@ If a schema change would destroy existing data — such as dropping a table or r
 ? Are you sure you want to continue? (y/N)
 ```
 
-The CLI will not apply destructive changes without your confirmation. In production, treat these warnings carefully — dropped columns and tables cannot be recovered.
+The CLI will not apply destructive changes without your confirmation. In production, treat these warnings carefully. Dropped columns and tables cannot be recovered.
 
 ## Viewing your data in Neon
 
-Every Typebase database lives in a [Neon](https://neon.tech) project. You can log in to the [Neon console](https://console.neon.tech) to browse your data visually — inspect tables, run ad-hoc `SELECT` queries, check indexes, and switch between the `dev` and `prod` branches.
+Every Typebase database lives in a [Neon](https://neon.tech) project. You can log in to the [Neon console](https://console.neon.tech) to browse your data visually: inspect tables, run ad-hoc `SELECT` queries, check indexes, and switch between the `dev` and `prod` branches.
 
 <Callout type="warn">
   **Don't edit your schema from the Neon UI.** Your `typebase/db/schema.ts` is the source of truth. If you add a column, rename a table, or change a
-  constraint directly in Neon, the next `npx typebase-io-cli db push` will detect the drift and try to "correct" it back to what `schema.ts` describes
-  — which usually means reverting your change, and in some cases failing the push outright.
+  constraint directly in Neon, the next `npx typebase-io-cli db push` will detect the drift and try to "correct" it back to what `schema.ts` describes,
+  which usually means reverting your change, and in some cases failing the push outright.
 </Callout>
 
-The Neon UI is fine — and useful — for:
+The Neon UI is fine (and useful) for:
 
 - Reading data and running queries
 - Debugging a specific row or running a one-off data fix

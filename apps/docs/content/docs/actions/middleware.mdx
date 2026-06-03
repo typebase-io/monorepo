@@ -57,10 +57,10 @@ export const authedAction = action.use(async ({ reqHeaders, auth }) => {
 
 Let's break this down:
 
-1. **`reqHeaders`** — The request headers are automatically available in the context (provided by Typebase's built-in `RequestHeadersPlugin`). This contains the cookies needed to verify the session.
-2. **`auth.api.getSession()`** — Uses better-auth to validate the session from the request headers.
-3. **`throw new ServerError('UNAUTHORIZED')`** — If the session is invalid, the action returns a 401 error and the handler never runs.
-4. **`return { user }`** — If the session is valid, the user object is added to the context for the handler to use.
+1. **`reqHeaders`**: the request headers are automatically available in the context (provided by Typebase's built-in `RequestHeadersPlugin`). This contains the cookies needed to verify the session.
+2. **`auth.api.getSession()`**: uses better-auth to validate the session from the request headers.
+3. **`throw new ServerError('UNAUTHORIZED')`**: if the session is invalid, the action returns a 401 error and the handler never runs.
+4. **`return { user }`**: if the session is valid, the user object is added to the context for the handler to use.
 
 ## Using the authenticated action
 
@@ -92,7 +92,7 @@ export const create = authedAction
   });
 ```
 
-The `user` property is fully typed — your IDE will autocomplete the user fields like `user.id`, `user.name`, `user.email`, etc.
+The `user` property is fully typed. Your IDE will autocomplete the user fields like `user.id`, `user.name`, `user.email`, etc.
 
 ## Chaining middleware
 
@@ -127,6 +127,6 @@ The base context available in every `.use()` function is built from your project
 | `auth`       | `auth.ts` exists            | The better-auth instance      |
 | `reqHeaders` | Always (may be `undefined`) | Incoming request headers      |
 
-Note that `input` is not available in middleware — it is only injected into `.handler()` when `.input()` has been defined on the action.
+Note that `input` is not available in middleware. It is only injected into `.handler()` when `.input()` has been defined on the action.
 
 Any properties you return from a `.use()` function are merged into the context and become available in all subsequent `.use()` calls and the final `.handler()`.

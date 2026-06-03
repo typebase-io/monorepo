@@ -58,7 +58,7 @@ export function RlsProblem() {
                   <span className="h-2.5 w-2.5 rounded-full bg-red-400/60" />
                   <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/60" />
                   <span className="h-2.5 w-2.5 rounded-full bg-green-400/60" />
-                  <span className="ml-3 hidden font-mono text-xs text-fd-muted-foreground sm:inline">app.supabase.com — auth / policies</span>
+                  <span className="ml-3 hidden font-mono text-xs text-fd-muted-foreground sm:inline">app.supabase.com / auth / policies</span>
                 </div>
                 <span className="rounded bg-fd-primary/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-fd-primary">dashboard</span>
               </div>
