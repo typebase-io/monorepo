@@ -58,7 +58,7 @@ export const init = new Command('init')
       generateTsConfig({ path: tsConfigFilePath, addWarning: true }),
       withAuth ? generateExampleAuth(exampleAuthPath) : Promise.resolve(),
       skipExample ? Promise.resolve() : generateExampleSchema({ path: exampleSchemaPath, withAuth }),
-      skipExample ? Promise.resolve() : generateExampleRelations(exampleRelationsPath),
+      skipExample ? Promise.resolve() : generateExampleRelations({ path: exampleRelationsPath, withAuth }),
       skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth }),
     ]);
 

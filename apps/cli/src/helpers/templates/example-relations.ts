@@ -1,7 +1,16 @@
-export const exampleRelationsTemplate = `import { q } from "typebase-io/db";
+export const exampleRelationsTemplate = (withAuth: boolean) => `import { q } from "typebase-io/db";
 
 import * as schema from "./schema.ts";
 
 export const relations = q.defineRelations(schema, (r) => ({
-  todos: {},
+  todos: {${
+    withAuth
+      ? `
+    user: r.one.users({
+      from: r.todos.userId,
+      to: r.users.id,
+    }),
+  `
+      : ''
+  }},
 }));`;
