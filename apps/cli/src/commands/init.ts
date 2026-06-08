@@ -15,6 +15,8 @@ import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { baseRelationsTemplate } from '#helpers/templates/base-relations.ts';
+import { baseSchemaTemplate } from '#helpers/templates/base-schema.ts';
 
 export const init = new Command('init')
   .summary('Create a basic Typebase project structure')
@@ -57,8 +59,10 @@ export const init = new Command('init')
     await Promise.all([
       generateTsConfig({ path: tsConfigFilePath, addWarning: true }),
       withAuth ? generateExampleAuth(exampleAuthPath) : Promise.resolve(),
-      skipExample ? Promise.resolve() : generateExampleSchema({ path: exampleSchemaPath, withAuth }),
-      skipExample ? Promise.resolve() : generateExampleRelations({ path: exampleRelationsPath, withAuth }),
+      skipExample ? fs.writeFile(exampleSchemaPath, `${baseSchemaTemplate}\n`) : generateExampleSchema({ path: exampleSchemaPath, withAuth }),
+      skipExample
+        ? fs.writeFile(exampleRelationsPath, `${baseRelationsTemplate}\n`)
+        : generateExampleRelations({ path: exampleRelationsPath, withAuth }),
       skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth }),
     ]);
 

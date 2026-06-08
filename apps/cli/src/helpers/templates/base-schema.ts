@@ -1,0 +1,3 @@
+export const baseSchemaTemplate = `// This export exists so schema.ts can be imported from relations.ts.
+// Replace it with your real tables.
+export const noop = {};`;
