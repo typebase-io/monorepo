@@ -106,6 +106,11 @@ export const buildLibrary = new Command('build-library')
             import: './dist/esm/src/client/auth/nuxt/index.js',
             require: './dist/cjs/src/client/auth/nuxt/index.js',
           },
+          './client/auth-plugins': {
+            types: './dist/types/src/client/auth/plugins.d.ts',
+            import: './dist/esm/src/client/auth/plugins.js',
+            require: './dist/cjs/src/client/auth/plugins.js',
+          },
           './db': {
             types: './dist/types/src/db/index.d.ts',
             import: './dist/esm/src/db/index.js',
@@ -115,6 +120,11 @@ export const buildLibrary = new Command('build-library')
             types: './dist/types/src/server/index.d.ts',
             import: './dist/esm/src/server/index.js',
             require: './dist/cjs/src/server/index.js',
+          },
+          './server/auth-plugins': {
+            types: './dist/types/src/server/auth/plugins.d.ts',
+            import: './dist/esm/src/server/auth/plugins.js',
+            require: './dist/cjs/src/server/auth/plugins.js',
           },
         },
         dependencies: {
