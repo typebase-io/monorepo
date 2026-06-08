@@ -9,6 +9,7 @@
     "actions",
     "database",
     "auth",
+    "client",
     "generated",
     "[Deploy](/docs/cli/deploy)",
     "work-locally",

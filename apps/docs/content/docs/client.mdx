@@ -1,0 +1,110 @@
+---
+title: Client
+description: Call your Typebase server from any JavaScript or TypeScript app.
+---
+
+The client is what your frontend uses to call the actions defined in your `typebase/` directory. It's a plain TypeScript library that works in any JS/TS environment: Node, the browser, edge runtimes, and React Native.
+
+Every call is just a function call. The types come straight from your action's `.input()` and `.output()`, so the editor knows what you can pass in and what you'll get back without any code generation step on the client side.
+
+```ts
+const todo = await client.queries.todos.getOne({ id: 1 });
+//      ^? { id: number; value: string; completed: boolean }
+```
+
+## The three client utilities
+
+Typebase ships three client helpers, all from the `typebase-io/client` namespace. Pick the ones you need:
+
+| Utility                     | Import                                | Use for                                                            |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------------ |
+| `createRouterClient`        | `typebase-io/client`                  | Simple promise-based calls (server code, scripts, anywhere async). |
+| `createTanstackQueryClient` | `typebase-io/client`                  | Reactive UI with caching, loading states, and refetching.          |
+| `createAuthClient`          | `typebase-io/client/auth/<framework>` | Sign-in, sign-up, sign-out, and session reads on the frontend.     |
+
+You can use them together. A common setup is `createRouterClient` for server-rendered pages and `createTanstackQueryClient` for interactive client components, both pointing at the same Typebase server.
+
+## `createRouterClient`
+
+A thin wrapper around an [oRPC](https://orpc.dev) client. Every action becomes a typed async function.
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
+});
+```
+
+Then call any action like a regular function:
+
+```ts
+const todos = await client.queries.todos.getMany();
+await client.mutations.todos.create({ value: 'Buy milk' });
+```
+
+The `Router` type is generated from your `actions/` folder by [`npx typebase-io-cli codegen`](/docs/cli/codegen). The shape of the client always mirrors the folder structure (`client.queries.todos.getMany`, `client.mutations.todos.create`, and so on).
+
+## `createTanstackQueryClient`
+
+The same client, wrapped with [TanStack Query](https://tanstack.com/query) utilities so each action exposes `queryOptions`, `mutationOptions`, and helpers like `key()` for cache invalidation.
+
+```ts title="lib/typebase/client.ts"
+import { createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../typebase/_generated/server';
+
+export const client = createTanstackQueryClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+});
+```
+
+```tsx
+const { data } = useQuery(client.queries.todos.getMany.queryOptions());
+const mutation = useMutation(client.mutations.todos.create.mutationOptions());
+```
+
+The URL must be reachable from the browser, so it needs whatever prefix your framework uses for public env vars (`NEXT_PUBLIC_`, `PUBLIC_`, `EXPO_PUBLIC_`, etc.).
+
+## `createAuthClient`
+
+When your project has an `auth.ts` file, Typebase re-exports a framework-specific better-auth client so sign-in, sign-up, and session reads are wired up to your Typebase server out of the box.
+
+```ts title="lib/typebase/auth-client.ts"
+import { createAuthClient } from 'typebase-io/client/auth/react';
+
+export const authClient = createAuthClient();
+```
+
+The framework suffix changes depending on what you're using:
+
+| Framework      | Import                           |
+| -------------- | -------------------------------- |
+| React, Next.js | `typebase-io/client/auth/react`  |
+| Svelte         | `typebase-io/client/auth/svelte` |
+| Vue, Nuxt      | `typebase-io/client/auth/vue`    |
+
+The returned `authClient` is the same object documented in the [better-auth client docs](https://www.better-auth.com/docs/concepts/client). Typebase just configures it for you.
+
+## Auth helpers per framework
+
+When your app's domain differs from the Typebase server's domain (the typical setup), auth cookies need to be proxied through your app so they can be set as secure, `HttpOnly` cookies. Typebase ships small framework-specific helpers for this:
+
+| Framework | Import path                          | Exports                                                      |
+| --------- | ------------------------------------ | ------------------------------------------------------------ |
+| Next.js   | `typebase-io/client/auth/nextjs`     | `proxyToTypebase`, `getServerSession`, `getServerAuthCookie` |
+| SvelteKit | `typebase-io/client/auth/svelte-kit` | `proxyToTypebase`, `getServerSession`, `getServerAuthCookie` |
+| Nuxt      | `typebase-io/client/auth/nuxt`       | `proxyToTypebase`, `getServerSession`, `getServerAuthCookie` |
+
+See your framework's integration guide below for how to wire them up.
+
+## Framework-specific guides
+
+This page is the framework-agnostic overview. For the full setup (providers, proxies, server-side session reads, route protection, environment variables), use the guide for your framework:
+
+<Cards>
+  <Card title="Next.js" href="/docs/integrations/nextjs" description="App Router, Server Components, Server Actions, and TanStack Query." />
+  <Card title="SvelteKit" href="/docs/integrations/sveltekit" description="Load functions, form actions, hooks, and Svelte Query." />
+  <Card title="Nuxt" href="/docs/integrations/nuxt" description="Server routes, middleware, and Vue Query." />
+  <Card title="Expo" href="/docs/integrations/expo" description="React Native client setup with TanStack Query." />
+</Cards>
