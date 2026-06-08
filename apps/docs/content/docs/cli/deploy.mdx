@@ -37,12 +37,13 @@ After the first deploy, the CLI remembers your choices in `typebase.json`, so fu
 When you run `npx typebase-io-cli deploy`, the CLI performs these steps automatically:
 
 1. **Validates your TypeScript**: Checks for type errors in your `typebase/` directory.
-2. **Generates server files**: Builds the server code from your actions, schema, and auth config.
-3. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
-4. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
-5. **Deploys the server**: Uploads the built server to your chosen provider.
-6. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value.
-7. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
+2. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand before deploying.
+3. **Generates server files**: Builds the server code from your actions, schema, and auth config.
+4. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
+5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
+6. **Deploys the server**: Uploads the built server to your chosen provider.
+7. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value.
+8. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
 
 <Callout type="warn">
   Schema changes are applied (step 4) before the new server code is live (step 5). This is normal for most deployment workflows, but it means the

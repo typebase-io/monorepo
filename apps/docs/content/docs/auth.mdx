@@ -74,6 +74,41 @@ export const auth = defineAuth({
 });
 ```
 
+### Plugins
+
+Every built-in better-auth plugin is re-exported through Typebase so you don't have to depend on `better-auth` directly. Import server plugins from `typebase-io/server/auth-plugins` and pass them to `defineAuth`:
+
+```ts title="typebase/auth.ts"
+import { defineAuth } from 'typebase-io/server';
+import { admin, magicLink } from 'typebase-io/server/auth-plugins';
+
+export const auth = defineAuth({
+  trustedOrigins: ['http://localhost:3000'],
+  emailAndPassword: { enabled: true },
+  plugins: [
+    admin(),
+    magicLink({
+      sendMagicLink: async ({ email, url }) => {
+        // send the link via your mailer of choice
+      },
+    }),
+  ],
+});
+```
+
+Wire the matching client plugins through `typebase-io/client/auth-plugins`:
+
+```ts title="lib/typebase/auth-client.ts"
+import { createAuthClient } from 'typebase-io/client/auth/react';
+import { adminClient, magicLinkClient } from 'typebase-io/client/auth-plugins';
+
+export const authClient = createAuthClient({
+  plugins: [adminClient(), magicLinkClient()],
+});
+```
+
+Both paths re-export `better-auth/plugins` and `better-auth/client/plugins` directly, so every plugin documented in the [better-auth plugin reference](https://www.better-auth.com/docs/plugins/admin) is available. Plugins shipped in separate packages (for example `@better-auth/expo`) are still imported from their own package.
+
 ## Step 2: Generate auth tables
 
 Run the `auth generate` command to automatically add the required authentication tables (`users`, `sessions`, `accounts`, `verifications`) to your database schema:
