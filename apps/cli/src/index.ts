@@ -11,6 +11,8 @@ import { env } from '#commands/env.ts';
 import { generateServer } from '#commands/generate-server.ts';
 import { init } from '#commands/init.ts';
 
+import { isTypebaseIoInstalled } from '#helpers/shared/is-typebase-io-installed.ts';
+
 const main = async () => {
   const program = new Command();
 
@@ -18,6 +20,17 @@ const main = async () => {
     .name('typebase-io-cli')
     .usage('<command> [options]')
     .description('Start developing with Typebase by running `npx typebase-io-cli init`.')
+    .hook('preSubcommand', (_program, subcommand) => {
+      if (subcommand.name() === 'env' || isTypebaseIoInstalled()) {
+        return;
+      }
+
+      subcommand.error(
+        chalkStderr.red(
+          `\`${subcommand.name()}\` needs the \`typebase-io\` package, but it is not installed. Install it first (e.g. \`npm install typebase-io\`), then run this command again.`
+        )
+      );
+    })
     .addCommand(init)
     .addCommand(codegen)
     .addCommand(generateServer)
