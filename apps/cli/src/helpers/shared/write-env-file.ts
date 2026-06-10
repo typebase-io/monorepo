@@ -1,13 +1,17 @@
+import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { readEnvFile } from '#helpers/shared/read-env-file.ts';
-
 export const writeEnvFile = async (name: string, value: string) => {
   const envPath = path.resolve('.env');
-  const env = readEnvFile();
+  const content = existsSync(envPath) ? await fs.readFile(envPath, 'utf8') : '';
 
-  const lines = Object.entries({ ...env, [name]: value }).map(([key, value]) => `${key}=${value}`);
+  const line = `${name}=${value}`;
+  const existingLine = new RegExp(`^(?:export[ \\t]+)?${name}[ \\t]*=.*$`, 'm');
 
-  await fs.writeFile(envPath, lines.join('\n') + '\n', 'utf8');
+  const next = existingLine.test(content)
+    ? content.replace(existingLine, line)
+    : `${content === '' || content.endsWith('\n') ? content : `${content}\n`}${line}\n`;
+
+  await fs.writeFile(envPath, next, 'utf8');
 };
