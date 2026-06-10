@@ -28,9 +28,9 @@ export function Hero() {
             <span>AI loves code</span>
           </p>
 
-          <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
+          <h1 className="mt-6 text-balance text-3xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
             Your backend is
-            <span className="mt-2 block text-5xl text-fd-primary sm:mt-3 sm:text-7xl">a folder of TypeScript</span>
+            <span className="mt-2 block text-balance text-3xl text-fd-primary sm:mt-3 sm:text-7xl">a folder of TypeScript</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">
@@ -58,7 +58,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="mt-20 grid gap-6 lg:grid-cols-[1fr_auto_1fr] items-stretch">
+        <div className="mt-10 sm:mt-20 grid gap-6 lg:grid-cols-[1fr_auto_1fr] items-stretch">
           <CodeCard title="typebase/actions/queries/todos.ts" label="server">
             <Line>
               <K>import</K> {`{ `}
