@@ -30,6 +30,7 @@ const main = async () => {
     await program.parseAsync(process.argv);
   } catch (e) {
     console.error(chalkStderr.red(`Unexpected Error: ${e}`));
+    process.exitCode = 1;
   }
 
   process.exit();
