@@ -50,7 +50,7 @@ export const deploy = new Command('deploy')
   .addOption(new Option('--provider <provider>', 'Deployment provider').choices(serverProviders))
   .allowExcessArguments(false)
   .action(async (target, options) => {
-    const { projectPath, serverProvider } = await getTypebaseConfig();
+    const { projectPath, serverProvider, server } = await getTypebaseConfig();
 
     const provider = await match(options.provider)
       .with(undefined, () => {
@@ -111,6 +111,7 @@ export const deploy = new Command('deploy')
       tsConfigFilePath,
       skipErrors: false,
       quiet: false,
+      excludeDirPaths: [path.resolve(typebaseDirPath, server.outDir)],
     });
 
     const codegenSpinner = ora('Generating types...').start();

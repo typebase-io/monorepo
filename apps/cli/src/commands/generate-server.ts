@@ -71,6 +71,7 @@ export const generateServer = new Command('generate-server')
       tsConfigFilePath,
       skipErrors: false,
       quiet: false,
+      excludeDirPaths: [serverDistDirPath, path.resolve(typebaseDirPath, server.outDir)],
     });
 
     const spinner = ora('Generating server files...').start();
