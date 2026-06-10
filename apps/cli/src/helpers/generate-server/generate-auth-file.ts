@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { Project, SyntaxKind } from 'ts-morph';
+import { IndentationText, Project, SyntaxKind } from 'ts-morph';
 import { match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
@@ -18,7 +18,7 @@ export const generateAuthFile = async ({
   useTs: boolean;
   provider: ServerProvider | undefined;
 }) => {
-  const project = new Project({ skipAddingFilesFromTsConfig: true });
+  const project = new Project({ skipAddingFilesFromTsConfig: true, manipulationSettings: { indentationText: IndentationText.TwoSpaces } });
   const sourceFile = project.addSourceFileAtPath(authFilePath);
 
   const allowedHosts = match(provider)

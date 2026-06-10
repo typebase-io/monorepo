@@ -44,7 +44,7 @@ export const generateIndex = async ({
     exportable: false,
   });
 
-  const routerCode = `${routerImports}\n\n ${router}`;
+  const routerCode = [routerImports, router].filter(Boolean).join('\n\n');
 
   let indexFile = match(adapter)
     .with('node', () => nodeIndexFileTemplate(routerCode, port, hasAuth, trustedOrigins))
