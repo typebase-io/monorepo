@@ -7,7 +7,7 @@ export const todos = p.pgTable("todos", {
   completed: p.boolean().notNull(),
   ${
     withAuth
-      ? "userId: p.text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),\n  createdAt: p.timestamp().notNull().defaultNow(),"
+      ? 'userId: p.text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),\n  createdAt: p.timestamp().notNull().defaultNow(),'
       : 'createdAt: p.timestamp().notNull().defaultNow(),'
   }
 });`;

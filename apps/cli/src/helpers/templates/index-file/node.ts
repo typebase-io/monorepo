@@ -35,8 +35,7 @@ export const nodeIndexFileTemplate = (routerCode: string, port: number, hasAuth:
 import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-${hasAuth ? `import { toNodeHandler } from "better-auth/node";\nimport { auth } from "./auth.ts";` : ''}
-
+${hasAuth ? `import { toNodeHandler } from "better-auth/node";\nimport { auth } from "./auth.ts";\n` : ''}
 ${routerCode}
 
 const handler = new RPCHandler(router, {
@@ -54,11 +53,7 @@ const handler = new RPCHandler(router, {
   ],
 });
 
-${corsSetup}
-
-const server = createServer(async (req, res) => {
-  ${authHandler}
-
+${corsSetup ? `${corsSetup}\n\n` : ''}const server = createServer(async (req, res) => {${authHandler ? `\n  ${authHandler}\n` : ''}
   const { matched } = await handler.handle(req, res, {
     prefix: "/rpc",
     context: {},

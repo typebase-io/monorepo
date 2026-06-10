@@ -13,16 +13,15 @@ export const serverTypesTemplate = (hasDB: boolean, hasAuth: boolean, routerImpo
     return 'ActionBuilder';
   })();
 
-  return `// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+  const declarations = [
+    'export type Router = typeof router;',
+    `export declare const action: ${actionType};`,
+    hasDB ? 'export declare const getDB: GetDBBuilder<typeof relations>;' : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 
-${imports}
+  const blocks = ['// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT', imports, routerImports, router, declarations].filter(Boolean).join('\n\n');
 
-${routerImports}
-
-${router}
-
-export type Router = typeof router;
-export declare const action: ${actionType};
-${hasDB ? 'export declare const getDB: GetDBBuilder<typeof relations>;' : ''}
-`;
+  return `${blocks}\n`;
 };
