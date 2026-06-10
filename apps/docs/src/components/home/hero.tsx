@@ -20,14 +20,22 @@ export function Hero() {
 
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-16 sm:pb-28">
         <div className="mx-auto max-w-3xl text-center">
+          <p className="inline-flex flex-wrap items-center justify-center gap-x-2 rounded-full border border-fd-primary/25 bg-fd-primary/10 px-4 py-1.5 font-mono text-xs text-fd-primary">
+            <span>Just use code</span>
+            <span aria-hidden className="text-fd-primary/50">
+              ·
+            </span>
+            <span>AI loves code</span>
+          </p>
+
           <h1 className="mt-6 text-5xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
-            Just use code
-            <span className="mt-2 block text-5xl text-fd-primary sm:mt-3 sm:text-7xl">AI loves code</span>
+            Your backend is
+            <span className="mt-2 block text-5xl text-fd-primary sm:mt-3 sm:text-7xl">a folder of TypeScript</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-fd-muted-foreground sm:text-xl">
-            Write actions, a database schema, and auth as TypeScript files in a <code>typebase/</code> folder inside your app. Your frontend calls
-            them like local functions.
+            Define your database schema, server actions, and auth in a <code>typebase/</code> folder inside your app. One command deploys a fully
+            typed server your frontend calls like local functions.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

@@ -1,6 +1,8 @@
+import { Comparison } from '#components/home/comparison.tsx';
 import { Features } from '#components/home/features.tsx';
 import { FinalCTA } from '#components/home/final-cta.tsx';
 import { Hero } from '#components/home/hero.tsx';
+import { HowItWorks } from '#components/home/how-it-works.tsx';
 import { Quotes } from '#components/home/quotes.tsx';
 import { RlsProblem } from '#components/home/rls-problem.tsx';
 import { WorksWith } from '#components/home/works-with.tsx';
@@ -49,8 +51,10 @@ export default function HomePage() {
     <main className="flex flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Hero />
-      <RlsProblem />
       <WorksWith />
+      <HowItWorks />
+      <RlsProblem />
+      <Comparison />
       <Features />
       <Quotes />
       <FinalCTA />
