@@ -91,6 +91,11 @@ npx typebase-io-cli deploy prod
 
 ## Provider setup
 
+<Callout type="warn">
+  When you log in to a provider, the CLI saves the API token it obtains (`VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, `DENO_DEPLOY_TOKEN`, `NEON_API_KEY`)
+  to your project-root `.env`. Make sure `.env` is listed in your `.gitignore` so these tokens never end up in version control.
+</Callout>
+
 ### Vercel
 
 When you deploy to Vercel for the first time:
