@@ -37,7 +37,7 @@ const createTargetCommand = (target: 'dev' | 'prod') =>
         const provider = await match(serverProvider)
           .with(undefined, () => {
             return select({
-              message: 'Select a deploy provider:',
+              message: 'Select the provider your server deploys to (used to build the schema for the right runtime):',
               choices: serverProviders.map((provider) => ({ name: provider, value: provider })),
             });
           })
