@@ -41,7 +41,7 @@ Add a `typebase` script to your `package.json`:
 }
 ```
 
-This lets you run CLI commands through your package manager (`npx typebase-io-cli init`, `npx typebase-io-cli deploy`, etc.) without installing the CLI globally. Any teammate who clones the repo and runs `npm install` will have access to the same CLI version.
+This lets you run CLI commands through your package manager, e.g. `npm run typebase init`. The script is optional: because the CLI is installed as a local dev dependency, `npx typebase-io-cli <command>` works without it (that's the form used throughout these docs). Either way, any teammate who clones the repo and runs `npm install` gets the same CLI version.
 
 <Callout type="info">
   <details>

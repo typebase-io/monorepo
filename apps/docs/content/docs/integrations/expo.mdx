@@ -16,7 +16,7 @@ Expo is a client-only environment: there's no server-side rendering, so all call
 
 ```ts title="lib/typebase/client.ts"
 import { createTanstackQueryClient } from 'typebase-io/client';
-import type { Router } from '../server/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url: process.env.EXPO_PUBLIC_TYPEBASE_APP_URL ?? '',
@@ -124,8 +124,8 @@ Expo uses better-auth's `expoClient` plugin, which handles session storage using
 
 <Callout type="warn">
   The Expo scheme you set in `app.json` (for example `"scheme": "myapp"`) must match `trustedOrigins` in `auth.ts` (`'myapp://'`) **and** the `scheme`
-  / `storagePrefix` values passed to `expoClient` below. If any of the three drifts, auth will fail silently. The snippets in this section use
-  `myapp` everywhere; replace it with your own scheme in all three places.
+  / `storagePrefix` values passed to `expoClient` below. If any of the three drifts, auth will fail silently. The snippets in this section use `myapp`
+  everywhere; replace it with your own scheme in all three places.
 </Callout>
 
 #### auth.ts
@@ -182,7 +182,7 @@ With the auth client in place, update your Typebase client to include the sessio
 
 ```ts title="lib/typebase/client.ts"
 import { createTanstackQueryClient } from 'typebase-io/client';
-import type { Router } from '../server/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 import { authClient } from './auth-client';
 
 export const client = createTanstackQueryClient<Router>({

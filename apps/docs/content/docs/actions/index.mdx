@@ -187,22 +187,27 @@ throw new ServerError('INTERNAL_SERVER_ERROR');
 <details>
 <summary><strong>All error codes</strong></summary>
 
-| Code                    | HTTP Status |
-| ----------------------- | ----------- |
-| `BAD_REQUEST`           | 400         |
-| `UNAUTHORIZED`          | 401         |
-| `FORBIDDEN`             | 403         |
-| `NOT_FOUND`             | 404         |
-| `METHOD_NOT_SUPPORTED`  | 405         |
-| `TIMEOUT`               | 408         |
-| `CONFLICT`              | 409         |
-| `PRECONDITION_FAILED`   | 412         |
-| `PAYLOAD_TOO_LARGE`     | 413         |
-| `UNPROCESSABLE_CONTENT` | 422         |
-| `TOO_MANY_REQUESTS`     | 429         |
-| `INTERNAL_SERVER_ERROR` | 500         |
-| `NOT_IMPLEMENTED`       | 501         |
-| `SERVICE_UNAVAILABLE`   | 503         |
+| Code                     | HTTP Status |
+| ------------------------ | ----------- |
+| `BAD_REQUEST`            | 400         |
+| `UNAUTHORIZED`           | 401         |
+| `FORBIDDEN`              | 403         |
+| `NOT_FOUND`              | 404         |
+| `METHOD_NOT_SUPPORTED`   | 405         |
+| `NOT_ACCEPTABLE`         | 406         |
+| `TIMEOUT`                | 408         |
+| `CONFLICT`               | 409         |
+| `PRECONDITION_FAILED`    | 412         |
+| `PAYLOAD_TOO_LARGE`      | 413         |
+| `UNSUPPORTED_MEDIA_TYPE` | 415         |
+| `UNPROCESSABLE_CONTENT`  | 422         |
+| `TOO_MANY_REQUESTS`      | 429         |
+| `CLIENT_CLOSED_REQUEST`  | 499         |
+| `INTERNAL_SERVER_ERROR`  | 500         |
+| `NOT_IMPLEMENTED`        | 501         |
+| `BAD_GATEWAY`            | 502         |
+| `SERVICE_UNAVAILABLE`    | 503         |
+| `GATEWAY_TIMEOUT`        | 504         |
 
 </details>
 
@@ -221,15 +226,13 @@ The object your handler receives is built automatically based on your project se
 So an action that uses all of them might look like:
 
 ```ts
-export const getProfile = action
-  .input(z.object({ id: z.number() }))
-  .handler(async ({ db, input, auth, reqHeaders }) => {
-    const session = await auth.api.getSession({ headers: reqHeaders });
+export const getProfile = action.input(z.object({ id: z.number() })).handler(async ({ db, input, auth, reqHeaders }) => {
+  const session = await auth.api.getSession({ headers: reqHeaders });
 
-    if (!session) throw new ServerError('UNAUTHORIZED');
+  if (!session) throw new ServerError('UNAUTHORIZED');
 
-    return db.query.users.findFirst({ where: { id: input.id } });
-  });
+  return db.query.users.findFirst({ where: { id: input.id } });
+});
 ```
 
 And one that uses none of them is equally valid:
@@ -245,12 +248,10 @@ export const ping = action.handler(async () => {
 Anywhere inside your `typebase/` directory (handlers, middleware, utility modules), you can read environment variables with `process.env`:
 
 ```ts
-export const sendEmail = action
-  .input(z.object({ to: z.email(), subject: z.string() }))
-  .handler(async ({ input }) => {
-    const apiKey = process.env.RESEND_API_KEY;
-    // ...
-  });
+export const sendEmail = action.input(z.object({ to: z.email(), subject: z.string() })).handler(async ({ input }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  // ...
+});
 ```
 
 In development, variables come from your local `.env` file. In production, they come from whatever you've configured on your deployment provider. Manage them with [`npx typebase-io-cli env`](/docs/cli/env).

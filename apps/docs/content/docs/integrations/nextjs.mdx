@@ -20,7 +20,7 @@ Pick the one that fits your use case, or use both in the same project.
 
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
   url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
@@ -95,7 +95,7 @@ export async function toggleTodo(formData: FormData) {
 
 ```ts title="lib/typebase/client.ts"
 import { createTanstackQueryClient } from 'typebase-io/client';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
@@ -198,7 +198,7 @@ export function Todos() {
 
   return (
     <ul>
-      {todos.map((todo) => (
+      {todos?.map((todo) => (
         <li key={todo.id}>{todo.value}</li>
       ))}
     </ul>
@@ -335,7 +335,7 @@ With the proxy in place, update your client to forward the session cookie on ser
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
 import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
   url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
@@ -348,7 +348,7 @@ export const client = createRouterClient<Router>({
 ```ts title="lib/typebase/client.ts"
 import { createTanstackQueryClient } from 'typebase-io/client';
 import { getServerAuthCookie } from 'typebase-io/client/auth/nextjs';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url:

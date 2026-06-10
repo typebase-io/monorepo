@@ -21,7 +21,7 @@ Pick the one that fits your use case, or use both in the same project.
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
 import { TYPEBASE_APP_URL, TYPEBASE_APP_URL_DEV } from '$env/static/private';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
   url: TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL,
@@ -92,7 +92,7 @@ import { createTanstackQueryClient } from 'typebase-io/client';
 import { browser } from '$app/environment';
 import { getRequestEvent } from '$app/server';
 import { PUBLIC_TYPEBASE_APP_URL } from '$env/static/public';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url: PUBLIC_TYPEBASE_APP_URL,
@@ -301,7 +301,7 @@ import { createRouterClient } from 'typebase-io/client';
 import { getServerAuthCookie } from 'typebase-io/client/auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { TYPEBASE_APP_URL, TYPEBASE_APP_URL_DEV } from '$env/static/private';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
   url: TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL,
@@ -315,7 +315,7 @@ export const client = createRouterClient<Router>({
 import { createTanstackQueryClient } from 'typebase-io/client';
 import { browser } from '$app/environment';
 import { PUBLIC_TYPEBASE_APP_URL } from '$env/static/public';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url: browser ? window.location.origin : PUBLIC_TYPEBASE_APP_URL,
@@ -456,7 +456,7 @@ export async function handle({ event, resolve }) {
 Declare the types for `event.locals` so `session` and `user` are typed everywhere:
 
 ```ts title="src/app.d.ts"
-import type { AuthSession } from '$lib/typebase/_generated/db';
+import type { AuthSession } from './typebase/_generated/db';
 
 declare global {
   namespace App {

@@ -52,7 +52,7 @@ Every Typebase database lives in a [Neon](https://neon.tech) project. You can lo
 
 <Callout type="warn">
   **Don't edit your schema from the Neon UI.** Your `typebase/db/schema.ts` is the source of truth. If you add a column, rename a table, or change a
-  constraint directly in Neon, the next `npx typebase-io-cli db push` will detect the drift and try to "correct" it back to what `schema.ts` describes,
+  constraint directly in Neon, the next `npx typebase-io-cli db <target> push` will detect the drift and try to "correct" it back to what `schema.ts` describes,
   which usually means reverting your change, and in some cases failing the push outright.
 </Callout>
 
@@ -62,4 +62,4 @@ The Neon UI is fine (and useful) for:
 - Debugging a specific row or running a one-off data fix
 - Exploring what the current schema actually looks like on the branch
 
-For anything that changes the schema shape (tables, columns, types, constraints, indexes tied to your schema), edit `schema.ts` and run `npx typebase-io-cli db push`.
+For anything that changes the schema shape (tables, columns, types, constraints, indexes tied to your schema), edit `schema.ts` and run `npx typebase-io-cli db dev push` (or `db prod push` for production).

@@ -30,7 +30,7 @@ A thin wrapper around an [oRPC](https://orpc.dev) client. Every action becomes a
 
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
   url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
@@ -52,7 +52,7 @@ The same client, wrapped with [TanStack Query](https://tanstack.com/query) utili
 
 ```ts title="lib/typebase/client.ts"
 import { createTanstackQueryClient } from 'typebase-io/client';
-import type { Router } from '../typebase/_generated/server';
+import type { Router } from '../../typebase/_generated/server';
 
 export const client = createTanstackQueryClient<Router>({
   url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',

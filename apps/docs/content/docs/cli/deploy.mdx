@@ -46,7 +46,7 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 8. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
 
 <Callout type="warn">
-  Schema changes are applied (step 4) before the new server code is live (step 5). This is normal for most deployment workflows, but it means the
+  Schema changes are applied (step 5) before the new server code is live (step 6). This is normal for most deployment workflows, but it means the
   previous version of your server briefly runs against the new schema. For destructive changes in `prod` (dropped columns, renamed tables), design
   your schema migrations so the old code keeps working, typically by rolling out additive changes first, then removing the old fields in a later
   deploy.
