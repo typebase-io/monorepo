@@ -53,7 +53,7 @@ const createTargetCommand = (target: 'dev' | 'prod') =>
         .argument('<key>', 'Environment variable name')
         .argument('<value>', 'Environment variable value')
         .addOption(new Option('--provider <provider>', 'Deployment provider').choices(serverProviders))
-        .option('--encrypted', 'Encrypt the value (default: true)', true)
+        .option('--no-encrypted', 'Store the value unencrypted (values are encrypted by default)')
         .allowExcessArguments(false)
         .action(async (key, value, options) => {
           const { serverProvider } = await getTypebaseConfig();
