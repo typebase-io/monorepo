@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import { Project, SyntaxKind } from 'ts-morph';
 
 export const getTrustedOriginsFromAuth = (authFilePath: string): string[] => {
@@ -17,21 +18,42 @@ export const getTrustedOriginsFromAuth = (authFilePath: string): string[] => {
 
     const prop = optionsArg.getProperty('trustedOrigins');
 
-    if (!prop?.isKind(SyntaxKind.PropertyAssignment)) {
+    if (!prop) {
+      continue;
+    }
+
+    if (!prop.isKind(SyntaxKind.PropertyAssignment)) {
+      warnUnreadableTrustedOrigins(prop.getText());
+
       continue;
     }
 
     const initializer = prop.getInitializer();
 
     if (!initializer?.isKind(SyntaxKind.ArrayLiteralExpression)) {
+      warnUnreadableTrustedOrigins(initializer?.getText() ?? prop.getText());
+
       continue;
     }
 
-    return initializer
-      .getElements()
-      .filter((el) => el.isKind(SyntaxKind.StringLiteral))
-      .map((el) => el.getLiteralText());
+    return initializer.getElements().flatMap((el) => {
+      if (el.isKind(SyntaxKind.StringLiteral) || el.isKind(SyntaxKind.NoSubstitutionTemplateLiteral)) {
+        return [el.getLiteralText()];
+      }
+
+      warnUnreadableTrustedOrigins(el.getText());
+
+      return [];
+    });
   }
 
   return [];
+};
+
+const warnUnreadableTrustedOrigins = (text: string) => {
+  console.warn(
+    chalk.yellow(
+      `Could not statically read \`trustedOrigins\` entry \`${text}\` from auth.ts; it will be omitted from the generated server's auth CORS allowlist.`
+    )
+  );
 };
