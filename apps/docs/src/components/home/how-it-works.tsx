@@ -22,7 +22,6 @@ const steps = [
         Every export is typechecked end to end.
       </>
     ),
-    command: 'typebase/actions/queries/todos.ts',
   },
   {
     number: '03',
@@ -62,10 +61,12 @@ export function HowItWorks() {
                 {step.title}
               </h3>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-fd-muted-foreground">{step.body}</p>
-              <code className="mt-5 block overflow-x-auto whitespace-nowrap rounded-lg border border-fd-border bg-fd-muted/40 px-3.5 py-2.5 font-mono text-xs text-fd-foreground/90">
-                <span className="select-none text-fd-muted-foreground">{step.command.startsWith('npx') ? '$ ' : '// '}</span>
-                {step.command}
-              </code>
+              {step.command ? (
+                <code className="mt-5 block overflow-x-auto whitespace-nowrap rounded-lg border border-fd-border bg-fd-muted/40 px-3.5 py-2.5 font-mono text-xs text-fd-foreground/90">
+                  <span className="select-none text-fd-muted-foreground">$ </span>
+                  {step.command}
+                </code>
+              ) : null}
             </li>
           ))}
         </ol>

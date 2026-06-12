@@ -247,7 +247,7 @@ export function FolderExplorer() {
   const [selected, setSelected] = useState<FileId>('queries');
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:items-start">
+    <div className="grid gap-6 lg:grid-cols-[230px_minmax(0,1fr)]">
       <div className="rounded-xl border border-fd-border bg-fd-card p-3">
         <ul className="font-mono text-xs leading-relaxed">
           {rows.map((row) => {
