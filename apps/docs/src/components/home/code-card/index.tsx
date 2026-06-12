@@ -12,8 +12,8 @@ export function CodeCard({ title, label, children }: { title: string; label: str
         </div>
         <span className="shrink-0 rounded bg-fd-primary/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-fd-primary">{label}</span>
       </div>
-      <pre className="flex-1 overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-fd-foreground/90">
-        <code>{children}</code>
+      <pre className="flex-1 overflow-x-auto py-5 font-mono text-[13px] leading-relaxed text-fd-foreground/90">
+        <code className="block w-max min-w-full px-5">{children}</code>
       </pre>
     </div>
   );

@@ -9,6 +9,7 @@ import { Line } from '#components/home/code-card/line.tsx';
 import { S } from '#components/home/code-card/s.tsx';
 import { T } from '#components/home/code-card/t.tsx';
 import { V } from '#components/home/code-card/v.tsx';
+import { HeroTagline } from '#components/home/hero-tagline.tsx';
 
 export function Hero() {
   return (
@@ -20,13 +21,7 @@ export function Hero() {
 
       <div className="mx-auto max-w-6xl px-6 pt-12 pb-16 sm:pb-28">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex flex-wrap items-center justify-center gap-x-2 rounded-full border border-fd-primary/25 bg-fd-primary/10 px-4 py-1.5 font-mono text-xs text-fd-primary">
-            <span>Just use code</span>
-            <span aria-hidden className="text-fd-primary/50">
-              ·
-            </span>
-            <span>AI loves code</span>
-          </p>
+          <HeroTagline />
 
           <h1 className="mt-6 text-balance text-3xl font-bold tracking-tight text-fd-foreground sm:text-7xl">
             Your backend is
@@ -58,7 +53,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="mt-10 sm:mt-20 grid gap-6 lg:grid-cols-[1fr_auto_1fr] items-stretch">
+        <div className="group/cards mt-10 sm:mt-20 grid gap-6 lg:grid-cols-[1fr_auto_1fr] items-stretch">
           <CodeCard title="typebase/actions/queries/todos.ts" label="server">
             <Line>
               <K>import</K> {`{ `}
@@ -76,16 +71,18 @@ export function Hero() {
             <Line>
               <K>export const</K> <F>getMany</F> = <V>action</V>
             </Line>
-            <Line indent={1}>
-              .<F>output</F>(<V>z</V>.<F>array</F>(<V>z</V>.<F>object</F>({`{`}
-            </Line>
-            <Line indent={2}>
-              <V>id</V>: <V>z</V>.<F>number</F>(),
-            </Line>
-            <Line indent={2}>
-              <V>value</V>: <V>z</V>.<F>string</F>(),
-            </Line>
-            <Line indent={1}>{`}))) `}</Line>
+            <div className="type-source -mx-2 cursor-default rounded-md px-2 transition-colors duration-200 hover:bg-fd-primary/10 group-has-[.type-result:hover]/cards:bg-fd-primary/10">
+              <Line indent={1}>
+                .<F>output</F>(<V>z</V>.<F>array</F>(<V>z</V>.<F>object</F>({`{`}
+              </Line>
+              <Line indent={2}>
+                <V>id</V>: <V>z</V>.<F>number</F>(),
+              </Line>
+              <Line indent={2}>
+                <V>value</V>: <V>z</V>.<F>string</F>(),
+              </Line>
+              <Line indent={1}>{`}))) `}</Line>
+            </div>
             <Line indent={1}>
               .<F>handler</F>(<K>async</K> ({`{ db }`}) {`=>`} {`{`}
             </Line>
@@ -96,7 +93,7 @@ export function Hero() {
           </CodeCard>
 
           <div className="flex flex-col items-center justify-center py-2 lg:py-0">
-            <ArrowRight className="h-8 w-8 text-fd-primary rotate-90 lg:rotate-0" />
+            <ArrowRight className="h-8 w-8 text-fd-primary rotate-90 lg:rotate-0 transition-transform duration-300 group-has-[.type-source:hover]/cards:scale-125 group-has-[.type-result:hover]/cards:scale-125" />
           </div>
 
           <CodeCard title="src/app/page.tsx" label="client">
@@ -113,9 +110,11 @@ export function Hero() {
             <Line indent={1}>
               <K>const</K> todos = <K>await</K> <V>client</V>.<V>queries</V>.<V>todos</V>.<F>getMany</F>();
             </Line>
-            <Line indent={1}>
-              <C>{`// ^? { id: number; value: string }[]`}</C>
-            </Line>
+            <div className="type-result -mx-2 cursor-default rounded-md px-2 transition-colors duration-200 hover:bg-fd-primary/10 group-has-[.type-source:hover]/cards:bg-fd-primary/10">
+              <Line indent={1}>
+                <C>{`// ^? { id: number; value: string }[]`}</C>
+              </Line>
+            </div>
             <Line />
             <Line indent={1}>
               <K>return</K> todos.<F>map</F>((t) {`=>`} (

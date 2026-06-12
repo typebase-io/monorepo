@@ -1,5 +1,4 @@
 import { Comparison } from '#components/home/comparison.tsx';
-import { Features } from '#components/home/features.tsx';
 import { FinalCTA } from '#components/home/final-cta.tsx';
 import { Hero } from '#components/home/hero.tsx';
 import { HowItWorks } from '#components/home/how-it-works.tsx';
@@ -55,7 +54,6 @@ export default function HomePage() {
       <HowItWorks />
       <RlsProblem />
       <Comparison />
-      <Features />
       <Quotes />
       <FinalCTA />
     </main>

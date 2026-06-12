@@ -1,3 +1,5 @@
+import { FolderExplorer } from '#components/home/folder-explorer.tsx';
+
 const steps = [
   {
     number: '01',
@@ -67,6 +69,17 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+
+        <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center text-center">
+          <svg aria-hidden viewBox="0 0 80 90" fill="none" className="h-16 w-auto -rotate-6 text-fd-primary/70">
+            <path d="M40 4 C 16 20, 64 32, 44 50 C 30 62, 50 68, 40 80" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M31 72 L40 83 L49 73" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <h3 className="mt-3 text-xl font-bold tracking-tight text-fd-foreground sm:text-2xl">Step 02, expanded</h3>
+        </div>
+        <div className="mt-8">
+          <FolderExplorer />
+        </div>
       </div>
     </section>
   );

@@ -34,9 +34,18 @@ const quotes = [
   },
 ];
 
+const scatter = [
+  '-rotate-[1.5deg]',
+  'rotate-[1deg] lg:translate-y-3',
+  '-rotate-[0.75deg] lg:-translate-y-1',
+  'rotate-[1.5deg] lg:translate-y-2',
+  '-rotate-[1deg] lg:-translate-y-2',
+  'rotate-[2deg] lg:translate-y-4',
+];
+
 export function Quotes() {
   return (
-    <section className="border-t border-fd-border bg-fd-muted/20 py-16 sm:py-24">
+    <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-fd-foreground sm:text-4xl">Industry-shaking testimonials*</h2>
@@ -46,8 +55,11 @@ export function Quotes() {
         </div>
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {quotes.map((q) => (
-            <figure key={q.name} className="flex flex-col rounded-xl border border-dashed border-fd-border bg-fd-card p-6">
+          {quotes.map((q, i) => (
+            <figure
+              key={q.name}
+              className={`flex flex-col rounded-xl border border-dashed border-fd-border bg-fd-card p-6 transition-transform duration-300 ease-out hover:z-10 hover:rotate-0 hover:scale-[1.02] ${scatter[i % scatter.length]}`}
+            >
               <div className="flex items-center gap-1 text-fd-primary/70">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <svg key={i} viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">

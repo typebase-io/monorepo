@@ -19,6 +19,9 @@ export function WorksWith() {
             <span>Expo</span>
           </div>
         </div>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-fd-muted-foreground">
+          Idiomatic clients for each one: Server Components, SvelteKit load functions, Nuxt plugins, Expo SecureStore.
+        </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-fd-muted-foreground">
           <span>Built on</span>
           <Pill>Drizzle ORM</Pill>

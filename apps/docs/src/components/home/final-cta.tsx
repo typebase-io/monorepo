@@ -1,12 +1,13 @@
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
+import { AgentPromptLine } from '#components/home/agent-prompt-line.tsx';
 import { Code } from '#components/home/code.tsx';
 import { CopyCommand } from '#components/home/copy-command.tsx';
 
 export function FinalCTA() {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="border-t border-fd-border bg-fd-muted/20 py-16 sm:py-24">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-4xl font-bold tracking-tight text-fd-foreground sm:text-5xl text-balance">Give your agent a backend it can read.</h2>
         <p className="mt-4 text-fd-muted-foreground text-balance">
@@ -17,6 +18,8 @@ export function FinalCTA() {
           <span className="select-none text-fd-muted-foreground">$ </span>
           npm i typebase-io <span className="text-fd-muted-foreground">&amp;&amp;</span> npm i -D typebase-io-cli
         </CopyCommand>
+
+        <AgentPromptLine />
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
