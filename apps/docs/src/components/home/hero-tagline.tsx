@@ -72,17 +72,20 @@ export function HeroTagline() {
   }
 
   return (
-    <p
-      onMouseEnter={reveal}
-      onMouseLeave={reset}
-      onClick={reveal}
-      aria-label={`// ${defaultMessage}`}
-      className="cursor-default font-mono text-sm italic text-fd-muted-foreground"
-    >
-      <span aria-hidden className="select-none text-fd-muted-foreground/50">
-        {'// '}
+    <p aria-label={`// ${defaultMessage}`} className="font-mono text-sm italic text-fd-muted-foreground">
+      <span
+        onMouseEnter={reveal}
+        onMouseLeave={reset}
+        onClick={reveal}
+        aria-hidden
+        className="relative inline-block cursor-default whitespace-nowrap"
+      >
+        <span className="invisible">{`// ${defaultMessage}`}</span>
+        <span className="absolute left-1/2 top-0 w-max -translate-x-1/2">
+          <span className="select-none text-fd-muted-foreground/50">{'// '}</span>
+          {text}
+        </span>
       </span>
-      <span aria-hidden>{text}</span>
     </p>
   );
 }
