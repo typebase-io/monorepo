@@ -11,18 +11,21 @@ You write actions, a database schema, and auth as TypeScript files in a `typebas
 
 Your project has two parts:
 
-```
-your-app/
-├── src/                        ← your frontend (Next.js, SvelteKit, Nuxt, Expo, ...)
-│   └── ...
-└── typebase/                   ← your backend (deployed as a server)
-    ├── db/
-    │   ├── schema.ts           ← database tables
-    │   └── relations.ts        ← table relationships
-    └── actions/
-        ├── queries/            ← read operations
-        └── mutations/          ← write operations
-```
+<Files>
+  <Folder name="your-app" defaultOpen>
+    <Folder name="src" comment="your frontend (Next.js, SvelteKit, Nuxt, Expo, ...)" />
+    <Folder name="typebase" comment="your backend (deployed as a server)" defaultOpen>
+      <Folder name="db" defaultOpen>
+        <File name="schema.ts" comment="database tables" />
+        <File name="relations.ts" comment="table relationships" />
+      </Folder>
+      <Folder name="actions" defaultOpen>
+        <Folder name="queries" comment="read operations" />
+        <Folder name="mutations" comment="write operations" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
 
 The `typebase/` directory is your **server code**. When you run `npx typebase-io-cli deploy`, it gets built and deployed as a standalone HTTP server. Your frontend communicates with it over the network, but calls look and feel like local function calls, with full autocomplete and type checking.
 

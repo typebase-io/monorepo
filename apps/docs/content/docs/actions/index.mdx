@@ -11,19 +11,43 @@ Under the hood, actions are built on top of [oRPC](https://orpc.dev), a type-saf
 
 The `npx typebase-io-cli init` command scaffolds a `typebase/actions/` folder with `queries/` and `mutations/` subfolders. This is just a suggested convention. **The only requirement is that your action files live somewhere inside the `typebase/actions/` folder.** You're free to organize them however you want:
 
-```
-typebase/actions/
-  queries/users.ts       # suggested convention
-  mutations/users.ts
+### Suggested convention
 
-typebase/actions/
-  users.ts               # flat structure, also fine
+<Files>
+  <Folder name="typebase" defaultOpen>
+    <Folder name="actions" defaultOpen>
+      <Folder name="queries" defaultOpen>
+        <File name="users.ts" />
+      </Folder>
+      <Folder name="mutations" defaultOpen>
+        <File name="users.ts" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
 
-typebase/actions/
-  users/
-    get.ts               # grouped by entity, also fine
-    create.ts
-```
+### Flat structure, also fine
+
+<Files>
+  <Folder name="typebase" defaultOpen>
+    <Folder name="actions" defaultOpen>
+      <File name="users.ts" />
+    </Folder>
+  </Folder>
+</Files>
+
+### Grouped by entity, also fine
+
+<Files>
+  <Folder name="typebase" defaultOpen>
+    <Folder name="actions" defaultOpen>
+      <Folder name="users" defaultOpen>
+        <File name="get.ts" />
+        <File name="create.ts" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
 
 ## Defining an action
 

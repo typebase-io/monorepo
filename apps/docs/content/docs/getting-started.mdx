@@ -76,19 +76,24 @@ npx typebase-io-cli init
 
 This creates your backend directory with example files. If you want the examples to include authentication setup, pass `--with-auth`. If you'd rather start from scratch without any examples, pass `--skip-example`.
 
-```
-typebase/
-├── tsconfig.json
-├── _generated/           ← auto-generated types, do not edit
-├── db/
-│   ├── schema.ts         ← your database tables
-│   └── relations.ts      ← table relationships
-└── actions/
-    ├── queries/
-    │   └── todos.ts
-    └── mutations/
-        └── todos.ts
-```
+<Files>
+  <Folder name="typebase" defaultOpen>
+    <File name="tsconfig.json" />
+    <Folder name="_generated" comment="auto-generated types, do not edit" />
+    <Folder name="db" defaultOpen>
+      <File name="schema.ts" comment="your database tables" />
+      <File name="relations.ts" comment="table relationships" />
+    </Folder>
+    <Folder name="actions" defaultOpen>
+      <Folder name="queries" defaultOpen>
+        <File name="todos.ts" />
+      </Folder>
+      <Folder name="mutations" defaultOpen>
+        <File name="todos.ts" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
 
 <Callout type="info">
   If your project has a `src/` directory, Typebase will create the files inside `src/typebase/` instead. You can customize this path in
