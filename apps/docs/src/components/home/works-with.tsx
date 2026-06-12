@@ -24,9 +24,9 @@ export function WorksWith() {
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-fd-muted-foreground">
           <span>Built on</span>
-          <Pill>Drizzle ORM</Pill>
-          <Pill>oRPC</Pill>
-          <Pill>better-auth</Pill>
+          <Pill href="https://orm.drizzle.team">Drizzle ORM</Pill>
+          <Pill href="https://orpc.dev">oRPC</Pill>
+          <Pill href="https://www.better-auth.com">better-auth</Pill>
         </div>
       </div>
     </section>
