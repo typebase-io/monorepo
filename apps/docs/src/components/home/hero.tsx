@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight } from 'lucide-react';
+import { ArrowRight, Play } from 'lucide-react';
 import Link from 'next/link';
 
 import { C } from '#components/home/code-card/c.tsx';
@@ -42,13 +42,13 @@ export function Hero() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
-              href="https://github.com/typebase-io/monorepo"
+              href="https://youtu.be/pvL5LOt567g"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-lg border border-fd-border bg-fd-muted/30 px-5 py-3 text-sm font-semibold text-fd-foreground transition hover:bg-fd-accent/40"
             >
-              View on GitHub
-              <ArrowUpRight className="h-4 w-4" />
+              <Play className="h-4 w-4" />
+              Typebase in 100s
             </a>
           </div>
         </div>
