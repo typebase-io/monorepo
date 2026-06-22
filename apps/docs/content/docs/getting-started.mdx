@@ -17,6 +17,18 @@ description: Install Typebase and make your first server call.
   />
 </Cards>
 
+## Using an AI coding agent
+
+Typebase ships an [AI Skill](/docs/skill): a single `SKILL.md` that teaches your agent (Claude Code, Cursor, and others) the whole mental model, file layout, CLI commands, and common pitfalls. With it installed, the agent can scaffold actions, edit the schema, wire up auth, and deploy without re-reading the docs each time.
+
+Install it with the `skills` CLI from [skills.sh](https://skills.sh):
+
+```npm
+npx skills add typebase-io/monorepo
+```
+
+Then just tell your agent what to build. See the [AI Skill](/docs/skill) page for manual installation and more detail. The rest of this guide is the manual path.
+
 ## Install
 
 Typebase is split into two packages. **`typebase-io`** is the core library. It provides the `action` builder for your server code and the client utilities for your frontend. **`typebase-io-cli`** is the CLI tool that handles code generation, schema pushes to your database, and deployment.
