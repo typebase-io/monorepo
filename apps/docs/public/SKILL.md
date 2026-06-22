@@ -213,12 +213,81 @@ Always run via the package script (`npx typebase-io-cli ...`). For CommonJS proj
 | `auth generate`                                                                                                                                   | Append auth tables to `db/schema.ts`, update `db/relations.ts`, set `BETTER_AUTH_SECRET`, rerun codegen.                                                                                                              |
 | `db dev push` / `db prod push`                                                                                                                    | Push schema to the dev / prod Neon branch.                                                                                                                                                                            |
 | `db local push --url <conn>`                                                                                                                      | Push schema to a local Postgres (or any Postgres you connect to directly). Falls back to `DATABASE_URL` from env if `--url` is omitted.                                                                               |
-| `deploy dev` / `deploy prod`                                                                                                                      | Validate types → run `codegen` → generate server → transpile → push schema → deploy → sync `DATABASE_URL` and `BETTER_AUTH_SECRET` → save URL to project `.env`. `--provider vercel\|cloudflare\|deno` skips the prompt.              |
+| `deploy dev` / `deploy prod`                                                                                                                      | Validate types → run `codegen` → generate server → transpile → push schema → deploy → sync `DATABASE_URL` and `BETTER_AUTH_SECRET` → save URL to project `.env`. `--provider vercel\|cloudflare\|deno` skips the prompt. **Interactive on first run** — to drive it as an agent see "Headless / AI-driven deploy" below.              |
 | `generate-server [--output ts\|esm\|cjs] [--adapter node\|bun\|hono\|fastify\|deno\|cloudflare] [--port N] [--out-dir _server] [--skip-load-env]` | Build a runnable server locally in `typebase/_server/`. Used for self-hosting or local iteration. Snapshot only — re-run after every `typebase/` change.                                                              |
 | `env <dev\|prod> get <key>`                                                                                                                       | Read an env var from the deployment provider. May print `ENCRYPTED` for some providers.                                                                                                                               |
 | `env <dev\|prod> add <key> <value> [--no-encrypted]`                                                                                              | Set an env var on the provider.                                                                                                                                                                                       |
 
 CLI defaults live in `typebase.json` at the project root. Common fields: `projectPath` (defaults to `src/typebase` if a `src/` exists, else `typebase`), `serverProvider`, `server.{output,adapter,port,outDir,skipLoadEnv}`, plus per-provider blocks (`vercel`, `cloudflare`, `deno`, `neon`) that the CLI fills in automatically after first deploy.
+
+## Headless / AI-driven deploy (driving the CLI without a human)
+
+`deploy` and `db <env> push` are **interactive** (built on `@inquirer/prompts`) and have **no `--yes` / non-interactive flag**. The first deploy needs a pty; after that the CLI has saved the project config and runs non-interactively on its own.
+
+### First deploy: drive a pty
+
+On the first deploy the provider/`neon` blocks don't exist yet, so the CLI asks which project to create or reuse. Provide tokens first (so the token prompts are skipped), then drive it through a pseudo-TTY. **Every "which project?" prompt defaults to "create a brand-new project" as the first choice, so "send Enter whenever the process goes idle" is a complete strategy.**
+
+Tokens needed in env or `.env`: `NEON_API_KEY` (always, for the database) plus the one for your provider — `VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, or `DENO_DEPLOY_TOKEN`.
+
+```bash
+# 1. Provide tokens so the API-key/token prompts are skipped (env or .env both work).
+printf 'NEON_API_KEY=%s\nVERCEL_TOKEN=%s\n' "$NEON_API_KEY" "$VERCEL_TOKEN" >> .env
+
+# 2. CI=1 silences the ora spinners (see gotcha below); --provider skips the provider prompt.
+CI=1 expect -c '
+  set timeout 12
+  spawn npx typebase-io-cli deploy prod --provider vercel
+  expect {
+    -re {.+}  { exp_continue }              ;# drain output
+    timeout   { send "\r"; exp_continue }   ;# idle => at a prompt => accept default
+    eof       {}
+  }'
+```
+
+### Subsequent deploys: automatically non-interactive
+
+The first successful deploy makes the CLI **write the `serverProvider` and provider/`neon` ID blocks into `typebase.json` for you**. Once they're there, every prompt is skipped and you can deploy with no pty:
+
+```bash
+CI=1 npx typebase-io-cli deploy prod
+```
+
+(The `db <env> push` "Apply these changes?" confirm still appears, but **only** when Drizzle detects a destructive/warned change — see below.)
+
+**Do not hand-write the `neon`/`vercel`/`cloudflare`/`deno` ID blocks yourself.** They contain real provider IDs (`prj_...`, `org-...`, `team_...`) that you cannot know — inventing plausible-looking values silently targets the wrong project or fails. Let the first pty-driven deploy create and persist them. Only edit these blocks if you have the exact IDs from an authoritative source (the provider's dashboard/API, or the user).
+
+### The `CI=1` gotcha (critical, undocumented elsewhere)
+
+`ora` treats a pty as interactive and animates spinners, emitting **hundreds of MB** of ANSI redraws that flood and stall the driver — the process *looks* hung when it isn't. Setting `CI=1` (or `TERM=dumb`) makes `is-interactive` return `false`, silencing spinners **without** breaking prompts (prompts key off `stdin.isTTY`, the pty). Also **never pipe the CLI through a slow filter** — if the consumer can't drain fast enough the pty buffer fills and the CLI blocks on its own stdout writes.
+
+### Prompt sequence and the default each one picks
+
+| Prompt | Default (what Enter picks) | Headless bypass |
+|---|---|---|
+| Select deploy provider | — | `--provider vercel\|cloudflare\|deno`, or `serverProvider` in `typebase.json` |
+| Provider API token / key | — | `NEON_API_KEY` + `VERCEL_TOKEN`/`CLOUDFLARE_API_TOKEN`/`DENO_DEPLOY_TOKEN` in env or `.env` |
+| Select Neon org | only prompts if **> 1** org (1 = auto, 0 = exits) | pre-seed `neon.orgId` |
+| Select Neon project | **"+ Create a new Neon project"** (first choice) | pre-seed `neon` block |
+| Neon project name | `basename(cwd)` | — |
+| Neon region | **US East (Ohio)** `aws-us-east-2` (first choice) | — |
+| Select Vercel project | **"+ Create a new project"** (first choice) | pre-seed `vercel` block |
+| Vercel project name | `basename(cwd)` | — |
+| "Project is protected. Disable protections?" | only for an **existing** protected Vercel project (never on create-new) | use a fresh/unprotected project |
+| "Apply these changes?" (`db push`) | appears **only on destructive/warned schema hints**; Enter = yes | avoid destructive diffs, or accept |
+
+### Read results from files, not the spinner stream
+
+Treat files as the source of truth, not scraped terminal output:
+
+- `TYPEBASE_APP_URL` (prod) / `TYPEBASE_APP_URL_DEV` (dev) → written to the project `.env`.
+- `DATABASE_URL`, `BETTER_AUTH_SECRET` → written to `.env` and synced to the provider.
+- `neon` / `vercel` (or `cloudflare`/`deno`) ID blocks → written to `typebase.json`.
+- Deployment URL + ID are also `console.log`'d at the very end.
+
+### Timing: don't kill a slow run
+
+The pre-prompt phase runs two `tsc` passes plus an esbuild transpile and can take **a few minutes on a cold run** — not a hang. To tell working-from-stuck: a working deploy keeps burning CPU; a deploy genuinely waiting at a prompt goes idle (which is exactly when the pty driver should send Enter).
 
 ## Dev vs prod
 
