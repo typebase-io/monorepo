@@ -1,0 +1,8 @@
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { ActionBuilder } from "typebase-io/server";
+
+const router = {};
+
+export type Router = typeof router;
+export declare const action: ActionBuilder;

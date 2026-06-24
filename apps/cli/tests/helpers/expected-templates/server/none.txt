@@ -1,0 +1,7 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
+
+const base = os.$context<RequestHeadersPluginContext>();
+
+export const action = new Action(base);

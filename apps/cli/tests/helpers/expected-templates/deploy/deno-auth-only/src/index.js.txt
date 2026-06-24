@@ -1,0 +1,43 @@
+import 'dotenv/config';
+import { RPCHandler } from "@orpc/server/fetch";
+import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+import { auth } from "./auth.js";
+import { filterActions } from "typebase-io/server";
+import * as ActionModule1 from "./actions/mutations/todos.js";
+import * as ActionModule2 from "./actions/queries/todos.js";
+const router = {
+    mutations: {
+        todos: filterActions(ActionModule1),
+    },
+    queries: {
+        todos: filterActions(ActionModule2),
+    },
+};
+const handler = new RPCHandler(router, {
+    plugins: [
+        new CORSPlugin({
+            origin: (origin, options) => origin,
+            allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+        }),
+        new RequestHeadersPlugin(),
+    ],
+    interceptors: [
+        onError((error) => {
+            console.error(error);
+        }),
+    ],
+});
+Deno.serve({ port: 3000 }, async (request) => {
+    if (new URL(request.url).pathname.startsWith("/api/auth")) {
+        return auth.handler(request);
+    }
+    const { matched, response } = await handler.handle(request, {
+        prefix: "/rpc",
+        context: {},
+    });
+    if (matched) {
+        return response;
+    }
+    return new Response("Not found", { status: 404 });
+});

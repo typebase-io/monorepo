@@ -1,0 +1,41 @@
+import Fastify from "fastify";
+import { RPCHandler } from "@orpc/server/fastify";
+import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+
+const router = {};
+
+const rpcHandler = new RPCHandler(router, {
+  plugins: [
+    new CORSPlugin({
+      origin: (origin, options) => origin,
+      allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+    }),
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+const fastify = Fastify();
+
+fastify.addContentTypeParser("*", (_request, _payload, done) => {
+  done(null, undefined);
+});
+
+fastify.all("/rpc/*", async (req, reply) => {
+  const { matched } = await rpcHandler.handle(req, reply, {
+    prefix: "/rpc",
+  });
+
+  if (!matched) {
+    reply.status(404).send("Not found");
+  }
+});
+
+fastify
+  .listen({ port: 6000 })
+  .then(() => console.log("Listening on 127.0.0.1:6000"));

@@ -10,7 +10,7 @@ export const getPackageManager = async (): Promise<PackageManager> => {
   }
 
   if (usedPackageManager.name === 'yarn') {
-    const major = parseInt(usedPackageManager.version.split('.')[0] ?? '', 10);
+    const major = parseInt(usedPackageManager.version, 10);
     return major >= 2 ? 'yarn-berry' : 'yarn-classic';
   }
 

@@ -1,0 +1,10 @@
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { ActionBuilder, GetDBBuilder } from "typebase-io/server";
+import type { relations } from "../db/relations.ts";
+
+const router = {};
+
+export type Router = typeof router;
+export declare const action: ActionBuilder<typeof relations>;
+export declare const getDB: GetDBBuilder<typeof relations>;

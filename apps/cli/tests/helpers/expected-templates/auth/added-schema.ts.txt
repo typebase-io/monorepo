@@ -1,0 +1,80 @@
+import { p } from "typebase-io/db";
+
+export const todos = p.pgTable("todos", {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  value: p.varchar({ length: 255 }).notNull(),
+  completed: p.boolean().notNull(),
+  createdAt: p.timestamp().notNull().defaultNow(),
+});
+
+export const users = p.pgTable("users", {
+  id: p.text("id").primaryKey(),
+  name: p.text("name").notNull(),
+  email: p.text("email").notNull().unique(),
+  emailVerified: p.boolean("email_verified").default(false).notNull(),
+  image: p.text("image"),
+  createdAt: p.timestamp("created_at").defaultNow().notNull(),
+  updatedAt: p.timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const sessions = p.pgTable(
+  "sessions",
+  {
+    id: p.text("id").primaryKey(),
+    expiresAt: p.timestamp("expires_at").notNull(),
+    token: p.text("token").notNull().unique(),
+    createdAt: p.timestamp("created_at").defaultNow().notNull(),
+    updatedAt: p.timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+    ipAddress: p.text("ip_address"),
+    userAgent: p.text("user_agent"),
+    userId: p.text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (table) => [p.index("sessions_userId_idx").on(table.userId)],
+);
+
+export const accounts = p.pgTable(
+  "accounts",
+  {
+    id: p.text("id").primaryKey(),
+    accountId: p.text("account_id").notNull(),
+    providerId: p.text("provider_id").notNull(),
+    userId: p.text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: p.text("access_token"),
+    refreshToken: p.text("refresh_token"),
+    idToken: p.text("id_token"),
+    accessTokenExpiresAt: p.timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: p.timestamp("refresh_token_expires_at"),
+    scope: p.text("scope"),
+    password: p.text("password"),
+    createdAt: p.timestamp("created_at").defaultNow().notNull(),
+    updatedAt: p.timestamp("updated_at")
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [p.index("accounts_userId_idx").on(table.userId)],
+);
+
+export const verifications = p.pgTable(
+  "verifications",
+  {
+    id: p.text("id").primaryKey(),
+    identifier: p.text("identifier").notNull(),
+    value: p.text("value").notNull(),
+    expiresAt: p.timestamp("expires_at").notNull(),
+    createdAt: p.timestamp("created_at").defaultNow().notNull(),
+    updatedAt: p.timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [p.index("verifications_identifier_idx").on(table.identifier)],
+);

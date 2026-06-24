@@ -10,7 +10,7 @@ export const writeEnvFile = async (name: string, value: string) => {
   const existingLine = new RegExp(`^(?:export[ \\t]+)?${name}[ \\t]*=.*$`, 'm');
 
   const next = existingLine.test(content)
-    ? content.replace(existingLine, line)
+    ? content.replace(existingLine, (match) => `${/^export[ \t]+/.exec(match)?.[0] ?? ''}${line}`)
     : `${content === '' || content.endsWith('\n') ? content : `${content}\n`}${line}\n`;
 
   await fs.writeFile(envPath, next, 'utf8');

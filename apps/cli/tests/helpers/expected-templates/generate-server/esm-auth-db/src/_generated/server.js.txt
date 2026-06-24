@@ -1,0 +1,18 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+import { db } from "../db/index.js";
+import { auth } from "../auth.js";
+const base = os.$context();
+const providerMiddleware = base
+    .$context()
+    .middleware(async ({ context, next }) => {
+    return next({
+        context: {
+            db: context.db ?? db,
+            auth: context.auth ?? auth,
+        },
+    });
+});
+const withProviders = base.use(providerMiddleware);
+export const action = new Action(withProviders);
+export const getDB = () => db;

@@ -1,0 +1,4 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+const base = os.$context();
+export const action = new Action(base);

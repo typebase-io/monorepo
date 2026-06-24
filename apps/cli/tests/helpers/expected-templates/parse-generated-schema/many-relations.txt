@@ -1,0 +1,8 @@
+export const usersTable = p.pgTable('users', {
+  id: p.text('id').primaryKey(),
+  name: p.text('name'),
+});
+export const postsTable = p.pgTable('posts', {
+  id: p.text('id').primaryKey(),
+  authorId: p.text('author_id'),
+});

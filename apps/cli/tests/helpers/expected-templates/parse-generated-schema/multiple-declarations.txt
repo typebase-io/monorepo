@@ -1,0 +1,5 @@
+export const version = "1", usersTable = p.pgTable('users', {
+  id: p.text('id').primaryKey(),
+}), postsTable = p.pgTable('posts', {
+  id: p.text('id').primaryKey(),
+});

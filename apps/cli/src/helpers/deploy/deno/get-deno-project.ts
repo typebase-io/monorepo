@@ -58,13 +58,13 @@ export const getDenoProject = async (token: string) => {
     allProjects.push(...apps.map(({ id, slug }) => ({ id, slug })));
 
     const linkHeader = res.headers.get('link');
-    const nextMatch = linkHeader?.match(/<[^>]*[?&]cursor=([^&>]+)[^>]*>;\s*rel="next"/);
+    const nextMatch = linkHeader?.match(/<[^>]*[?&]cursor=([^&>]+)[^>]*>;\s*rel="next"/)?.at(1);
 
     if (!nextMatch || apps.length === 0) {
       break;
     }
 
-    cursor = decodeURIComponent(nextMatch[1] ?? '');
+    cursor = decodeURIComponent(nextMatch);
   }
 
   getAppsSpinner.stop();

@@ -18,7 +18,7 @@ export const generateDBFiles = async ({
   adapter: ServerAdapter;
 }) => {
   await fs.cp(dbDirPath, dbOutputDirPath, { recursive: true });
-  await fs.writeFile(path.join(dbOutputDirPath, 'index.ts'), `${drizzleIndexTemplate(adapter)}\n`);
+  await fs.writeFile(path.join(dbOutputDirPath, 'index.ts'), `${drizzleIndexTemplate({ ts: useTs, adapter })}\n`);
   await fs.writeFile(path.join(dbOutputDirPath, 'drizzle.config.ts'), `${drizzleConfigTemplate({ ts: useTs, adapter })}\n`);
 
   await fixImportExtensions(dbOutputDirPath, useTs ? 'ts' : 'js');

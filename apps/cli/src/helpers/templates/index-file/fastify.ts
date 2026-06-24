@@ -1,8 +1,15 @@
 export const fastifyIndexFileTemplate = (routerCode: string, port: number, hasAuth: boolean, trustedOrigins: string[]) => {
+  const authImports = hasAuth
+    ? `import cors from "@fastify/cors";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "./auth.ts";
+`
+    : '';
+
   const authCors =
     hasAuth && trustedOrigins.length > 0
       ? `fastify.register(cors, {
-  origin: ${JSON.stringify(trustedOrigins)},
+  origin: [${trustedOrigins.map((origin) => JSON.stringify(origin)).join(', ')}],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -33,12 +40,14 @@ export const fastifyIndexFileTemplate = (routerCode: string, port: number, hasAu
 });`
     : '';
 
+  const authBlocks = [authCors, authRoute].filter(Boolean).join('\n\n');
+  const authBlocksSection = authBlocks ? `${authBlocks}\n\n` : '';
+
   return `import Fastify from "fastify";
 import { RPCHandler } from "@orpc/server/fastify";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-${hasAuth ? `import cors from "@fastify/cors";\nimport { fromNodeHeaders } from "better-auth/node";\nimport { auth } from "./auth.ts";` : ''}
-
+${authImports}
 ${routerCode}
 
 const rpcHandler = new RPCHandler(router, {
@@ -62,11 +71,7 @@ fastify.addContentTypeParser("*", (_request, _payload, done) => {
   done(null, undefined);
 });
 
-${authCors}
-
-${authRoute}
-
-fastify.all("/rpc/*", async (req, reply) => {
+${authBlocksSection}fastify.all("/rpc/*", async (req, reply) => {
   const { matched } = await rpcHandler.handle(req, reply, {
     prefix: "/rpc",
   });

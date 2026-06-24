@@ -65,11 +65,12 @@ export const getServerRouter = async ({
       imports.push(`import * as ${importAlias} from "${importPath}";`);
       hasAnyAction = true;
 
-      const segments = relativeActionPath.split('/');
-      const fileName = segments.pop() ?? '';
+      const lastSlashIndex = relativeActionPath.lastIndexOf('/');
+      const pathSegments = lastSlashIndex === -1 ? [] : relativeActionPath.slice(0, lastSlashIndex).split('/');
+      const fileName = relativeActionPath.slice(lastSlashIndex + 1);
 
       return {
-        pathSegments: segments,
+        pathSegments,
         leaves: { [fileName]: `filterActions(${importAlias})` },
       };
     })

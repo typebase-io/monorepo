@@ -1,0 +1,6 @@
+  apple: {
+    b: bFn,
+  },
+  zebra: {
+    a: aFn,
+  },

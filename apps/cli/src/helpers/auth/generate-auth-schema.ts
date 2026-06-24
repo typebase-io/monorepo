@@ -26,8 +26,8 @@ export const generateAuthSchema = async ({
     adapter: createMockAdapter(),
   });
 
-  if (!result.code) {
-    return;
+  if (result.code === undefined) {
+    throw new Error('Better Auth did not return generated schema code.');
   }
 
   const { cleaned, tableNames, relations } = parseGeneratedSchema(result.code.replaceAll('/* @__PURE__ */ ', ''));
@@ -37,10 +37,15 @@ export const generateAuthSchema = async ({
 
   for (const name of tableNames) {
     for (const stmt of schemaSourceFile.getVariableStatements()) {
-      const decl = stmt.getDeclarations()[0];
+      const decl = stmt.getDeclarations().find((decl) => decl.getName() === name);
 
-      if (decl?.getName() === name) {
-        stmt.remove();
+      if (decl) {
+        if (stmt.getDeclarations().length === 1) {
+          stmt.remove();
+        } else {
+          decl.remove();
+        }
+
         break;
       }
     }
@@ -78,18 +83,12 @@ export const generateAuthSchema = async ({
         const name = prop.getName();
 
         if (!authSet.has(name)) {
-          existingEntries.set(name, prop.getInitializer()?.getText() ?? '{}');
+          existingEntries.set(name, prop.getInitializerOrThrow().getText());
         }
       }
     }
 
     const allEntries = new Map([...existingEntries, ...relations]);
-
-    for (const name of tableNames) {
-      if (!allEntries.has(name)) {
-        allEntries.set(name, '{}');
-      }
-    }
 
     const inner = [...allEntries.entries()].map(([name, value]) => `  ${name}: ${value},`).join('\n');
 

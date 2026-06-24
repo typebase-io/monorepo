@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const resolveRelativeImport = (fromFile: string, specifier: string, ext: 'ts' | 'js'): string | null => {
+export const resolveRelativeImport = (fromFile: string, specifier: string, ext: 'ts' | 'js') => {
   const dir = path.dirname(fromFile);
 
   for (const srcExt of ['.ts', '.tsx', '.mts', '.cts']) {

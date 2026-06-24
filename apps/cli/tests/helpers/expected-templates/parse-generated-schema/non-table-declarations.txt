@@ -1,0 +1,5 @@
+const tableName = 'users';
+const generated = createGeneratedSchema();
+export const usersTable = p.pgTable('users', {
+  id: p.text('id').primaryKey(),
+});

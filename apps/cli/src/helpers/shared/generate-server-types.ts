@@ -21,7 +21,7 @@ export const generateServerTypes = async ({
 }) => {
   const serverTypesOutputPath = path.join(generatedDirPath, 'server.ts');
   const includeDB = hasDB(schemaFilePath);
-  const includeAuth = hasAuth(authFilePath);
+  const includeAuth = includeDB ? hasAuth(authFilePath) : false;
 
   const skeleton = serverTypesTemplate(includeDB, includeAuth, '', 'export const router = {\n};');
 

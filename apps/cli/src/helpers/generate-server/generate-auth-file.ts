@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { IndentationText, Project, SyntaxKind } from 'ts-morph';
+import { IndentationText, type ObjectLiteralExpression, Project, SyntaxKind } from 'ts-morph';
 import { match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
@@ -34,40 +34,59 @@ export const generateAuthFile = async ({
     }
   }
 
-  sourceFile.insertStatements(0, [
-    `import { betterAuth } from "better-auth";`,
-    `import { drizzleAdapter } from "better-auth/adapters/drizzle";`,
-    `import { db } from "./db/index.ts";`,
-    `import * as schema from "./db/schema.ts";\n\n`,
-  ]);
+  let transformed = false;
 
   for (const callExpr of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
     if (callExpr.getExpression().getText() !== 'defineAuth') {
       continue;
     }
 
-    const optionsArg = callExpr.getArguments()[0];
+    const arg = callExpr.getArguments()[0];
+    let optionsObject: ObjectLiteralExpression | undefined;
 
-    if (!optionsArg?.isKind(SyntaxKind.ObjectLiteralExpression)) {
+    if (arg?.isKind(SyntaxKind.ObjectLiteralExpression)) {
+      optionsObject = arg;
+    } else if (arg?.isKind(SyntaxKind.Identifier)) {
+      const initializer = sourceFile.getVariableDeclaration(arg.getText())?.getInitializer();
+
+      if (initializer?.isKind(SyntaxKind.ObjectLiteralExpression)) {
+        optionsObject = initializer;
+      }
+    }
+
+    if (!optionsObject) {
       continue;
     }
 
-    optionsArg.insertPropertyAssignment(0, {
+    optionsObject.insertPropertyAssignment(0, {
       name: 'database',
       initializer: `drizzleAdapter(db, { provider: "pg", usePlural: true, schema })`,
     });
 
-    if (!optionsArg.getProperty('baseURL') && allowedHosts) {
-      optionsArg.insertPropertyAssignment(1, {
+    if (!optionsObject.getProperty('baseURL') && allowedHosts) {
+      optionsObject.insertPropertyAssignment(1, {
         name: 'baseURL',
-        initializer: `{ allowedHosts: ${JSON.stringify(allowedHosts)} }`,
+        initializer: `{ allowedHosts: [${allowedHosts.map((host) => JSON.stringify(host)).join(', ')}] }`,
       });
     }
 
     callExpr.getExpression().replaceWithText('betterAuth');
 
+    transformed = true;
+
     break;
   }
+
+  if (transformed) {
+    const ext = useTs ? 'ts' : 'js';
+
+    sourceFile.insertStatements(
+      0,
+      `import { betterAuth } from "better-auth";\nimport { drizzleAdapter } from "better-auth/adapters/drizzle";\nimport { db } from "./db/index.${ext}";\nimport * as schema from "./db/schema.${ext}";\n\n`
+    );
+  }
+
+  sourceFile.formatText({ insertSpaceAfterCommaDelimiter: true });
 
   await fs.mkdir(authOutputDirPath, { recursive: true });
   await fs.writeFile(path.join(authOutputDirPath, 'auth.ts'), sourceFile.getFullText());

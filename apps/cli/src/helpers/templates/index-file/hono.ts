@@ -1,10 +1,17 @@
 export const honoIndexFileTemplate = (routerCode: string, hasAuth: boolean, trustedOrigins: string[]) => {
+  const authImports = [
+    hasAuth ? `import { auth } from "./auth.ts";` : '',
+    hasAuth && trustedOrigins.length > 0 ? `import { cors } from "hono/cors";` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   const authCors =
     hasAuth && trustedOrigins.length > 0
       ? `app.use(
 	"/api/auth/*",
 	cors({
-		origin: ${JSON.stringify(trustedOrigins)},
+		origin: [${trustedOrigins.map((origin) => JSON.stringify(origin)).join(', ')}],
 		allowHeaders: ["Content-Type", "Authorization"],
 		allowMethods: ["POST", "GET", "OPTIONS"],
 		exposeHeaders: ["Content-Length"],
@@ -20,13 +27,14 @@ export const honoIndexFileTemplate = (routerCode: string, hasAuth: boolean, trus
 });`
     : '';
 
+  const authBlocks = [authCors, authRoute].filter(Boolean).join('\n\n');
+  const authBlocksSection = authBlocks ? `${authBlocks}\n\n` : '';
+
   return `import { Hono } from "hono";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-${hasAuth ? `import { auth } from "./auth.ts";` : ''}
-${hasAuth && trustedOrigins.length > 0 ? `import { cors } from "hono/cors";` : ''}
-
+${authImports ? `${authImports}\n` : ''}
 ${routerCode}
 
 const app = new Hono();
@@ -56,11 +64,7 @@ const BODY_PARSER_METHODS = new Set([
 
 type BodyParserMethod = typeof BODY_PARSER_METHODS extends Set<infer T> ? T : never;
 
-${authCors}
-
-${authRoute}
-
-app.use("/rpc/*", async (c, next) => {
+${authBlocksSection}app.use("/rpc/*", async (c, next) => {
   const request = new Proxy(c.req.raw, {
     get(target, prop) {
       if (BODY_PARSER_METHODS.has(prop as BodyParserMethod)) {

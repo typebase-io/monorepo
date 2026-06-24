@@ -1,0 +1,5 @@
+const textFactory = helper.text;
+export const usersTable = p.pgTable('users', {
+  id: p.text('id').primaryKey(),
+  custom: helper.text('custom'),
+});

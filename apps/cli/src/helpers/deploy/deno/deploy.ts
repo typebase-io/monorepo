@@ -22,7 +22,7 @@ export const deploy = async ({
 
   const textExtensions = new Set(['.js', '.ts', '.json', '.map', '.txt', '.html', '.css', '.svg', '.xml', '.yaml', '.yml', '.toml', '.md']);
   const prepareSpinner = ora('Preparing files...').start();
-  const skipDirs = new Set(['node_modules', 'dist', 'build', ...(server.outDir ? [server.outDir] : [])]);
+  const skipDirs = new Set(['node_modules', 'dist', 'build', server.outDir]);
   const filePaths = await walk(serverDirPath, { skipDirs: (name) => skipDirs.has(name) });
 
   const fileEntries = await Promise.all(

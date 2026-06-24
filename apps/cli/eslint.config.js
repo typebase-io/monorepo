@@ -18,6 +18,11 @@ export default defineConfig(...baseConfig, {
             group: 'external',
             position: 'after',
           },
+          {
+            pattern: '#tests/**',
+            group: 'external',
+            position: 'after',
+          },
         ],
         'newlines-between': 'always',
         alphabetize: {

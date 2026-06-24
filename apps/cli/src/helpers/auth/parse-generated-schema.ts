@@ -23,24 +23,21 @@ export const parseGeneratedSchema = (code: string): { cleaned: string; tableName
   const relations = buildRelation(oneRelations, manyRelations);
 
   for (const stmt of sourceFile.getVariableStatements()) {
-    const decl = stmt.getDeclarations()[0];
+    for (const decl of stmt.getDeclarations()) {
+      const init = decl.getInitializer();
 
-    if (!decl) {
-      continue;
-    }
+      if (!init?.isKind(SyntaxKind.CallExpression)) {
+        continue;
+      }
 
-    const init = decl.getInitializer();
+      const callee = init.getExpression().getText();
 
-    if (!init?.isKind(SyntaxKind.CallExpression)) {
-      continue;
-    }
-
-    const callee = init.getExpression().getText();
-
-    if (callee === 'relations') {
-      stmt.remove();
-    } else if (callee.endsWith('Table')) {
-      tableNames.push(decl.getName());
+      if (callee === 'relations') {
+        stmt.remove();
+        break;
+      } else if (callee.endsWith('Table')) {
+        tableNames.push(decl.getName());
+      }
     }
   }
 

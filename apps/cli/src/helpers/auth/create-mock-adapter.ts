@@ -21,5 +21,5 @@ export const createMockAdapter = (): DBAdapter => {
       adapterConfig: { adapterId: 'drizzle', usePlural: true },
       provider: 'pg',
     },
-  } as DBAdapter;
+  };
 };

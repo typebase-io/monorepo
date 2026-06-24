@@ -27,7 +27,7 @@ export const deploy = async ({
   const vercel = new VercelClient({ token, orgId });
 
   const hashSpinner = ora('Preparing files...').start();
-  const skipDirs = new Set(['node_modules', 'dist', 'build', ...(server.outDir ? [server.outDir] : [])]);
+  const skipDirs = new Set(['node_modules', 'dist', 'build', server.outDir]);
   const filePaths = await walk(serverDirPath, { skipDirs: (name) => skipDirs.has(name) });
   const installCommand = await getPackageManagerInstallCommand('npm');
 

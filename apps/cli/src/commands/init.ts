@@ -47,7 +47,7 @@ export const init = new Command('init')
 
     if (tsConfigExists && !force) {
       console.error(
-        chalkStderr.red(`\`${path.relative(process.cwd(), tsConfigFilePath) || 'tsconfig.json'}\` already exists. Use \`--force\` to recreate it.`)
+        chalkStderr.red(`\`${path.relative(process.cwd(), tsConfigFilePath)}\` already exists. Use \`--force\` to recreate it.`)
       );
 
       process.exitCode = 1;

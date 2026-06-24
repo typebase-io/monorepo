@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.auth = void 0;
+const better_auth_1 = require("better-auth");
+const drizzle_1 = require("better-auth/adapters/drizzle");
+const index_js_1 = require("./db/index.js");
+const schema = require("./db/schema.js");
+exports.auth = (0, better_auth_1.betterAuth)({
+    database: (0, drizzle_1.drizzleAdapter)(index_js_1.db, { provider: "pg", usePlural: true, schema }),
+    trustedOrigins: ["http://localhost:3000"],
+    emailAndPassword: {
+        enabled: true,
+    },
+});

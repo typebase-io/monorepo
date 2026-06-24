@@ -1,0 +1,4 @@
+  hello: helloFn,
+  users: {
+    list: listFn,
+  },

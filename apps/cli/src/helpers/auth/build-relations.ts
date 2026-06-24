@@ -41,11 +41,6 @@ export const buildRelation = (
   const result = new Map<string, string>();
 
   for (const [table, rels] of entries) {
-    if (rels.size === 0) {
-      result.set(table, '{}');
-      continue;
-    }
-
     const inner = [...rels.entries()].map(([name, value]) => `    ${name}: ${value},`).join('\n');
     result.set(table, `{\n${inner}\n  }`);
   }

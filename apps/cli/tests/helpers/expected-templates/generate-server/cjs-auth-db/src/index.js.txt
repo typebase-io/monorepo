@@ -1,0 +1,53 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
+const node_http_1 = require("node:http");
+const node_1 = require("@orpc/server/node");
+const plugins_1 = require("@orpc/server/plugins");
+const server_1 = require("@orpc/server");
+const node_2 = require("better-auth/node");
+const auth_ts_1 = require("./auth.js");
+const router = {};
+const handler = new node_1.RPCHandler(router, {
+    plugins: [
+        new plugins_1.CORSPlugin({
+            origin: (origin, options) => origin,
+            allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+        }),
+        new plugins_1.RequestHeadersPlugin(),
+    ],
+    interceptors: [
+        (0, server_1.onError)((error) => {
+            console.error(error);
+        }),
+    ],
+});
+const TRUSTED_ORIGINS = new Set(["http://localhost:3000"]);
+const server = (0, node_http_1.createServer)(async (req, res) => {
+    if (req.url?.startsWith("/api/auth")) {
+        const origin = req.headers.origin;
+        if (typeof origin === "string" && TRUSTED_ORIGINS.has(origin)) {
+            res.setHeader("Access-Control-Allow-Origin", origin);
+            res.setHeader("Access-Control-Allow-Credentials", "true");
+            res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            res.setHeader("Access-Control-Max-Age", "600");
+        }
+        if (req.method === "OPTIONS") {
+            res.writeHead(204);
+            res.end();
+            return;
+        }
+        return (0, node_2.toNodeHandler)(auth_ts_1.auth)(req, res);
+    }
+    const { matched } = await handler.handle(req, res, {
+        prefix: "/rpc",
+        context: {},
+    });
+    if (matched) {
+        return;
+    }
+    res.statusCode = 404;
+    res.end("Not found");
+});
+server.listen(8080, "127.0.0.1", () => console.log("Listening on 127.0.0.1:8080"));

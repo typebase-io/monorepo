@@ -1,0 +1,47 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMany = exports.getOne = void 0;
+const server_1 = require("typebase-io/server");
+const zod_1 = require("zod");
+const custom_actions_ts_1 = require("../custom-actions.js");
+exports.getOne = custom_actions_ts_1.authedAction
+    .input(zod_1.z.object({
+    id: zod_1.z.number(),
+}))
+    .output(zod_1.z.object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+}))
+    .handler(async ({ db, input, user }) => {
+    const todo = await db.query.todos.findFirst({
+        where: { id: input.id, userId: user.id },
+    });
+    if (!todo) {
+        throw new server_1.ServerError("NOT_FOUND");
+    }
+    return {
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    };
+});
+exports.getMany = custom_actions_ts_1.authedAction
+    .output(zod_1.z
+    .object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+})
+    .array())
+    .handler(async ({ db, user }) => {
+    const todos = await db.query.todos.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+    });
+    return todos.map((todo) => ({
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    }));
+});

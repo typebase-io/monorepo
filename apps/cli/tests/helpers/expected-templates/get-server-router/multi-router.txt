@@ -1,0 +1,6 @@
+export const router = {
+  hello: filterActions(ActionModule0),
+  users: {
+    list: filterActions(ActionModule2),
+  },
+};

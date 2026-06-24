@@ -15,63 +15,71 @@ export const getDrizzleRelations = (code: string) => {
   const manyRelations: { sourceTable: string; relationName: string; targetTable: string }[] = [];
 
   for (const stmt of sourceFile.getVariableStatements()) {
-    const decl = stmt.getDeclarations()[0];
-    const init = decl?.getInitializer();
+    for (const decl of stmt.getDeclarations()) {
+      const init = decl.getInitializer();
 
-    if (!init?.isKind(SyntaxKind.CallExpression)) {
-      continue;
-    }
-
-    if (init.getExpression().getText() !== 'relations') {
-      continue;
-    }
-
-    const sourceTable = init.getArguments()[0]?.getText() ?? '';
-    const callbackArg = init.getArguments()[1];
-
-    if (!callbackArg?.isKind(SyntaxKind.ArrowFunction)) {
-      continue;
-    }
-
-    const body = callbackArg.getBody();
-    const obj = body.isKind(SyntaxKind.ParenthesizedExpression) ? body.getExpression() : body;
-
-    if (!obj.isKind(SyntaxKind.ObjectLiteralExpression)) {
-      continue;
-    }
-
-    for (const prop of obj.getProperties()) {
-      if (!prop.isKind(SyntaxKind.PropertyAssignment)) {
+      if (!init?.isKind(SyntaxKind.CallExpression)) {
         continue;
       }
 
-      const relationName = prop.getName();
-      const call = prop.getInitializer();
-
-      if (!call?.isKind(SyntaxKind.CallExpression)) {
+      if (init.getExpression().getText() !== 'relations') {
         continue;
       }
 
-      const fnName = call.getExpression().getText();
-      const targetTable = call.getArguments()[0]?.getText() ?? '';
+      const [sourceTableArg, callbackArg] = init.getArguments();
 
-      if (fnName === 'many') {
-        manyRelations.push({ sourceTable, relationName, targetTable });
-      } else if (fnName === 'one') {
-        const configArg = call.getArguments()[1];
+      if (!sourceTableArg || !callbackArg?.isKind(SyntaxKind.ArrowFunction)) {
+        continue;
+      }
 
-        if (configArg?.isKind(SyntaxKind.ObjectLiteralExpression)) {
-          const fieldsProp = configArg.getProperty('fields');
-          const refsProp = configArg.getProperty('references');
+      const sourceTable = sourceTableArg.getText();
+      const body = callbackArg.getBody();
+      const obj = body.isKind(SyntaxKind.ParenthesizedExpression) ? body.getExpression() : body;
 
-          if (fieldsProp?.isKind(SyntaxKind.PropertyAssignment) && refsProp?.isKind(SyntaxKind.PropertyAssignment)) {
-            const fieldText = fieldsProp.getInitializer()?.getText() ?? '';
-            const field = fieldText.replace(/^\[.*\./, '').replace(/\]$/, '');
+      if (!obj.isKind(SyntaxKind.ObjectLiteralExpression)) {
+        continue;
+      }
 
-            const refText = refsProp.getInitializer()?.getText() ?? '';
-            const reference = refText.replace(/^\[.*\./, '').replace(/\]$/, '');
+      for (const prop of obj.getProperties()) {
+        if (!prop.isKind(SyntaxKind.PropertyAssignment)) {
+          continue;
+        }
 
-            oneRelations.push({ sourceTable, relationName, targetTable, field, reference });
+        const relationName = prop.getName();
+        const initializer = prop.getInitializerOrThrow();
+
+        if (!initializer.isKind(SyntaxKind.CallExpression)) {
+          continue;
+        }
+
+        const call = initializer;
+        const fnName = call.getExpression().getText();
+        const targetTableArg = call.getArguments()[0];
+
+        if (!targetTableArg) {
+          continue;
+        }
+
+        const targetTable = targetTableArg.getText();
+
+        if (fnName === 'many') {
+          manyRelations.push({ sourceTable, relationName, targetTable });
+        } else if (fnName === 'one') {
+          const configArg = call.getArguments()[1];
+
+          if (configArg?.isKind(SyntaxKind.ObjectLiteralExpression)) {
+            const fieldsProp = configArg.getProperty('fields');
+            const refsProp = configArg.getProperty('references');
+
+            if (fieldsProp?.isKind(SyntaxKind.PropertyAssignment) && refsProp?.isKind(SyntaxKind.PropertyAssignment)) {
+              const fieldText = fieldsProp.getInitializerOrThrow().getText();
+              const field = fieldText.replace(/^\[.*\./, '').replace(/\]$/, '');
+
+              const refText = refsProp.getInitializerOrThrow().getText();
+              const reference = refText.replace(/^\[.*\./, '').replace(/\]$/, '');
+
+              oneRelations.push({ sourceTable, relationName, targetTable, field, reference });
+            }
           }
         }
       }

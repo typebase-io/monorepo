@@ -24,10 +24,9 @@ export const fixImportExtensions = async (dirPath: string, ext: 'ts' | 'js') => 
 
       const resolved = resolveRelativeImport(sourceFile.getFilePath(), specifier, ext);
 
-      if (resolved) {
-        decl.setModuleSpecifier(resolved);
-        modified = true;
-      }
+      decl.setModuleSpecifier(resolved);
+
+      modified = true;
     }
 
     if (modified) {

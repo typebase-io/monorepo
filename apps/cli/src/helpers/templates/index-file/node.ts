@@ -1,5 +1,8 @@
 export const nodeIndexFileTemplate = (routerCode: string, port: number, hasAuth: boolean, trustedOrigins: string[]) => {
-  const corsSetup = hasAuth && trustedOrigins.length > 0 ? `const TRUSTED_ORIGINS = new Set(${JSON.stringify(trustedOrigins)});` : '';
+  const corsSetup =
+    hasAuth && trustedOrigins.length > 0
+      ? `const TRUSTED_ORIGINS = new Set([${trustedOrigins.map((origin) => JSON.stringify(origin)).join(', ')}]);`
+      : '';
 
   const authHandler = (() => {
     if (!hasAuth) return '';

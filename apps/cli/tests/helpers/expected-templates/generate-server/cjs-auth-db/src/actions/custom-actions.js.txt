@@ -1,0 +1,19 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authedAction = void 0;
+const server_1 = require("typebase-io/server");
+const server_js_1 = require("../_generated/server.js");
+exports.authedAction = server_js_1.action.use(async ({ reqHeaders, auth }) => {
+    if (!reqHeaders) {
+        throw new server_1.ServerError("UNAUTHORIZED");
+    }
+    const sessionData = await auth.api.getSession({
+        headers: reqHeaders,
+    });
+    if (!sessionData?.session || !sessionData?.user) {
+        throw new server_1.ServerError("UNAUTHORIZED");
+    }
+    return {
+        user: sessionData.user,
+    };
+});

@@ -1,15 +1,16 @@
 export const bunIndexFileTemplate = (routerCode: string, port: number, hasAuth: boolean) => {
+  const authImport = hasAuth ? `import { auth } from "./auth.ts";\n` : '';
+
   const authHandler = hasAuth
-    ? `if (new URL(request.url).pathname.startsWith("/api/auth")) {
+    ? `    if (new URL(request.url).pathname.startsWith("/api/auth")) {
       return auth.handler(request);
-    }`
+    }\n\n`
     : '';
 
   return `import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-${hasAuth ? `import { auth } from "./auth.ts";` : ''}
-
+${authImport}
 ${routerCode}
 
 const handler = new RPCHandler(router, {
@@ -30,8 +31,7 @@ const handler = new RPCHandler(router, {
 Bun.serve({
   port: ${port},
   async fetch(request: Request) {
-    ${authHandler}
-    const { matched, response } = await handler.handle(request, {
+${authHandler}    const { matched, response } = await handler.handle(request, {
       prefix: "/rpc",
       context: {},
     });

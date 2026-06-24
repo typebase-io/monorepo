@@ -33,7 +33,7 @@ export const getPackageDeps = async ({ sourceDirPath, skipDirs }: { sourceDirPat
       const specifier = exportDecl.getModuleSpecifierValue();
 
       if (specifier) {
-        specifiers.push(exportDecl.getModuleSpecifierValue() ?? '');
+        specifiers.push(specifier);
       }
     });
 

@@ -1,0 +1,7 @@
+import { q } from "typebase-io/db";
+
+import * as schema from "./schema.ts";
+
+const callback = (r) => ({ todos: {} });
+
+export const relations = q.defineRelations(schema, callback);

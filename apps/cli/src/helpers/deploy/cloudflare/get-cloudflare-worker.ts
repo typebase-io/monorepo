@@ -33,13 +33,15 @@ export const getCloudflareWorker = async (token: string) => {
 
   accountsSpinner.stop();
 
-  if (accounts.length === 0) {
+  const firstAccount = accounts[0];
+
+  if (!firstAccount) {
     throw new Error('No Cloudflare accounts found for this token.');
   }
 
   const accountId =
     accounts.length === 1
-      ? (accounts.at(0)?.id ?? '')
+      ? firstAccount.id
       : await select({
           message: 'Select a Cloudflare account:',
           choices: accounts.map((account) => ({

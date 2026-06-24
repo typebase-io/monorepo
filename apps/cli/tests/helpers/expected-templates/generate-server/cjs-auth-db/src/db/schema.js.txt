@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.todos = void 0;
+const db_1 = require("typebase-io/db");
+exports.todos = db_1.p.pgTable("todos", {
+    id: db_1.p.integer().primaryKey().generatedAlwaysAsIdentity(),
+    value: db_1.p.varchar({ length: 255 }).notNull(),
+    completed: db_1.p.boolean().notNull(),
+    userId: db_1.p.text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    createdAt: db_1.p.timestamp().notNull().defaultNow(),
+});

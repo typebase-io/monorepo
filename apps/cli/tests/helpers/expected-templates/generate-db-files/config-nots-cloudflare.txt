@@ -1,0 +1,12 @@
+import { defineConfig } from "drizzle-kit";
+import { env } from "cloudflare:workers";
+
+export default defineConfig({
+  out: "./drizzle",
+  schema: "./src/db/schema.js",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: env.DATABASE_URL || "",
+    ssl: "verify-full",
+  },
+});
