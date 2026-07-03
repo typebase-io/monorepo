@@ -46,9 +46,7 @@ export const init = new Command('init')
     const tsConfigExists = existsSync(tsConfigFilePath);
 
     if (tsConfigExists && !force) {
-      console.error(
-        chalkStderr.red(`\`${path.relative(process.cwd(), tsConfigFilePath)}\` already exists. Use \`--force\` to recreate it.`)
-      );
+      console.error(chalkStderr.red(`\`${path.relative(process.cwd(), tsConfigFilePath)}\` already exists. Use \`--force\` to recreate it.`));
 
       process.exitCode = 1;
       return;
