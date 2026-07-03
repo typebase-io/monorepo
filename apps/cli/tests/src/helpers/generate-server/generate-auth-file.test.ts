@@ -110,6 +110,21 @@ export const auth = defineAuth({ emailAndPassword: { enabled: true } });`;
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'js-imports.txt');
   });
 
+  it('rewrites auth plugin imports to better-auth/plugins and keeps the plugins option', async () => {
+    const source = `import { defineAuth } from "typebase-io/server";
+import { username } from "typebase-io/server/auth-plugins";
+
+export const auth = defineAuth({
+  trustedOrigins: ["http://localhost:3000"],
+  emailAndPassword: { enabled: true },
+  plugins: [username()],
+});`;
+
+    await run(source);
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'plugins.txt');
+  });
+
   it('removes @typebase-io/typebase imports as well', async () => {
     const source = `import { defineAuth } from "@typebase-io/typebase/server";
 

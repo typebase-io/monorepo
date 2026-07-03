@@ -29,7 +29,11 @@ export const generateAuthFile = async ({
     .exhaustive();
 
   for (const decl of sourceFile.getImportDeclarations()) {
-    if (decl.getModuleSpecifierValue().startsWith('@typebase-io/typebase') || decl.getModuleSpecifierValue().startsWith('typebase-io')) {
+    const specifier = decl.getModuleSpecifierValue();
+
+    if (specifier === '@typebase-io/typebase/server/auth-plugins' || specifier === 'typebase-io/server/auth-plugins') {
+      decl.setModuleSpecifier('better-auth/plugins');
+    } else if (specifier.startsWith('@typebase-io/typebase') || specifier.startsWith('typebase-io')) {
       decl.remove();
     }
   }
