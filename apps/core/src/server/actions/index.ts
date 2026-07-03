@@ -8,6 +8,8 @@ import { type DB } from '#server/actions/types.ts';
 export { Action } from '#server/actions/action.ts';
 export { filterActions } from '#server/actions/filter-actions.ts';
 
+export type { InferRouterInputs, InferRouterOutputs } from '@orpc/server';
+
 interface DbContext<TRelations extends AnyRelations> {
   db: DB<TRelations>;
 }
