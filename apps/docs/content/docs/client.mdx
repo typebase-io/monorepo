@@ -46,6 +46,22 @@ await client.mutations.todos.create({ value: 'Buy milk' });
 
 The `Router` type is generated from your `actions/` folder by [`npx typebase-io-cli codegen`](/docs/cli/codegen). The shape of the client always mirrors the folder structure (`client.queries.todos.getMany`, `client.mutations.todos.create`, and so on).
 
+## Typing action inputs and outputs
+
+Sometimes you need an action's return type or input type outside of a call. Instead of re-declaring the shape by hand, use the generated `RouterInputs` and `RouterOutputs` maps:
+
+```ts
+import type { RouterInputs, RouterOutputs } from '../../typebase/_generated/server';
+
+type Todos = RouterOutputs['queries']['todos']['getMany'];
+
+function TodoList({ todos }: { todos: Todos }) {
+  /* ... */
+}
+```
+
+Both maps mirror the router structure, so the path is the same one you use to call the action. See [Generated Code](/docs/generated) for details.
+
 ## `createTanstackQueryClient`
 
 The same client, wrapped with [TanStack Query](https://tanstack.com/query) utilities so each action exposes `queryOptions`, `mutationOptions`, and helpers like `key()` for cache invalidation.
