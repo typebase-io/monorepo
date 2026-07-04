@@ -54,29 +54,31 @@ export function Comparison() {
           </p>
         </div>
 
-        <div className="mt-14 overflow-x-auto rounded-xl border border-fd-border bg-fd-card">
-          <table className="w-full min-w-[44rem] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-fd-border text-left">
-                <th className="px-5 py-4" />
-                <th className="bg-fd-primary/10 px-5 py-4 font-semibold text-fd-primary">Typebase</th>
-                <th className="px-5 py-4 font-semibold text-fd-foreground/80">Supabase</th>
-                <th className="px-5 py-4 font-semibold text-fd-foreground/80">Convex</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-fd-border">
-              {rows.map((row) => (
-                <tr key={row.label}>
-                  <th scope="row" className="whitespace-nowrap px-5 py-3.5 text-left font-medium text-fd-muted-foreground">
-                    {row.label}
-                  </th>
-                  <td className="bg-fd-primary/10 px-5 py-3.5 font-medium text-fd-foreground">{row.typebase}</td>
-                  <td className="px-5 py-3.5 text-fd-muted-foreground">{row.supabase}</td>
-                  <td className="px-5 py-3.5 text-fd-muted-foreground">{row.convex}</td>
+        <div className="scroll-shadows mt-14 rounded-xl border border-fd-border bg-fd-card">
+          <div className="scroll-shadows-scroller">
+            <table className="w-full min-w-176 border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-fd-border text-left">
+                  <th className="px-5 py-4" />
+                  <th className="bg-fd-primary/10 px-5 py-4 font-semibold text-fd-primary">Typebase</th>
+                  <th className="px-5 py-4 font-semibold text-fd-foreground/80">Supabase</th>
+                  <th className="px-5 py-4 font-semibold text-fd-foreground/80">Convex</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-fd-border">
+                {rows.map((row) => (
+                  <tr key={row.label}>
+                    <th scope="row" className="whitespace-nowrap px-5 py-3.5 text-left font-medium text-fd-muted-foreground">
+                      {row.label}
+                    </th>
+                    <td className="bg-fd-primary/10 px-5 py-3.5 font-medium text-fd-foreground">{row.typebase}</td>
+                    <td className="px-5 py-3.5 text-fd-muted-foreground">{row.supabase}</td>
+                    <td className="px-5 py-3.5 text-fd-muted-foreground">{row.convex}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-fd-muted-foreground">

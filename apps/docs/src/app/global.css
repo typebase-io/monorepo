@@ -41,3 +41,67 @@
   background-image: linear-gradient(rgba(37, 134, 201, 0.15), transparent 20rem, transparent);
   background-repeat: no-repeat;
 }
+
+/*
+ * Right-edge scroll shadow for horizontally scrollable content, no JS.
+ * The scroller drives a named scroll timeline; the wrapper's ::after is a
+ * gradient shadow hinting that there is more content to the right, fading
+ * out as the user scrolls to the end. When nothing overflows the timeline
+ * is inactive, the keyframes never apply, and the shadow stays hidden.
+ * Browsers without scroll-driven animations simply show no shadow.
+ */
+.scroll-shadows {
+  position: relative;
+  timeline-scope: --scroll-shadows;
+}
+
+.scroll-shadows-scroller {
+  overflow-x: auto;
+  border-radius: inherit;
+  scroll-timeline: --scroll-shadows inline;
+}
+
+.scroll-shadows::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2.5rem;
+  pointer-events: none;
+  opacity: 0;
+  border-top-right-radius: inherit;
+  border-bottom-right-radius: inherit;
+  background: linear-gradient(to left, rgb(0 0 0 / 0.15), transparent);
+  animation-name: scroll-shadows-right;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-timeline: --scroll-shadows;
+}
+
+.dark .scroll-shadows::after {
+  background: linear-gradient(to left, rgb(0 0 0 / 0.5), transparent);
+}
+
+@keyframes scroll-shadows-right {
+  0%,
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * A timeline that was active holds its last progress when the overflow
+ * disappears (e.g. rotating a phone after scrolling to the end). Hide the
+ * shadow at widths where the content fits so it can never go stale.
+ * Assumes content min-width ≈ 44rem; adjust if reused for wider content.
+ */
+@media (width >= 48rem) {
+  .scroll-shadows::after {
+    display: none;
+  }
+}
