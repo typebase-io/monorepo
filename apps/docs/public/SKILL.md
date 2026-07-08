@@ -40,6 +40,7 @@ Hard rules:
 - **The folder structure of `actions/` is the API.** `actions/queries/todos.ts` exporting `getOne` becomes `client.queries.todos.getOne` on the frontend. `queries`/`mutations` are pure convention — flat or nested folders work too. Only exports that are full Typebase/oRPC procedures end up on the client; helpers next to them are fine.
 - **Files in `typebase/` can import each other freely.** Add utilities, shared types, helpers anywhere alongside your actions, schema, or auth.
 - **Codegen is required when files appear/disappear/rename**, not when their contents change. See "Codegen rules" below.
+- **No type escape hatches.** Typebase's entire value is that types flow from `db/schema.ts` through actions to the frontend client. Never use `as` casts (the type-safe `as const` is fine), `any`, or `@ts-ignore`/`@ts-expect-error` — not in `typebase/` and not in frontend code consuming the client. If a type doesn't line up, fix the code, not the type: the mismatch is usually a missing `.notNull()`, a table not registered in `relations.ts`, stale codegen, or a handler returning a shape that doesn't match `.output()`.
 
 ## File: `typebase/actions/**/*.ts`
 
