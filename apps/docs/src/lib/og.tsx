@@ -123,6 +123,7 @@ export async function brandedOgImage({ title, titleAccent, description }: { titl
     {
       width: 1200,
       height: 630,
+      headers: { 'X-Robots-Tag': 'noindex' },
       fonts: [
         { name: 'Inter', data: interFonts.regular, weight: 400, style: 'normal' },
         { name: 'Inter', data: interFonts.semibold, weight: 600, style: 'normal' },
