@@ -107,9 +107,9 @@
     "@orpc/client": "1.14.3",
     "@orpc/server": "1.14.3",
     "@orpc/tanstack-query": "1.14.3",
-    "@types/pg": "8.20.0",
-    "better-auth": "1.6.11",
-    "drizzle-orm": "1.0.0-beta.22"
+    "@types/pg": "catalog:",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "peerDependencies": {
     "@sveltejs/kit": ">=2.20.0",

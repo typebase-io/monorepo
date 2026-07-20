@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 import { buildTypes } from '#helpers/shared/build-type.ts';
+import { loadCatalog, resolveCatalogVersions } from '#helpers/shared/catalog.ts';
 import { findMonorepoRoot } from '#helpers/shared/find-monorepo-root.ts';
 import { getPublishableName } from '#helpers/shared/get-publishable-name.ts';
 import { transpile } from '#helpers/shared/transpile.ts';
@@ -50,8 +51,15 @@ export const build = new Command('build')
     const publishAppReadMePath = path.join(publishAppDir, 'README.md');
     const publishAppLicensePath = path.join(publishAppDir, 'LICENSE');
 
-    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8')) as { name: string; imports?: Record<string, string[]> };
+    const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8')) as {
+      name: string;
+      imports?: Record<string, string[]>;
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+
     const paths = packageJson.imports ?? {};
+    const catalog = await loadCatalog(monorepoRoot);
 
     const spinner = ora(`Building ${chalk.cyan(selectedApp)}...`).start();
 
@@ -69,7 +77,19 @@ export const build = new Command('build')
     await rm(publishAppDir, { recursive: true, force: true });
     await mkdir(path.dirname(publishAppDistDir), { recursive: true });
     await cp(buildDir, publishAppDistDir, { recursive: true });
-    await writeFile(publishAppPackageJsonPath, `${JSON.stringify({ ...packageJson, name: getPublishableName(packageJson.name) }, null, 2)}\n`);
+    await writeFile(
+      publishAppPackageJsonPath,
+      `${JSON.stringify(
+        {
+          ...packageJson,
+          name: getPublishableName(packageJson.name),
+          dependencies: packageJson.dependencies && resolveCatalogVersions(packageJson.dependencies, catalog),
+          devDependencies: packageJson.devDependencies && resolveCatalogVersions(packageJson.devDependencies, catalog),
+        },
+        null,
+        2
+      )}\n`
+    );
     await cp(readMePath, publishAppReadMePath);
     await cp(licensePath, publishAppLicensePath);
 

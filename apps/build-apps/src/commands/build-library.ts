@@ -7,6 +7,7 @@ import ora from 'ora';
 
 import { buildCli } from '#helpers/build-library/build-cli.ts';
 import { buildCore } from '#helpers/build-library/build-core.ts';
+import { loadCatalog, resolveCatalogVersions } from '#helpers/shared/catalog.ts';
 import { findMonorepoRoot } from '#helpers/shared/find-monorepo-root.ts';
 
 export const buildLibrary = new Command('build-library')
@@ -61,6 +62,10 @@ export const buildLibrary = new Command('build-library')
       const cliPackageJson = JSON.parse(await readFile(path.join(monorepoRoot, 'apps', 'cli', 'package.json'), 'utf-8')) as {
         dependencies: Record<string, string>;
       };
+
+      const catalog = await loadCatalog(monorepoRoot);
+      const coreDependencies = resolveCatalogVersions(corePackageJson.dependencies, catalog);
+      const cliDependencies = resolveCatalogVersions(cliPackageJson.dependencies, catalog);
 
       const publishPackageJson = {
         name: 'typebase',
@@ -142,12 +147,12 @@ export const buildLibrary = new Command('build-library')
           },
         },
         dependencies: {
-          ...corePackageJson.dependencies,
-          '@neondatabase/api-client': cliPackageJson.dependencies['@neondatabase/api-client'],
-          'drizzle-kit': cliPackageJson.dependencies['drizzle-kit'],
-          'drizzle-orm': cliPackageJson.dependencies['drizzle-orm'],
-          esbuild: cliPackageJson.dependencies.esbuild,
-          pg: cliPackageJson.dependencies.pg,
+          ...coreDependencies,
+          '@neondatabase/api-client': cliDependencies['@neondatabase/api-client'],
+          'drizzle-kit': cliDependencies['drizzle-kit'],
+          'drizzle-orm': cliDependencies['drizzle-orm'],
+          esbuild: cliDependencies.esbuild,
+          pg: cliDependencies.pg,
         },
         peerDependencies: corePackageJson.peerDependencies,
         peerDependenciesMeta: corePackageJson.peerDependenciesMeta,
