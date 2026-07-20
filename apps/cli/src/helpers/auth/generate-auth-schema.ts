@@ -32,8 +32,27 @@ export const generateAuthSchema = async ({
 
   const { cleaned, tableNames, relations } = parseGeneratedSchema(result.code.replaceAll('/* @__PURE__ */ ', ''));
 
-  const schemaProjet = new Project({ skipAddingFilesFromTsConfig: true });
-  const schemaSourceFile = schemaProjet.addSourceFileAtPath(schemaFilePath);
+  const schemaProject = new Project({ skipAddingFilesFromTsConfig: true });
+  const schemaSourceFile = schemaProject.addSourceFileAtPath(schemaFilePath);
+
+  const relationsProject = new Project({ skipAddingFilesFromTsConfig: true });
+  const relationsSourceFile = relationsProject.addSourceFileAtPath(relationsFilePath);
+
+  const callbackBody = relationsSourceFile
+    .getDescendantsOfKind(SyntaxKind.CallExpression)
+    .find((callExpr) => callExpr.getExpression().getText() === 'q.defineRelations')
+    ?.getArguments()[1]
+    ?.asKind(SyntaxKind.ArrowFunction)
+    ?.getBody();
+
+  const relationsCallback = callbackBody?.asKind(SyntaxKind.ParenthesizedExpression)?.getExpression() ?? callbackBody;
+  const relationsObject = relationsCallback?.asKind(SyntaxKind.ObjectLiteralExpression);
+
+  if (!relationsObject) {
+    throw new Error(
+      `Could not register the auth tables in \`${relationsFilePath}\`: expected a \`q.defineRelations(schema, (r) => ({ ... }))\` call with an inline arrow function returning an object literal. No files were modified.`
+    );
+  }
 
   for (const name of tableNames) {
     for (const stmt of schemaSourceFile.getVariableStatements()) {
@@ -52,50 +71,26 @@ export const generateAuthSchema = async ({
   }
 
   schemaSourceFile.replaceWithText(`${schemaSourceFile.getFullText().trimEnd()}\n\n${cleaned}\n`);
-  schemaSourceFile.saveSync();
 
-  const relationsProject = new Project({ skipAddingFilesFromTsConfig: true });
-  const relationsSourceFile = relationsProject.addSourceFileAtPath(relationsFilePath);
+  const authSet = new Set(tableNames);
+  const existingEntries = new Map<string, string>();
 
-  for (const callExpr of relationsSourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
-    if (callExpr.getExpression().getText() !== 'q.defineRelations') {
-      continue;
-    }
+  for (const prop of relationsObject.getProperties()) {
+    if (prop.isKind(SyntaxKind.PropertyAssignment)) {
+      const name = prop.getName();
 
-    const callbackArg = callExpr.getArguments()[1];
-
-    if (!callbackArg?.isKind(SyntaxKind.ArrowFunction)) {
-      continue;
-    }
-
-    const body = callbackArg.getBody();
-    const obj = body.isKind(SyntaxKind.ParenthesizedExpression) ? body.getExpression() : body;
-
-    if (!obj.isKind(SyntaxKind.ObjectLiteralExpression)) {
-      continue;
-    }
-
-    const authSet = new Set(tableNames);
-    const existingEntries = new Map<string, string>();
-
-    for (const prop of obj.getProperties()) {
-      if (prop.isKind(SyntaxKind.PropertyAssignment)) {
-        const name = prop.getName();
-
-        if (!authSet.has(name)) {
-          existingEntries.set(name, prop.getInitializerOrThrow().getText());
-        }
+      if (!authSet.has(name)) {
+        existingEntries.set(name, prop.getInitializerOrThrow().getText());
       }
     }
-
-    const allEntries = new Map([...existingEntries, ...relations]);
-
-    const inner = [...allEntries.entries()].map(([name, value]) => `  ${name}: ${value},`).join('\n');
-
-    obj.replaceWithText(`{\n${inner}\n}`);
-
-    break;
   }
 
+  const allEntries = new Map([...existingEntries, ...relations]);
+
+  const inner = [...allEntries.entries()].map(([name, value]) => `  ${name}: ${value},`).join('\n');
+
+  relationsObject.replaceWithText(`{\n${inner}\n}`);
+
+  schemaSourceFile.saveSync();
   relationsSourceFile.saveSync();
 };

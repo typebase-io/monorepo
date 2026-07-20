@@ -182,7 +182,7 @@ describe('generateAuthSchema', () => {
     expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-other-call.txt');
   });
 
-  it('leaves relations unchanged when defineRelations callback is not an inline arrow function', async () => {
+  it('throws when the defineRelations callback is not an inline arrow function', async () => {
     relations = `
       import { q } from "typebase-io/db";
 
@@ -193,13 +193,10 @@ describe('generateAuthSchema', () => {
       export const relations = q.defineRelations(schema, callback);
     `;
 
-    await run();
-
-    expect(tmp.read('schema.ts')).toEqualTemplate('generate-auth-schema', 'schema.txt');
-    expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-non-arrow-callback.txt');
+    await expect(run()).rejects.toThrow('Could not register the auth tables');
   });
 
-  it('leaves relations unchanged when defineRelations callback body is not an object literal', async () => {
+  it('throws when the defineRelations callback body is not an object literal', async () => {
     relations = `
       import { q } from "typebase-io/db";
 
@@ -210,13 +207,10 @@ describe('generateAuthSchema', () => {
       export const relations = q.defineRelations(schema, (r) => config);
     `;
 
-    await run();
-
-    expect(tmp.read('schema.ts')).toEqualTemplate('generate-auth-schema', 'schema.txt');
-    expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-non-object-callback.txt');
+    await expect(run()).rejects.toThrow('Could not register the auth tables');
   });
 
-  it('leaves relations unchanged when there is no q.defineRelations call', async () => {
+  it('throws when there is no q.defineRelations call', async () => {
     relations = `
       import { q } from "typebase-io/db";
 
@@ -225,9 +219,26 @@ describe('generateAuthSchema', () => {
       export const relations = {};
     `;
 
-    await run();
+    await expect(run()).rejects.toThrow('Could not register the auth tables');
+  });
 
-    expect(tmp.read('schema.ts')).toEqualTemplate('generate-auth-schema', 'schema.txt');
-    expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-no-define-relations.txt');
+  it('does not modify the schema file when the relations file cannot be updated', async () => {
+    relations = `
+      import { q } from "typebase-io/db";
+
+      import * as schema from "./schema.ts";
+
+      const callback = (r) => ({ todos: {} });
+
+      export const relations = q.defineRelations(schema, callback);
+    `;
+
+    const originalSchema = removeExtraSpaces(schema);
+    const originalRelations = removeExtraSpaces(relations);
+
+    await expect(run()).rejects.toThrow();
+
+    expect(tmp.read('schema.ts')).toBe(originalSchema);
+    expect(tmp.read('relations.ts')).toBe(originalRelations);
   });
 });
