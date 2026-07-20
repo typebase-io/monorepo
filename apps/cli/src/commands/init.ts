@@ -7,6 +7,7 @@ import chalk, { chalkStderr } from 'chalk';
 import ora from 'ora';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
+import { addExampleTodosRelation } from '#helpers/init/add-example-todos-relation.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
@@ -71,6 +72,8 @@ export const init = new Command('init')
         relationsFilePath: exampleRelationsPath,
         authFilePath: exampleAuthPath,
       });
+
+      addExampleTodosRelation({ relationsFilePath: exampleRelationsPath });
     }
 
     spinner.text = 'Generating types...';

@@ -30,6 +30,10 @@ export const relations = q.defineRelations(schema, (r) => ({
       from: r.users.id,
       to: r.accounts.userId,
     }),
+    todos: r.many.todos({
+      from: r.users.id,
+      to: r.todos.userId,
+    }),
   },
   verifications: {},
 }));
