@@ -35,6 +35,7 @@ export const pushSchema = async ({ serverDistDirPath, connectionUri }: { serverD
 
       if (sqlStatements.length === 0) {
         spinner.succeed('Schema is up to date.');
+
         return;
       }
 

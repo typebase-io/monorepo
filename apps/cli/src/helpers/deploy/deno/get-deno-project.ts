@@ -50,6 +50,7 @@ export const getDenoProject = async (token: string) => {
       getAppsSpinner.fail('Failed to fetch apps.');
 
       const body = await res.text();
+
       throw new Error(`Failed to fetch Deno Deploy apps: ${body}`);
     }
 
@@ -109,7 +110,9 @@ export const getDenoProject = async (token: string) => {
 
       if (!res.ok) {
         spinner.fail('Failed to create app.');
+
         const body = await res.text();
+
         throw new Error(`Failed to create Deno Deploy app: ${body}`);
       }
 

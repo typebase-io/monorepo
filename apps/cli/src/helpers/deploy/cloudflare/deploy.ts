@@ -86,6 +86,7 @@ export const deploy = async ({
   const deploySpinner = ora('Uploading worker...').start();
 
   const bundledContent = await fs.readFile(tempBundlePath, 'utf-8');
+
   await fs.rm(tempBundlePath, { force: true });
 
   const bindings = env.map(({ key, value, secret }) => ({
@@ -117,6 +118,7 @@ export const deploy = async ({
     deploySpinner.fail('Failed to upload worker.');
 
     const body = await res.text();
+
     throw new Error(`Cloudflare API error: ${body}`);
   }
 

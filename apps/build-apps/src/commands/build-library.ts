@@ -34,9 +34,11 @@ export const buildLibrary = new Command('build-library')
 
     try {
       spinner.text = `Building ${chalk.cyan('core')}...`;
+
       const coreBuildDir = await buildCore({ monorepoRoot, tempDir });
 
       spinner.text = `Bundling ${chalk.cyan('CLI')}...`;
+
       const cliBuildDir = await buildCli({ monorepoRoot, tempDir });
 
       spinner.text = `Assembling ${chalk.cyan('publish/library')} directory...`;
@@ -49,6 +51,7 @@ export const buildLibrary = new Command('build-library')
       await cp(path.join(coreBuildDir, 'types'), path.join(distDir, 'types'), { recursive: true });
 
       const binDir = path.join(distDir, 'bin');
+
       await mkdir(binDir, { recursive: true });
       await cp(path.join(cliBuildDir, 'esm', 'typebase.js'), path.join(binDir, 'typebase.js'));
       await cp(path.join(cliBuildDir, 'cjs', 'typebase.cjs'), path.join(binDir, 'typebase.cjs'));

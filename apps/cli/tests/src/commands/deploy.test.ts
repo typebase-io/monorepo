@@ -135,6 +135,7 @@ describe('deploy command', () => {
 
   const useRealValidateTypes = async () => {
     const actual = await vi.importActual<typeof ValidateTypes>('#helpers/shared/validate-types.ts');
+
     vi.mocked(ValidateTypes.validateTypes).mockImplementation(actual.validateTypes);
   };
 
@@ -251,6 +252,7 @@ describe('deploy command', () => {
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
         throw new Error('process.exit called');
       }) as never);
+
       vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
       await setupProject({ withAuth: true, withDb: true });

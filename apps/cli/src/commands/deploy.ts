@@ -139,6 +139,7 @@ export const deploy = new Command('deploy')
       });
 
       const generatedFile = await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
+
       await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile });
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: false });
 

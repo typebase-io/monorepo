@@ -24,6 +24,7 @@ export const waitForDeployment = async ({ token, revisionId }: { token: string; 
 
     if (state === 'succeeded') {
       spinner.succeed('Deployment is ready!');
+
       return;
     }
 

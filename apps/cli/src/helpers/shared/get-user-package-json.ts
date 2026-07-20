@@ -17,6 +17,7 @@ export const getUserPackageJson = async (startDir = process.cwd()) => {
 
     try {
       const content = await readFile(packageJsonPath, 'utf8');
+
       return JSON.parse(content) as PackageJson;
     } catch {
       const parentDir = dirname(currentDir);

@@ -31,6 +31,7 @@ describe('waitForDeployment', () => {
 
     vi.spyOn(global, 'setTimeout').mockImplementation(((callback: () => void) => {
       callback();
+
       return undefined;
     }) as never);
   });

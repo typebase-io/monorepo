@@ -18,17 +18,21 @@ export const getTrustedOriginsFromAuth = (authFilePath: string): string[] => {
     for (let depth = 0; node && depth < MAX_RESOLVE_DEPTH; depth++) {
       if (node.isKind(SyntaxKind.ObjectLiteralExpression)) {
         optionsObject = node;
+
         break;
       }
 
       if (node.isKind(SyntaxKind.ParenthesizedExpression) || node.isKind(SyntaxKind.AsExpression) || node.isKind(SyntaxKind.SatisfiesExpression)) {
         node = node.getExpression();
+
         continue;
       }
 
       if (node.isKind(SyntaxKind.Identifier)) {
         const declaration = node.getSymbol()?.getValueDeclaration();
+
         node = declaration?.isKind(SyntaxKind.VariableDeclaration) ? declaration.getInitializer() : undefined;
+
         continue;
       }
 
@@ -51,6 +55,7 @@ export const getTrustedOriginsFromAuth = (authFilePath: string): string[] => {
         node = functionBody?.isKind(SyntaxKind.Block)
           ? functionBody.getDescendantsOfKind(SyntaxKind.ReturnStatement)[0]?.getExpression()
           : functionBody;
+
         continue;
       }
 

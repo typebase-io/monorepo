@@ -45,8 +45,10 @@ export function HeroTagline() {
 
       if (frame >= scrambleFrames) {
         if (timerRef.current) clearInterval(timerRef.current);
+
         timerRef.current = null;
         setText(target);
+
         return;
       }
 
@@ -63,6 +65,7 @@ export function HeroTagline() {
 
   function reveal() {
     const secret = secrets[indexRef.current % secrets.length] ?? defaultMessage;
+
     indexRef.current += 1;
     scrambleTo(secret);
   }

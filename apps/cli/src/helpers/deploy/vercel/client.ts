@@ -187,6 +187,7 @@ export class VercelClient {
 
     if (response.ok) {
       const data = (await response.json()) as { id: string; url: string };
+
       return { status: 'ok', id: data.id, url: data.url };
     }
 

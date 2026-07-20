@@ -221,6 +221,7 @@ describe('VercelClient', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
     expect(calls[0]?.url).toBe('https://api.vercel.com/v2/files?teamId=team-1');
     expect(calls[0]?.method).toBe('POST');
+
     const headers = calls[0]?.headers ?? {};
 
     expect(headers.Authorization).toBe('Bearer vercel-token');
@@ -235,6 +236,7 @@ describe('VercelClient', () => {
 
     vi.spyOn(global, 'setTimeout').mockImplementation(((callback: () => void) => {
       callback();
+
       return undefined;
     }) as never);
 
@@ -251,6 +253,7 @@ describe('VercelClient', () => {
 
     vi.spyOn(global, 'setTimeout').mockImplementation(((callback: () => void) => {
       callback();
+
       return undefined;
     }) as never);
 

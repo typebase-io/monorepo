@@ -68,6 +68,7 @@ export const deploy = async ({
   }
 
   const missingRefs = fileRefs.filter((ref) => result.missing.includes(ref.sha));
+
   await vercel.uploadFiles({ files: missingRefs });
 
   const retryResult = await vercel.createDeployment({

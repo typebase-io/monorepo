@@ -28,6 +28,7 @@ describe('waitForDeployment', () => {
     poll({ json: { status: 'succeeded' } });
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await expect(promise).resolves.toBeUndefined();
@@ -37,6 +38,7 @@ describe('waitForDeployment', () => {
     const { calls } = poll({ json: { status: 'pending' } }, { json: { status: 'building' } }, { json: { status: 'succeeded' } });
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
 
     await expect(promise).resolves.toBeUndefined();
@@ -48,6 +50,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
     const assertion = expect(promise).rejects.toThrow('Revision r failed: boom');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -58,6 +61,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
     const assertion = expect(promise).rejects.toThrow('Revision r failed: unknown');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -68,6 +72,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
     const assertion = expect(promise).rejects.toThrow('Revision r was skipped.');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -78,6 +83,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
     const assertion = expect(promise).rejects.toThrow('Failed to fetch revision status: Bad Gateway');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -88,6 +94,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', revisionId: 'r' });
     const assertion = expect(promise).rejects.toThrow('Deployment did not become ready within the time limit.');
+
     await vi.advanceTimersByTimeAsync(TIMEOUT_MS + POLL_INTERVAL_MS);
 
     await assertion;

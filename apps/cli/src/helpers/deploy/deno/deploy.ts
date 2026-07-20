@@ -73,6 +73,7 @@ export const deploy = async ({
     deploySpinner.fail('Failed to create deployment.');
 
     const body = await res.text();
+
     throw new Error(`Deno Deploy API error: ${body}`);
   }
 

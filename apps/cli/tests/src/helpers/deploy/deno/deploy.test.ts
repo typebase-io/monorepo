@@ -22,6 +22,7 @@ describe('deno deploy', () => {
     tmp = createTempDir();
 
     const projectDir = await generateTypebaseProject(tmp);
+
     serverDirPath = await buildTypebaseServer(tmp, projectDir, { provider: 'deno' });
 
     tmp.write('server/image.png', 'PNGDATA');

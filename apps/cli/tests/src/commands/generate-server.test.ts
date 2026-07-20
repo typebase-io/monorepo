@@ -231,6 +231,7 @@ export const auth = defineAuth({
   emailAndPassword: { enabled: true },
 });
 `;
+
       tmp.write('typebase/auth.ts', authFile);
 
       await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));

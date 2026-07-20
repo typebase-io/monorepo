@@ -30,6 +30,7 @@ export const waitForDeployment = async ({
 
     if (deploymentState === 'READY') {
       spinner.succeed(`${upper} is ready!`);
+
       return;
     }
 

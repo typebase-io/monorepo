@@ -8,6 +8,7 @@ export const findMonorepoRoot = async (startDir: string): Promise<string> => {
   while (true) {
     try {
       await access(path.join(dir, 'pnpm-workspace.yaml'));
+
       return dir;
     } catch {
       const parent = path.dirname(dir);

@@ -49,6 +49,7 @@ export const init = new Command('init')
       console.error(chalkStderr.red(`\`${path.relative(process.cwd(), tsConfigFilePath)}\` already exists. Use \`--force\` to recreate it.`));
 
       process.exitCode = 1;
+
       return;
     }
 

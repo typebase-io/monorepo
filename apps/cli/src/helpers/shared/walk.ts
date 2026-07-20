@@ -26,6 +26,7 @@ export const walk = async (
 
     if (ent.isDirectory()) {
       if (!recursive) continue;
+
       if (skipDirs(ent.name)) continue;
 
       out.push(...(await walk(full, options)));

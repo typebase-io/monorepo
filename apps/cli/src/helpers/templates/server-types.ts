@@ -11,7 +11,9 @@ export const serverTypesTemplate = (hasDB: boolean, hasAuth: boolean, routerImpo
 
   const actionType = (() => {
     if (hasDB && hasAuth) return 'ActionBuilder<typeof relations, typeof authConfig>';
+
     if (hasDB) return 'ActionBuilder<typeof relations>';
+
     return 'ActionBuilder';
   })();
 

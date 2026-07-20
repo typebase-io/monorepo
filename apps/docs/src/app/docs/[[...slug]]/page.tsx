@@ -13,6 +13,7 @@ const SITE_URL = 'https://typebase.io';
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
   const page = source.getPage(params.slug);
+
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -21,9 +22,12 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   const breadcrumbItems = [{ name: 'Docs', url: `${SITE_URL}/docs` }];
   let cumulative = '';
+
   page.slugs.forEach((slug, index) => {
     cumulative += `/${slug}`;
+
     const isLast = index === page.slugs.length - 1;
+
     breadcrumbItems.push({
       name: isLast ? page.data.title : slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       url: `${SITE_URL}/docs${cumulative}`,
@@ -93,6 +97,7 @@ export async function generateStaticParams() {
 export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): Promise<Metadata> {
   const params = await props.params;
   const page = source.getPage(params.slug);
+
   if (!page) notFound();
 
   const imageUrl = getPageImage(page).url;

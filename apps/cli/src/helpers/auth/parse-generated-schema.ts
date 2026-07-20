@@ -34,6 +34,7 @@ export const parseGeneratedSchema = (code: string): { cleaned: string; tableName
 
       if (callee === 'relations') {
         stmt.remove();
+
         break;
       } else if (callee.endsWith('Table')) {
         tableNames.push(decl.getName());

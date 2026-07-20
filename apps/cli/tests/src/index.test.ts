@@ -13,36 +13,43 @@ const spies = vi.hoisted(() => ({
 
 vi.mock('#commands/init.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { init: new Command('init').action(spies.init) };
 });
 
 vi.mock('#commands/codegen.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { codegen: new Command('codegen').action(spies.codegen) };
 });
 
 vi.mock('#commands/generate-server.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { generateServer: new Command('generate-server').action(spies.generateServer) };
 });
 
 vi.mock('#commands/auth.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { auth: new Command('auth').action(spies.auth) };
 });
 
 vi.mock('#commands/db.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { db: new Command('db').action(spies.db) };
 });
 
 vi.mock('#commands/deploy.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { deploy: new Command('deploy').action(spies.deploy) };
 });
 
 vi.mock('#commands/env.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
+
   return { env: new Command('env').action(spies.env) };
 });
 

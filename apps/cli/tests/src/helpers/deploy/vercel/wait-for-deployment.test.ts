@@ -28,6 +28,7 @@ describe('waitForDeployment', () => {
     poll({ json: { readyState: 'READY' } });
 
     const promise = waitForDeployment({ token: 't', deploymentId: 'dpl_1', orgId: 'team-1', type: 'normal' });
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await expect(promise).resolves.toBeUndefined();
@@ -37,6 +38,7 @@ describe('waitForDeployment', () => {
     const { calls } = poll({ json: { readyState: 'QUEUED' } }, { json: { readyState: 'BUILDING' } }, { json: { readyState: 'READY' } });
 
     const promise = waitForDeployment({ token: 't', deploymentId: 'dpl_1', orgId: undefined, type: 'normal' });
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
 
     await expect(promise).resolves.toBeUndefined();
@@ -50,6 +52,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', deploymentId: 'dpl_1', orgId: 'team-1', type: 'normal' });
     const assertion = expect(promise).rejects.toThrow('Deployment dpl_1 ended in ERROR state.');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -60,6 +63,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', deploymentId: 'dpl_1', orgId: 'team-1', type: 'placeholder' });
     const assertion = expect(promise).rejects.toThrow('Placeholder deployment dpl_1 was canceled.');
+
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
     await assertion;
@@ -70,6 +74,7 @@ describe('waitForDeployment', () => {
 
     const promise = waitForDeployment({ token: 't', deploymentId: 'dpl_1', orgId: undefined, type: 'normal' });
     const assertion = expect(promise).rejects.toThrow('deployment did not become ready within the time limit.');
+
     await vi.advanceTimersByTimeAsync(TIMEOUT_MS + POLL_INTERVAL_MS);
 
     await assertion;

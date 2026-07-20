@@ -19,6 +19,7 @@ describe('resolveRelativeImport', () => {
 
   it('resolves a sibling source file, preserving the .ts extension', () => {
     tmp.write('foo.ts', '');
+
     const fromFile = path.join(tmp.path, 'index.ts');
 
     expect(resolveRelativeImport(fromFile, './foo', 'ts')).toBe('./foo.ts');
@@ -26,6 +27,7 @@ describe('resolveRelativeImport', () => {
 
   it('rewrites the extension to .js when targeting js output', () => {
     tmp.write('foo.ts', '');
+
     const fromFile = path.join(tmp.path, 'index.ts');
 
     expect(resolveRelativeImport(fromFile, './foo', 'js')).toBe('./foo.js');
@@ -33,6 +35,7 @@ describe('resolveRelativeImport', () => {
 
   it('resolves a directory to its index file', () => {
     tmp.write('foo/index.ts', '');
+
     const fromFile = path.join(tmp.path, 'index.ts');
 
     expect(resolveRelativeImport(fromFile, './foo', 'ts')).toBe('./foo/index.ts');
@@ -41,6 +44,7 @@ describe('resolveRelativeImport', () => {
 
   it('preserves the original source extension (e.g. .tsx)', () => {
     tmp.write('foo.tsx', '');
+
     const fromFile = path.join(tmp.path, 'index.ts');
 
     expect(resolveRelativeImport(fromFile, './foo', 'ts')).toBe('./foo.tsx');
@@ -50,6 +54,7 @@ describe('resolveRelativeImport', () => {
   it('maps .mts and .cts sources to .mjs and .cjs when targeting js', () => {
     tmp.write('esm.mts', '');
     tmp.write('cjs.cts', '');
+
     const fromFile = path.join(tmp.path, 'index.ts');
 
     expect(resolveRelativeImport(fromFile, './esm', 'js')).toBe('./esm.mjs');

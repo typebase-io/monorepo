@@ -6,6 +6,7 @@ export const isTypebaseIoInstalled = () => {
 
   try {
     require.resolve('typebase-io/server');
+
     return true;
   } catch {
     return false;

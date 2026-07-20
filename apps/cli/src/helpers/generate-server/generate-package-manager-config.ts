@@ -8,6 +8,7 @@ export const generatePackageManagerConfig = async ({ outputDirPath }: { outputDi
 
   if (packageManager === 'yarn-berry') {
     const content = 'enableScripts: true\n';
+
     await fs.writeFile(path.join(outputDirPath, '.yarnrc.yml'), content);
 
     return '.yarnrc.yml';
@@ -15,6 +16,7 @@ export const generatePackageManagerConfig = async ({ outputDirPath }: { outputDi
 
   if (packageManager === 'bun') {
     const content = '[install]\ntrustedDependencies = ["esbuild"]\n';
+
     await fs.writeFile(path.join(outputDirPath, 'bunfig.toml'), content);
 
     return 'bunfig.toml';

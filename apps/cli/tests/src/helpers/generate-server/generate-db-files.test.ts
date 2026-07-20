@@ -32,6 +32,7 @@ describe('generateDBFiles', () => {
 
   it('creates the output directory and copies the db tree', async () => {
     tmp.write('db/schema.ts', 'export const schema = {};');
+
     const dbOutputDirPath = path.join(tmp.path, 'nested', 'out');
 
     await generateDBFiles({

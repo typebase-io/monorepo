@@ -4,6 +4,7 @@ export const revalidate = false;
 
 export async function GET() {
   const lines: string[] = [];
+
   lines.push('# Documentation');
   lines.push('');
 

@@ -47,7 +47,9 @@ export const deployPlaceholder = async ({
     const fileRefs = await Promise.all(
       files.map(async ({ file, content }) => {
         const absPath = path.join(tempDir, file);
+
         await fs.writeFile(absPath, content);
+
         const buffer = await fs.readFile(absPath);
 
         return {

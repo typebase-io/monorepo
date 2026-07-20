@@ -9,7 +9,9 @@ import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts
 const routeFetch = (responses: { accounts?: MockFetchResult; scripts?: MockFetchResult; subdomain?: MockFetchResult }) =>
   mockFetch((url) => {
     if (url.endsWith('/accounts')) return responses.accounts ?? {};
+
     if (url.endsWith('/workers/scripts')) return responses.scripts ?? {};
+
     if (url.endsWith('/workers/subdomain')) return responses.subdomain ?? {};
 
     return {};

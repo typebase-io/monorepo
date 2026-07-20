@@ -27,6 +27,7 @@ describe('vercel deploy', () => {
     tmp = createTempDir();
 
     const projectDir = await generateTypebaseProject(tmp);
+
     serverDirPath = await buildTypebaseServer(tmp, projectDir, { provider: 'vercel' });
 
     tmp.write('server/marker.txt', 'MARKER_CONTENT');
@@ -174,6 +175,7 @@ describe('vercel deploy', () => {
 
     vi.spyOn(global, 'setTimeout').mockImplementation(((callback: () => void) => {
       callback();
+
       return undefined;
     }) as never);
 

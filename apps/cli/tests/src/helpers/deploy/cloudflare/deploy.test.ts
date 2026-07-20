@@ -77,6 +77,7 @@ describe('deploy', () => {
 
     vi.mocked(execFile).mockImplementation(((...callArgs: unknown[]) => {
       const cb = callArgs[callArgs.length - 1] as (error: unknown, result?: unknown) => void;
+
       cb(null, { stdout: '', stderr: '' });
     }) as never);
   });
@@ -161,6 +162,7 @@ describe('deploy', () => {
   it('throws and does not bundle or upload when installing dependencies fails', async () => {
     vi.mocked(execFile).mockImplementation(((...callArgs: unknown[]) => {
       const cb = callArgs[callArgs.length - 1] as (error: unknown) => void;
+
       cb(new Error('install exploded'));
     }) as never);
 

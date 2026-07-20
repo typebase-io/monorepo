@@ -66,6 +66,7 @@ describe('codegen command', () => {
 
     for (const rel of actions) {
       const up = '../'.repeat(rel.split('/').length);
+
       tmp.write(
         `typebase/actions/${rel}`,
         `import { action } from "${up}_generated/server.ts";\n\nexport const handler = action.handler(async () => "ok");\n`

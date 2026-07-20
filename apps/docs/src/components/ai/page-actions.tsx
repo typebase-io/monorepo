@@ -21,6 +21,7 @@ export function LLMCopyButton({
   const [isLoading, setLoading] = useState(false);
   const [checked, onClick] = useCopyButton(async () => {
     const cached = cache.get(markdownUrl);
+
     if (cached) return navigator.clipboard.writeText(cached);
 
     setLoading(true);
@@ -30,6 +31,7 @@ export function LLMCopyButton({
         new ClipboardItem({
           'text/plain': fetch(markdownUrl).then(async (res) => {
             const content = await res.text();
+
             cache.set(markdownUrl, content);
 
             return content;

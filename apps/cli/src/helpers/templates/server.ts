@@ -16,6 +16,7 @@ export const serverTemplate = (hasDB: boolean, hasAuth: boolean) => {
 
   if (contextEntries.length === 0) {
     lines.push('', 'export const action = new Action(base);');
+
     return lines.join('\n');
   }
 

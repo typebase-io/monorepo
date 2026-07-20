@@ -39,6 +39,7 @@ describe('getDenoProject', () => {
 
   it('returns the saved deno config without hitting the API', async () => {
     tmp.write('typebase.json', JSON.stringify({ deno: { org: 'saved-org', projectId: 'saved-id', slug: 'saved-slug' } }));
+
     const { calls } = routeFetch({});
 
     const result = await withCwd(tmp.path, () => getDenoProject('deno-token'));

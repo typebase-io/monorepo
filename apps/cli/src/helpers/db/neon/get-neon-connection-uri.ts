@@ -34,6 +34,7 @@ export const getNeonConnectionUri = async ({
   });
 
   const connectionUrl = new URL(uriRes.data.uri);
+
   connectionUrl.searchParams.set('sslmode', 'verify-full');
 
   const connectionUri = connectionUrl.toString();

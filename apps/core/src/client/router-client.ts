@@ -25,5 +25,6 @@ export const createTanstackQueryClient = <TRouter extends AnyRouter = never>(
     : [options: RPCLinkOptions<ClientContext>, utilsOptions?: CreateRouterUtilsOptions<RouterClient<TRouter>>]
 ): RouterUtils<RouterClient<TRouter>> => {
   const [linkOptions, utilsOptions] = args as [RPCLinkOptions<ClientContext>, CreateRouterUtilsOptions<RouterClient<TRouter>>?];
+
   return createTanstackQueryUtils(buildClient<TRouter>(linkOptions), utilsOptions);
 };

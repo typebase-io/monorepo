@@ -25,6 +25,7 @@ export const getCloudflareWorker = async (token: string) => {
     accountsSpinner.fail('Failed to fetch accounts.');
 
     const body = await accountsRes.text();
+
     throw new Error(`Failed to fetch Cloudflare accounts: ${body}`);
   }
 
@@ -60,6 +61,7 @@ export const getCloudflareWorker = async (token: string) => {
     workersSpinner.fail('Failed to fetch workers.');
 
     const body = await res.text();
+
     throw new Error(`Failed to fetch Cloudflare workers: ${body}`);
   }
 
@@ -107,6 +109,7 @@ export const getCloudflareWorker = async (token: string) => {
     subdomainSpinner.fail('Failed to fetch subdomain.');
 
     const body = await subdomainRes.text();
+
     throw new Error(`Failed to fetch Cloudflare subdomain: ${body}`);
   }
 

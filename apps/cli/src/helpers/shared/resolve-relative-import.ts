@@ -11,6 +11,7 @@ export const resolveRelativeImport = (fromFile: string, specifier: string, ext: 
 
     if (fs.existsSync(path.join(dir, specifier, `index${srcExt}`))) {
       const outExt = ext === 'ts' ? srcExt : srcExt.replace(/ts$/, 'js');
+
       return `${specifier}/index${outExt}`;
     }
   }

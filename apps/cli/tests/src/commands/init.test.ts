@@ -101,6 +101,7 @@ describe('init command', () => {
     );
 
     const warnings = vi.mocked(console.warn).mock.calls.flat().map(String).join('\n');
+
     expect(warnings).toContain('Base URL could not be determined');
   });
 
