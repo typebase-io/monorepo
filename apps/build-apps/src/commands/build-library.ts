@@ -65,6 +65,20 @@ export const buildLibrary = new Command('build-library')
       const publishPackageJson = {
         name: 'typebase',
         version,
+        description: 'A type-safe backend you write as TypeScript files inside your existing app.',
+        license: 'MIT',
+        homepage: 'https://typebase.io',
+        repository: {
+          type: 'git',
+          url: 'git+https://github.com/typebase-io/monorepo.git',
+        },
+        bugs: {
+          url: 'https://github.com/typebase-io/monorepo/issues',
+        },
+        keywords: ['typebase', 'typebase-io', 'typescript', 'backend', 'cli', 'api', 'database', 'auth', 'drizzle', 'better-auth', 'orpc'],
+        engines: {
+          node: '>=20',
+        },
         type: 'module',
         bin: {
           'typebase-io-cli': './dist/bin/typebase.js',
@@ -141,6 +155,8 @@ export const buildLibrary = new Command('build-library')
       };
 
       await writeFile(path.join(publishDir, 'library', 'package.json'), `${JSON.stringify(publishPackageJson, null, 2)}\n`);
+      await cp(path.join(monorepoRoot, 'README.md'), path.join(libraryDir, 'README.md'));
+      await cp(path.join(monorepoRoot, 'LICENSE'), path.join(libraryDir, 'LICENSE'));
 
       spinner.succeed(chalk.green(`Done! Publishable package at ${chalk.bold('publish/library/')}`));
     } finally {

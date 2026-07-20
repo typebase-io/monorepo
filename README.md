@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./apps/docs/public/logo.svg" alt="Typebase" width="96" />
+  <img src="https://raw.githubusercontent.com/typebase-io/monorepo/main/apps/docs/public/logo.svg" alt="Typebase" width="96" />
 </p>
 
 <h1 align="center">Typebase</h1>
@@ -28,4 +28,4 @@ apps/
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](https://github.com/typebase-io/monorepo/blob/main/LICENSE)

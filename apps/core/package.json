@@ -3,7 +3,20 @@
   "version": "0.1.6",
   "private": false,
   "type": "module",
+  "description": "A type-safe backend you write as TypeScript files inside your existing app.",
   "license": "MIT",
+  "homepage": "https://typebase.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/typebase-io/monorepo.git",
+    "directory": "apps/core"
+  },
+  "bugs": {
+    "url": "https://github.com/typebase-io/monorepo/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "keywords": [
     "typebase",
     "typebase-io",
