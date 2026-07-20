@@ -17,7 +17,8 @@ This writes a runnable server to `typebase/_server/`. See the [generate-server r
 
 <Callout type="warn">
   The generated server is a snapshot of your `typebase/` directory. It isn't watching your files. Re-run `generate-server` (and restart the local
-  server) any time you change anything inside `typebase/`, whether that's an action, your schema, or your auth config.
+  server) any time you change anything inside `typebase/`, whether that's an action, your schema, or your auth config. Re-running replaces
+  `typebase/_server/` with a fresh build, but your `.env` and installed `node_modules` are preserved.
 </Callout>
 
 ## Start it

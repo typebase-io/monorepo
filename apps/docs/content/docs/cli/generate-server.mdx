@@ -115,6 +115,14 @@ _server/
   tsconfig.json       # TypeScript config
 ```
 
+## Regeneration
+
+Each run rebuilds the server from scratch and replaces the previous output directory — files whose source was deleted or renamed don't linger. Two exceptions survive regeneration because they belong to you, not the generator: `.env` and `node_modules`. Install dependencies and configure your env once; re-runs keep both.
+
+If a generation fails, the previous output is left untouched, so a working server is never destroyed by a failed rebuild.
+
+As a safety measure, the CLI only replaces a directory it recognizes as its own: one that is empty, doesn't exist yet, or contains the generated `@typebase-io/server` package. Pointing `--out-dir` (or `server.outDir`) at any other non-empty directory aborts with an error instead of overwriting it.
+
 ## Running the generated server
 
 After generating the server, you can run it like any Node.js project:

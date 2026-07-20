@@ -6,6 +6,7 @@ import { Command, InvalidArgumentError, Option } from '@commander-js/extra-typin
 import ora from 'ora';
 
 import { serverAdapters } from '#helpers/constants.ts';
+import { canReplaceServerDir } from '#helpers/generate-server/can-replace-server-dir.ts';
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
@@ -55,8 +56,17 @@ export const generateServer = new Command('generate-server')
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
 
-    const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
     const serverDistDirPath = path.resolve(typebaseDirPath, outDir);
+    const canWriteFiles = await canReplaceServerDir(serverDistDirPath);
+
+    if (!canWriteFiles) {
+      throw new Error(
+        `Refusing to replace \`${serverDistDirPath}\`: it is not empty and does not look like a previously generated Typebase server. Choose an empty or new directory, or delete it manually.`
+      );
+    }
+
+    const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
+    const tempDistDirPath = `${tempServerDirPath}-dist`;
     const tsConfigFileOutputPath = path.join(tempServerDirPath, 'tsconfig.json');
     const actionsOutputDirPath = path.join(tempServerDirPath, 'src', 'actions');
     const dbOutputDirPath = path.join(tempServerDirPath, 'src', 'db');
@@ -116,22 +126,40 @@ export const generateServer = new Command('generate-server')
 
       spinner.succeed('Server files generated!');
 
-      if (output === 'ts') {
-        await fs.cp(tempServerDirPath, serverDistDirPath, { recursive: true });
-      } else {
-        transpileTsToJs({ tsConfigFilePath: tsConfigFileOutputPath, cjs: output === 'cjs', quiet: false, tempServerDirPath, serverDistDirPath });
+      let outputDirPath = tempServerDirPath;
 
-        await fs.cp(tempServerDirPath, serverDistDirPath, {
+      if (output !== 'ts') {
+        transpileTsToJs({
+          tsConfigFilePath: tsConfigFileOutputPath,
+          cjs: output === 'cjs',
+          quiet: false,
+          tempServerDirPath,
+          serverDistDirPath: tempDistDirPath,
+        });
+
+        await fs.cp(tempServerDirPath, tempDistDirPath, {
           recursive: true,
           filter: (src) => !src.startsWith(path.join(tempServerDirPath, 'src')) && src !== path.join(tempServerDirPath, 'tsconfig.json'),
         });
+
+        outputDirPath = tempDistDirPath;
       }
+
+      const previousEntries = await fs.readdir(serverDistDirPath).catch(() => []);
+
+      for (const entry of previousEntries) {
+        if (entry !== '.env' && entry !== 'node_modules') {
+          await fs.rm(path.join(serverDistDirPath, entry), { recursive: true, force: true });
+        }
+      }
+
+      await fs.cp(outputDirPath, serverDistDirPath, { recursive: true });
     } catch (err) {
       spinner.stop();
-      await fs.rm(serverDistDirPath, { recursive: true, force: true });
       throw err;
     } finally {
       await fs.rm(tempServerDirPath, { recursive: true, force: true });
+      await fs.rm(tempDistDirPath, { recursive: true, force: true });
     }
 
     ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
