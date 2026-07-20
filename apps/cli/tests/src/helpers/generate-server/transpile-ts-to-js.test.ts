@@ -99,4 +99,24 @@ describe('transpileTsToJs', () => {
 
     expect(distHas('nested/deep/mod.js')).toBe(true);
   });
+
+  it('throws on syntax errors instead of emitting broken output', () => {
+    tmp.write('server/tsconfig.json', tsConfig());
+    tmp.write('server/index.ts', 'export const value: = broken(;');
+
+    expect(() => {
+      transpile(false, true);
+    }).toThrow('The generated server contains syntax errors');
+
+    expect(distHas('index.js')).toBe(false);
+  });
+
+  it('does not fail on semantic errors, which are expected before dependencies are installed', () => {
+    tmp.write('server/tsconfig.json', tsConfig());
+    tmp.write('server/index.ts', 'import { missing } from "not-installed";\nexport const value: number = missing;');
+
+    transpile(false, true);
+
+    expect(distHas('index.js')).toBe(true);
+  });
 });

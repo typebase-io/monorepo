@@ -36,6 +36,20 @@ export const transpileTsToJs = ({
     },
   });
 
+  const syntacticDiagnostics = transpileProgram.getSyntacticDiagnostics();
+
+  if (syntacticDiagnostics.length > 0) {
+    const formatted = ts.formatDiagnostics(syntacticDiagnostics, {
+      getCanonicalFileName: (fileName) => fileName,
+      getCurrentDirectory: () => tempServerDirPath,
+      getNewLine: () => '\n',
+    });
+
+    spinner?.fail('Transpilation failed.');
+
+    throw new Error(`The generated server contains syntax errors:\n${formatted}`);
+  }
+
   transpileProgram.emit();
 
   spinner?.succeed('Transpiled!');
