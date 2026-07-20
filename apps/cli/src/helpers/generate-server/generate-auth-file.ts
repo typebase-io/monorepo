@@ -59,7 +59,9 @@ export const generateAuthFile = async ({
     }
 
     if (!optionsObject) {
-      continue;
+      throw new Error(
+        `Could not generate the server auth file from \`${authFilePath}\`: \`defineAuth\` must be called with an inline object literal or a local variable initialized with one.`
+      );
     }
 
     optionsObject.insertPropertyAssignment(0, {

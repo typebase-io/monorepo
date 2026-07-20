@@ -1,2 +1,0 @@
-const config = makeConfig();
-export const auth = defineAuth(config);

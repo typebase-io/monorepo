@@ -146,25 +146,21 @@ export const auth = defineAuth(config);`;
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'non-object-arg.txt');
   });
 
-  it('leaves the call untouched when the argument is not a resolvable reference', async () => {
+  it('throws when the argument is not a resolvable reference', async () => {
     const source = `import { defineAuth } from "typebase-io/server";
 
 export const auth = defineAuth(getConfig());`;
 
-    await run(source);
-
-    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'unresolved-call.txt');
+    await expect(run(source)).rejects.toThrow('`defineAuth` must be called with an inline object literal');
   });
 
-  it('leaves the call untouched when the referenced variable does not hold an object literal', async () => {
+  it('throws when the referenced variable does not hold an object literal', async () => {
     const source = `import { defineAuth } from "typebase-io/server";
 
 const config = makeConfig();
 export const auth = defineAuth(config);`;
 
-    await run(source);
-
-    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'unresolved-variable.txt');
+    await expect(run(source)).rejects.toThrow('`defineAuth` must be called with an inline object literal');
   });
 
   it('only inserts the better-auth imports when there is no defineAuth call', async () => {
@@ -175,5 +171,15 @@ export const auth = {};`;
     await run(source);
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'no-defineauth.txt');
+  });
+
+  it('does not write any output file when the defineAuth argument cannot be transformed', async () => {
+    const source = `import { defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth(getConfig());`;
+
+    await expect(run(source)).rejects.toThrow();
+
+    expect(fs.existsSync(path.join(tmp.path, 'out', 'auth.ts'))).toBe(false);
   });
 });
