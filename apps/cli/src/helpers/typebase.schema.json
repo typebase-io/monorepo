@@ -38,6 +38,11 @@
           "type": "string",
           "description": "The output directory for the server build.",
           "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The port the generated server listens on."
         }
       },
       "additionalProperties": false
