@@ -6,14 +6,14 @@
     "build": "next build",
     "dev": "next dev",
     "start": "next start",
-    "lint": "fumadocs-mdx && next typegen && tsc --noEmit && prettier --check . && eslint .",
+    "lint": "next typegen && fumadocs-mdx && tsc --noEmit && prettier --check . && eslint .",
     "postinstall": "fumadocs-mdx"
   },
   "imports": {
     "#components/*": [
       "./src/components/*"
     ],
-    "#fumadocs-mdx:collections/*": [
+    "#collections/*": [
       "./.source/*"
     ],
     "#lib/*": [
@@ -28,25 +28,25 @@
   },
   "dependencies": {
     "@vercel/analytics": "2.0.1",
-    "fumadocs-core": "16.5.4",
-    "fumadocs-mdx": "14.2.7",
-    "fumadocs-ui": "16.5.4",
-    "lucide-react": "0.563.0",
-    "next": "16.1.6",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "tailwind-merge": "3.4.0"
+    "fumadocs-core": "16.11.5",
+    "fumadocs-mdx": "15.2.0",
+    "fumadocs-ui": "16.11.5",
+    "lucide-react": "1.25.0",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "4.1.18",
-    "@types/mdx": "2.0.13",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdx": "2.0.14",
     "@types/node": "24.1.0",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "eslint": "9.39.2",
-    "eslint-config-next": "16.1.6",
-    "postcss": "8.5.6",
-    "tailwindcss": "4.1.18",
+    "eslint-config-next": "16.2.10",
+    "postcss": "8.5.21",
+    "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
   }
 }

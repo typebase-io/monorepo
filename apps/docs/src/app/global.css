@@ -42,6 +42,25 @@
   background-repeat: no-repeat;
 }
 
+/* Keep a lone GitHub action visually ungrouped in the docs sidebar. */
+#nd-sidebar div:has(> [aria-label='GitHub']:only-child) {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+@media (width >= 48rem) {
+  #nd-sidebar div:has(> div > [aria-label='GitHub']:only-child) {
+    border-top: 1px solid var(--color-fd-border);
+  }
+}
+
+/* Shiki renders blank lines with an empty child span, so Fumadocs' `.line:empty`
+ * rule does not match them. Keep every highlighted line one line-box tall. */
+.shiki:not(.not-fumadocs-codeblock *) .line {
+  min-height: 1lh;
+}
+
 /*
  * Right-edge scroll shadow for horizontally scrollable content, no JS.
  * The scroller drives a named scroll timeline; the wrapper's ::after is a
