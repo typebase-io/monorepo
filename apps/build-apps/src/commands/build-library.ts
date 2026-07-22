@@ -5,9 +5,8 @@ import { Command } from '@commander-js/extra-typings';
 import chalk from 'chalk';
 import ora from 'ora';
 
-import { buildCli } from '#helpers/build-library/build-cli.ts';
+import { buildCli, cliExternalDependencies } from '#helpers/build-library/build-cli.ts';
 import { buildCore } from '#helpers/build-library/build-core.ts';
-import { loadCatalog, resolveCatalogVersions } from '#helpers/shared/catalog.ts';
 import { findMonorepoRoot } from '#helpers/shared/find-monorepo-root.ts';
 
 export const buildLibrary = new Command('build-library')
@@ -66,9 +65,19 @@ export const buildLibrary = new Command('build-library')
         dependencies: Record<string, string>;
       };
 
-      const catalog = await loadCatalog(monorepoRoot);
-      const coreDependencies = resolveCatalogVersions(corePackageJson.dependencies, catalog);
-      const cliDependencies = resolveCatalogVersions(cliPackageJson.dependencies, catalog);
+      const coreDependencies = corePackageJson.dependencies;
+
+      const cliDependencies = Object.fromEntries(
+        cliExternalDependencies.map((name) => {
+          const version = cliPackageJson.dependencies[name];
+
+          if (!version) {
+            throw new Error(`CLI dependency "${name}" is externalized by esbuild but missing from apps/cli/package.json`);
+          }
+
+          return [name, version];
+        })
+      );
 
       const publishPackageJson = {
         name: 'typebase',
@@ -151,11 +160,7 @@ export const buildLibrary = new Command('build-library')
         },
         dependencies: {
           ...coreDependencies,
-          '@neondatabase/api-client': cliDependencies['@neondatabase/api-client'],
-          'drizzle-kit': cliDependencies['drizzle-kit'],
-          'drizzle-orm': cliDependencies['drizzle-orm'],
-          esbuild: cliDependencies.esbuild,
-          pg: cliDependencies.pg,
+          ...cliDependencies,
         },
         peerDependencies: corePackageJson.peerDependencies,
         peerDependenciesMeta: corePackageJson.peerDependenciesMeta,

@@ -3,6 +3,8 @@ import path from 'path';
 
 import * as esbuild from 'esbuild';
 
+export const cliExternalDependencies = ['esbuild', '@neondatabase/api-client', 'drizzle-kit', 'drizzle-orm', 'pg', 'jiti'] as const;
+
 export const buildCli = async ({ monorepoRoot, tempDir }: { monorepoRoot: string; tempDir: string }) => {
   const cliRoot = path.join(monorepoRoot, 'apps', 'cli');
   const cliTmp = path.join(tempDir, 'cli');
@@ -46,7 +48,7 @@ export const buildCli = async ({ monorepoRoot, tempDir }: { monorepoRoot: string
     target: 'esnext',
     banner: { js: esmBannerLines.join(' ') },
     plugins: [cliAliasPlugin],
-    external: ['esbuild', '@neondatabase/api-client', 'drizzle-kit', 'drizzle-orm', 'pg', 'jiti'],
+    external: [...cliExternalDependencies],
     nodePaths: [path.join(cliRoot, 'node_modules'), path.join(monorepoRoot, 'node_modules')],
   });
 
@@ -58,7 +60,7 @@ export const buildCli = async ({ monorepoRoot, tempDir }: { monorepoRoot: string
     format: 'cjs',
     target: 'esnext',
     plugins: [cliAliasPlugin],
-    external: ['esbuild', '@neondatabase/api-client', 'drizzle-kit', 'drizzle-orm', 'pg', 'jiti'],
+    external: [...cliExternalDependencies],
     nodePaths: [path.join(cliRoot, 'node_modules'), path.join(monorepoRoot, 'node_modules')],
   });
 

@@ -3,7 +3,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
 
 import { DEPS, serverAdapters, serverProviders, typebaseConfigSchema } from '#helpers/constants.ts';
 
@@ -17,8 +16,6 @@ describe('constants', () => {
 describe('DEPS', () => {
   it('stays in sync with the versions the monorepo is built against', async () => {
     const monorepoRoot = fileURLToPath(new URL('../../../../..', import.meta.url));
-    const workspaceConfig = parse(await readFile(path.join(monorepoRoot, 'pnpm-workspace.yaml'), 'utf-8')) as { catalog?: Record<string, string> };
-    const catalog = workspaceConfig.catalog ?? {};
 
     const readPackageJson = async (...segments: string[]) =>
       JSON.parse(await readFile(path.join(monorepoRoot, ...segments, 'package.json'), 'utf-8')) as {
@@ -29,7 +26,7 @@ describe('DEPS', () => {
     const corePackageJson = await readPackageJson('apps', 'core');
     const cliPackageJson = await readPackageJson('apps', 'cli');
 
-    const workspaceVersions: Record<string, string> = { ...catalog };
+    const workspaceVersions: Record<string, string> = {};
 
     for (const dependencies of [
       corePackageJson.dependencies,
@@ -38,7 +35,7 @@ describe('DEPS', () => {
       cliPackageJson.devDependencies,
     ]) {
       for (const [name, version] of Object.entries(dependencies ?? {})) {
-        workspaceVersions[name] = version === 'catalog:' ? (catalog[name] ?? version) : version;
+        workspaceVersions[name] = version;
       }
     }
 
