@@ -7,6 +7,7 @@ export interface MockFetchResult {
   json?: unknown;
   text?: string;
   headers?: Record<string, string>;
+  body?: ReadableStream<Uint8Array> | null;
 }
 
 export interface RecordedFetchCall {
@@ -40,6 +41,7 @@ export const mockFetch = (handler: (url: string, init?: RequestInit) => MockFetc
       statusText: result.statusText ?? '',
       json: () => Promise.resolve(result.json),
       text: () => Promise.resolve(result.text ?? ''),
+      body: result.body ?? null,
       headers: { get: (name: string) => headers[name] ?? headers[name.toLowerCase()] ?? null },
     } as Response);
   });
