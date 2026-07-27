@@ -44,6 +44,83 @@ export class VercelClient {
     return data.deployments.length > 0;
   }
 
+  public async getDeployment({ idOrUrl }: { idOrUrl: string }): Promise<{ id: string; readyState: string } | undefined> {
+    const response = await fetch(`https://api.vercel.com/v13/deployments/${idOrUrl}${this.query}`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (response.status === 404) {
+      return undefined;
+    }
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as { id: string; readyState: string };
+
+    return { id: data.id, readyState: data.readyState };
+  }
+
+  public async getRequestLogs({
+    projectId,
+    deploymentId,
+    startDate,
+    endDate,
+    signal,
+  }: {
+    projectId: string;
+    deploymentId: string;
+    startDate: number;
+    endDate: number;
+    signal: AbortSignal;
+  }): Promise<
+    {
+      requestId?: string;
+      timestamp?: string | number;
+      requestMethod?: string;
+      requestPath?: string;
+      statusCode?: number;
+      logs?: { level?: string; message?: string }[];
+    }[]
+  > {
+    const params = new URLSearchParams({
+      projectId,
+      deploymentId,
+      page: '0',
+      startDate: String(startDate),
+      endDate: String(endDate),
+    });
+
+    if (this.#orgId) {
+      params.set('ownerId', this.#orgId);
+    }
+
+    const response = await fetch(`https://vercel.com/api/logs/request-logs?${params}`, {
+      method: 'GET',
+      headers: this.headers,
+      signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as {
+      rows?: {
+        requestId?: string;
+        timestamp?: string | number;
+        requestMethod?: string;
+        requestPath?: string;
+        statusCode?: number;
+        logs?: { level?: string; message?: string }[];
+      }[];
+    };
+
+    return data.rows ?? [];
+  }
+
   public async getDeploymentState({ deploymentId }: { deploymentId: string }): Promise<string> {
     const response = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}${this.query}`, {
       method: 'GET',

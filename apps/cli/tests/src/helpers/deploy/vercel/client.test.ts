@@ -56,6 +56,67 @@ describe('VercelClient', () => {
     await expect(client.hasAnyDeployment({ projectId: 'project-1' })).rejects.toThrow('deployments unavailable');
   });
 
+  it('gets a deployment by id or url', async () => {
+    const { calls } = mockFetch(() => ({ json: { id: 'dpl_1', readyState: 'READY' } }));
+
+    await expect(client.getDeployment({ idOrUrl: 'app-dev.vercel.app' })).resolves.toEqual({ id: 'dpl_1', readyState: 'READY' });
+
+    expect(calls[0]?.url).toBe('https://api.vercel.com/v13/deployments/app-dev.vercel.app?teamId=team-1');
+    expect(calls[0]?.method).toBe('GET');
+    expect(calls[0]?.headers).toEqual({ Authorization: 'Bearer vercel-token', 'Content-Type': 'application/json' });
+  });
+
+  it('returns undefined when the deployment does not exist', async () => {
+    mockFetch(() => ({ ok: false, status: 404, text: 'not found' }));
+
+    await expect(personalClient.getDeployment({ idOrUrl: 'missing.vercel.app' })).resolves.toBeUndefined();
+  });
+
+  it('throws when getting a deployment fails', async () => {
+    mockFetch(() => ({ ok: false, status: 500, text: 'deployment lookup failed' }));
+
+    await expect(client.getDeployment({ idOrUrl: 'app-dev.vercel.app' })).rejects.toThrow('deployment lookup failed');
+  });
+
+  it('gets request logs with owner scoping and the date window', async () => {
+    const rows = [{ requestId: 'req_1', requestMethod: 'GET', requestPath: '/api', statusCode: 200, logs: [] }];
+    const { calls } = mockFetch(() => ({ json: { rows } }));
+
+    await expect(
+      client.getRequestLogs({ projectId: 'prj_1', deploymentId: 'dpl_1', startDate: 1_000, endDate: 2_000, signal: new AbortController().signal })
+    ).resolves.toEqual(rows);
+
+    expect(calls[0]?.url).toBe(
+      'https://vercel.com/api/logs/request-logs?projectId=prj_1&deploymentId=dpl_1&page=0&startDate=1000&endDate=2000&ownerId=team-1'
+    );
+    expect(calls[0]?.method).toBe('GET');
+    expect(calls[0]?.headers).toEqual({ Authorization: 'Bearer vercel-token', 'Content-Type': 'application/json' });
+  });
+
+  it('gets request logs without owner scoping and defaults missing rows to an empty array', async () => {
+    const { calls } = mockFetch(() => ({ json: {} }));
+
+    await expect(
+      personalClient.getRequestLogs({
+        projectId: 'prj_1',
+        deploymentId: 'dpl_1',
+        startDate: 1_000,
+        endDate: 2_000,
+        signal: new AbortController().signal,
+      })
+    ).resolves.toEqual([]);
+
+    expect(calls[0]?.url).toBe('https://vercel.com/api/logs/request-logs?projectId=prj_1&deploymentId=dpl_1&page=0&startDate=1000&endDate=2000');
+  });
+
+  it('throws when getting request logs fails', async () => {
+    mockFetch(() => ({ ok: false, text: 'logs unavailable' }));
+
+    await expect(
+      client.getRequestLogs({ projectId: 'prj_1', deploymentId: 'dpl_1', startDate: 1_000, endDate: 2_000, signal: new AbortController().signal })
+    ).rejects.toThrow('logs unavailable');
+  });
+
   it('reads a deployment state', async () => {
     const { calls } = mockFetch(() => ({ json: { readyState: 'BUILDING' } }));
 
