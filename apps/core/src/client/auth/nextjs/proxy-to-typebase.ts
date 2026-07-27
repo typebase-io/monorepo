@@ -8,6 +8,8 @@ export const proxyToTypebase = async (request: NextRequest, typebaseAppUrl: stri
   const headers = new Headers(request.headers);
 
   headers.delete('host');
+  headers.delete('x-forwarded-host');
+  headers.delete('x-forwarded-proto');
   headers.set('accept-encoding', 'identity');
 
   const res = await fetch(targetUrl, {

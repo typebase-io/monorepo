@@ -6,6 +6,8 @@ export const proxyToTypebase = async (event: RequestEvent, typebaseAppUrl: strin
   const headers = new Headers(event.request.headers);
 
   headers.delete('host');
+  headers.delete('x-forwarded-host');
+  headers.delete('x-forwarded-proto');
   headers.set('accept-encoding', 'identity');
 
   return event.fetch(targetUrl, {
