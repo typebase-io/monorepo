@@ -7,6 +7,7 @@ const spies = vi.hoisted(() => ({
   auth: vi.fn(),
   db: vi.fn(),
   deploy: vi.fn(),
+  logs: vi.fn(),
   env: vi.fn(),
   isTypebaseIoInstalled: vi.fn(),
 }));
@@ -45,6 +46,12 @@ vi.mock('#commands/deploy.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
 
   return { deploy: new Command('deploy').action(spies.deploy) };
+});
+
+vi.mock('#commands/logs.ts', async () => {
+  const { Command } = await import('@commander-js/extra-typings');
+
+  return { logs: new Command('logs').action(spies.logs) };
 });
 
 vi.mock('#commands/env.ts', async () => {
@@ -102,17 +109,17 @@ describe('cli entrypoint', () => {
     expect(exitSpy).toHaveBeenCalled();
   });
 
-  it('runs the env command without checking for the typebase-io install', async () => {
+  it.each(['env', 'logs'] as const)('runs the %s command without checking for the typebase-io install', async (command) => {
     spies.isTypebaseIoInstalled.mockReturnValue(false);
 
-    await runCli(['env']);
+    await runCli([command]);
 
     expect(spies.isTypebaseIoInstalled).not.toHaveBeenCalled();
-    expect(spies.env).toHaveBeenCalledOnce();
+    expect(spies[command]).toHaveBeenCalledOnce();
     expect(stderr()).not.toContain('typebase-io');
   });
 
-  it('blocks a non-env subcommand when typebase-io is missing', async () => {
+  it('blocks a subcommand that needs the package when typebase-io is missing', async () => {
     spies.isTypebaseIoInstalled.mockReturnValue(false);
 
     await runCli(['db']);

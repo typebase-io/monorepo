@@ -10,6 +10,7 @@ import { deploy } from '#commands/deploy.ts';
 import { env } from '#commands/env.ts';
 import { generateServer } from '#commands/generate-server.ts';
 import { init } from '#commands/init.ts';
+import { logs } from '#commands/logs.ts';
 
 import { isTypebaseIoInstalled } from '#helpers/shared/is-typebase-io-installed.ts';
 
@@ -21,7 +22,7 @@ const main = async () => {
     .usage('<command> [options]')
     .description('Start developing with Typebase by running `npx typebase-io-cli init`.')
     .hook('preSubcommand', (_program, subcommand) => {
-      if (subcommand.name() === 'env' || isTypebaseIoInstalled()) {
+      if (subcommand.name() === 'env' || subcommand.name() === 'logs' || isTypebaseIoInstalled()) {
         return;
       }
 
@@ -37,6 +38,7 @@ const main = async () => {
     .addCommand(auth)
     .addCommand(db)
     .addCommand(deploy)
+    .addCommand(logs)
     .addCommand(env);
 
   try {
