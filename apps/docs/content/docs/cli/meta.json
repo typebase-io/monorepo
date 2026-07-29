@@ -1,4 +1,4 @@
 {
   "title": "CLI",
-  "pages": ["index", "init", "codegen", "deploy", "generate-server", "db", "auth", "env"]
+  "pages": ["index", "init", "codegen", "deploy", "generate-server", "db", "auth", "env", "logs"]
 }

@@ -1,0 +1,127 @@
+---
+title: typebase-io-cli logs
+description: Stream runtime logs from your deployed Typebase server.
+---
+
+Stream runtime logs from your deployed Typebase server. Press `x` or `Ctrl+C` to stop.
+
+## `logs <target>`
+
+Stream the logs of your `dev` or `prod` deployment.
+
+```npm
+npx typebase-io-cli logs dev
+```
+
+```npm
+npx typebase-io-cli logs prod
+```
+
+To deploy and start streaming in one step, pass [`--logs` to the deploy command](/docs/cli/deploy) instead:
+
+```npm
+npx typebase-io-cli deploy dev --logs
+```
+
+Each line shows the time, the level, the request it belongs to, and the message:
+
+```
+12:34:56 INFO POST /rpc/mutations/todos/create 201
+12:34:56 INFO added todo 42
+12:34:57 ERROR Error: could not notify subscriber
+```
+
+## Options
+
+| Flag                    | Description                                            | Default              |
+| ----------------------- | ------------------------------------------------------ | -------------------- |
+| `--provider <provider>` | Deployment provider: `vercel`, `cloudflare`, or `deno` | From `typebase.json` |
+
+The provider is resolved the same way as [`deploy`](/docs/cli/deploy): the `--provider` flag wins, then `serverProvider` in
+`typebase.json`, and if neither is set the CLI asks you to pick one.
+
+## Stopping the stream
+
+Press `x`, `X`, or `Ctrl+C`. The command restores your terminal on the way out, including when it is stopped mid-connection.
+
+<Callout type="info">
+  The keypress only works when the command owns a terminal. If you pipe the output somewhere (`| tee`, CI, a background job), `x` does nothing — send
+  `SIGINT` to the process instead.
+</Callout>
+
+## What the providers have in common
+
+- The stream is attached to the deployment currently serving that target's URL, so run it after a [`deploy`](/docs/cli/deploy). If the target was
+  never deployed, the command says so and exits with a non-zero code.
+- Connections are re-established automatically, so a stream can stay open indefinitely.
+- Levels are normalized: `warn` prints as `WARNING`, and anything Typebase treats as an error prints as `ERROR` in red.
+
+## Provider differences
+
+How logs reach you differs per provider, because each one exposes a different API:
+
+| Behaviour            | Vercel                     | Deno Deploy             | Cloudflare              |
+| -------------------- | -------------------------- | ----------------------- | ----------------------- |
+| Delivery             | Polled every 2s            | Streamed (NDJSON)       | Streamed (tail session) |
+| Delay before a line  | ~10–20s                    | ~1–2s                   | Under a second          |
+| `console.log` calls  | First one per request only | All                     | All                     |
+| Requests with no log | Shown                      | Not shown               | Shown                   |
+| History on start     | Last ~60s                  | Last ~60s               | None, live only         |
+| Survives a redeploy  | No, restart the command    | No, restart the command | Yes                     |
+
+### Vercel
+
+Vercel has no working log-streaming endpoint, so the CLI polls the same request-logs API the Vercel dashboard uses, every two seconds, and skips
+requests it has already printed.
+
+<Callout type="info">
+  Lines typically appear 10–20 seconds after the request. That is Vercel's log ingestion delay — the dashboard and the official `vercel logs` CLI are
+  equally delayed, so there is nothing the CLI can do to be faster.
+</Callout>
+
+<Callout type="warn">
+  If an action calls `console.log` several times while handling one request, Vercel's API only keeps the first one. Combine the values into a single
+  `console.log` when you need to see more than one.
+</Callout>
+
+### Deno Deploy
+
+Deno Deploy streams newline-delimited JSON, so lines arrive as they happen and every `console.log` is delivered. Lines produced while handling a
+request carry a shortened OpenTelemetry trace id, which tells you which lines belong together:
+
+```
+12:34:56 INFO [a1b2c3d4] fetching feed
+12:34:56 INFO [a1b2c3d4] found 12 posts
+```
+
+<Callout type="info">
+  The Deno Deploy console splits Logs and Traces into separate tabs and only the Logs API is public. Requests that never call `console.log` therefore
+  do not appear in the stream. Paste a trace id into the console's Traces search to see the full request.
+</Callout>
+
+<Callout type="info">
+  `logs dev` follows the specific preview revision that was live when it started. After deploying again, restart the command to follow the new one.
+</Callout>
+
+### Cloudflare
+
+Cloudflare logs arrive over a [tail session](https://developers.cloudflare.com/workers/observability/logs/real-time-logs/) — the same mechanism
+`wrangler tail` uses, and the fastest of the three. One message covers a whole invocation: the request line, then everything it logged, then any
+exception with its stack.
+
+Because the tail follows the Worker by name, it keeps working across deploys: redeploy in another terminal and the stream picks up the new version.
+
+<Callout type="warn">
+  Needs the global `WebSocket`, available from Node 22.4. On older versions the command exits with an error telling you to upgrade. Vercel and Deno
+  Deploy are unaffected.
+</Callout>
+
+<Callout type="info">
+  Tail sessions expire after about an hour; the CLI opens a new one automatically. When you stop the stream it shows a short `Closing the log
+  stream...` spinner while it releases the session on Cloudflare's side.
+</Callout>
+
+<Callout type="info">
+  Cloudflare samples tail messages when a Worker takes more traffic than the session can carry, so a very busy Worker may not show every request. Dev
+  and prod deployments with normal traffic stream everything.
+</Callout>

@@ -61,6 +61,21 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 | Flag                    | Description                                            |
 | ----------------------- | ------------------------------------------------------ |
 | `--provider <provider>` | Deployment provider: `vercel`, `cloudflare`, or `deno` |
+| `--logs`                | Stream the server logs once the deployment is live     |
+
+## Streaming logs after deploying
+
+Pass `--logs` to tail the server as soon as the deployment goes live, without running a second command:
+
+```npm
+npx typebase-io-cli deploy dev --logs
+```
+
+The stream starts once the deployment URL has been printed, and keeps running until you press `x` or `Ctrl+C`. It reuses the target and provider of
+the deploy, so it never asks you anything a second time. Everything else works exactly like [`typebase-io-cli logs`](/docs/cli/logs), including the
+[provider differences](/docs/cli/logs#provider-differences) in delivery speed and completeness.
+
+<Callout type="info">A failed deploy stops before the stream starts, so you never end up tailing a version that did not ship.</Callout>
 
 ## Dev vs Prod environments
 
