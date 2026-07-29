@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { generateServer } from '#commands/generate-server.ts';
@@ -79,6 +80,8 @@ describe('generate-server command', () => {
       fs.rmSync(path.join(tmp.path, 'typebase/db'), { recursive: true, force: true });
     }
   };
+
+  const succeeded = () => vi.mocked(ora()).succeed.mock.calls.flat().map(String).join('\n');
 
   const expectServer = (outcome: string, files: string[], root = '_server') => {
     expectProject(tmp, outcome, files, { namespace: 'generate-server', root: `typebase/${root}` });
@@ -292,6 +295,16 @@ export const auth = defineAuth({
       );
 
       expect(tmp.read('important/notes.txt')).toBe('do not delete');
+    });
+
+    it('reports the absolute path when the server is generated into the current directory', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      tmp.write('package.json', JSON.stringify({ name: '@typebase-io/server' }));
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--out-dir', '..'], { from: 'user' }));
+
+      expect(succeeded()).toContain(`Server files generated in \`${tmp.path}\`.`);
     });
 
     it('rejects an invalid --port value', async () => {

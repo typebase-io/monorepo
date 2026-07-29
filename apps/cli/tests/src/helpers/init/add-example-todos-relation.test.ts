@@ -68,6 +68,26 @@ export const relations = q.defineRelations(schema, (r) => ({
 `);
   });
 
+  it('throws when the relations callback has a block body instead of an object literal', () => {
+    tmp.write(
+      'relations.ts',
+      `import { q } from "typebase-io/db";
+
+import * as schema from "./schema.ts";
+
+export const relations = q.defineRelations(schema, (r) => {
+  return {
+    users: {},
+  };
+});
+`
+    );
+
+    expect(() => {
+      addExampleTodosRelation({ relationsFilePath: path.join(tmp.path, 'relations.ts') });
+    }).toThrow('no `users` entry found');
+  });
+
   it('throws when there is no users entry', () => {
     tmp.write(
       'relations.ts',

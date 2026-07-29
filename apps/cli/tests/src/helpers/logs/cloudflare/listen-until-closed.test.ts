@@ -33,7 +33,6 @@ class FakeWebSocket {
 
   public close(): void {
     this.closeCalls++;
-    this.emit('close', {});
   }
 
   public emit(type: string, event: unknown): void {
@@ -75,7 +74,7 @@ describe('listenUntilClosed', () => {
     expect(socket().protocol).toBe('trace-v1');
     expect(socket().binaryType).toBe('arraybuffer');
 
-    socket().close();
+    socket().emit('close', {});
     await promise;
   });
 
@@ -89,7 +88,7 @@ describe('listenUntilClosed', () => {
 
     expect(socket().sent).toEqual([JSON.stringify({ debug: false })]);
 
-    socket().close();
+    socket().emit('close', {});
     await promise;
   });
 
@@ -105,7 +104,7 @@ describe('listenUntilClosed', () => {
     expect(printMessage).toHaveBeenNthCalledWith(1, '{"outcome":"ok"}');
     expect(printMessage).toHaveBeenNthCalledWith(2, binary);
 
-    socket().close();
+    socket().emit('close', {});
     await promise;
   });
 
@@ -118,7 +117,7 @@ describe('listenUntilClosed', () => {
     await expect(promise).resolves.toBeUndefined();
   });
 
-  it('closes the socket and resolves when the signal aborts', async () => {
+  it('closes the socket and resolves on abort without waiting for the closing handshake', async () => {
     const abort = new AbortController();
     const promise = listenUntilClosed({ url: 'wss://tail.example.com/tail-1', signal: abort.signal });
 
