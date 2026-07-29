@@ -17,6 +17,7 @@ import { getCloudflareEnvVar } from '#helpers/env/cloudflare.ts';
 import { getDenoEnvVar } from '#helpers/env/deno.ts';
 import { getVercelEnvVar } from '#helpers/env/vercel.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
+import { streamLogs } from '#helpers/logs/stream-logs.ts';
 import * as ValidateTypes from '#helpers/shared/validate-types.ts';
 
 import { expectProject } from '#tests/helpers/expect-project.ts';
@@ -47,6 +48,7 @@ vi.mock('#helpers/env/cloudflare.ts', () => ({ getCloudflareEnvVar: vi.fn() }));
 vi.mock('#helpers/deploy/vercel/index.ts', () => ({ vercel: vi.fn() }));
 vi.mock('#helpers/deploy/deno/index.ts', () => ({ deno: vi.fn() }));
 vi.mock('#helpers/deploy/cloudflare/index.ts', () => ({ cloudflare: vi.fn() }));
+vi.mock('#helpers/logs/stream-logs.ts', () => ({ streamLogs: vi.fn() }));
 vi.mock('#helpers/generate-server/generate-package-json.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 
 const CONNECTION_URI = 'postgres://neon/db';
@@ -359,6 +361,42 @@ describe('deploy command', () => {
 
       expect(vi.mocked(console.log).mock.calls.flat().map(String).join('\n')).toContain('Deployment Id: dep_123');
       expect(vi.mocked(console.log).mock.calls.flat().map(String).join('\n')).toContain(`Deployment URL: ${DEPLOY_URL}`);
+    });
+
+    it('does not stream logs unless --logs is passed', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(streamLogs).not.toHaveBeenCalled();
+    });
+
+    it.each(['dev', 'prod'] as const)('streams the %s logs after deploying when --logs is passed', async (target) => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => deploy.parseAsync([target, '--provider', 'deno', '--logs'], { from: 'user' }));
+
+      expect(streamLogs).toHaveBeenCalledWith({ target, provider: 'deno' });
+      expect(vi.mocked(deno)).toHaveBeenCalledBefore(vi.mocked(streamLogs));
+    });
+
+    it('streams with the provider chosen at the prompt', async () => {
+      vi.mocked(select).mockResolvedValue('cloudflare');
+
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--logs'], { from: 'user' }));
+
+      expect(streamLogs).toHaveBeenCalledWith({ target: 'dev', provider: 'cloudflare' });
+    });
+
+    it('skips the logs when the deployment fails', async () => {
+      vi.mocked(vercel).mockRejectedValueOnce(new Error('deploy failed'));
+
+      await setupProject({ withAuth: true, withDb: true });
+
+      await expect(withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel', '--logs'], { from: 'user' }))).rejects.toThrow(
+        'deploy failed'
+      );
+
+      expect(streamLogs).not.toHaveBeenCalled();
     });
 
     it('bundles the package-manager config file when one is generated', async () => {

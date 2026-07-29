@@ -26,6 +26,7 @@ import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
+import { streamLogs } from '#helpers/logs/stream-logs.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
@@ -48,6 +49,7 @@ export const deploy = new Command('deploy')
     return target as 'dev' | 'prod';
   })
   .addOption(new Option('--provider <provider>', 'Deployment provider').choices(serverProviders))
+  .option('--logs', 'Stream the server logs once the deployment is live')
   .allowExcessArguments(false)
   .action(async (target, options) => {
     const { projectPath, serverProvider, server } = await getTypebaseConfig();
@@ -233,5 +235,11 @@ export const deploy = new Command('deploy')
     } finally {
       spinner.stop();
       await fs.rm(tempServerDirPath, { recursive: true, force: true });
+    }
+
+    if (options.logs) {
+      console.log(chalk.dim('\nStreaming logs. Press "x" or Ctrl+C to stop.'));
+
+      await streamLogs({ target, provider });
     }
   });
