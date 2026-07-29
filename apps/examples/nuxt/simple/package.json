@@ -14,12 +14,12 @@
     "@tailwindcss/vite": "4.2.2",
     "nuxt": "4.4.2",
     "tailwindcss": "4.2.2",
-    "typebase-io": "0.0.1",
+    "typebase-io": "latest",
     "vue": "3.5.32",
     "vue-router": "5.0.4",
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "typebase-io-cli": "0.0.1"
+    "typebase-io-cli": "latest"
   }
 }

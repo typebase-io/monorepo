@@ -27,13 +27,13 @@
     "react-native-safe-area-context": "5.6.2",
     "react-native-screens": "4.16.0",
     "tailwindcss": "4.2.2",
-    "typebase-io": "0.0.1",
+    "typebase-io": "latest",
     "uniwind": "1.6.2",
     "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/react": "19.1.10",
-    "typebase-io-cli": "0.0.1",
+    "typebase-io-cli": "latest",
     "typescript": "5.9.2"
   }
 }

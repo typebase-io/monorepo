@@ -32,13 +32,13 @@
 		"svelte": "5.55.3",
 		"svelte-check": "4.4.6",
 		"tailwindcss": "4.2.2",
-		"typebase-io-cli": "0.0.1",
+		"typebase-io-cli": "latest",
 		"typescript": "6.0.2",
 		"typescript-eslint": "8.58.1",
 		"vite": "8.0.8"
 	},
 	"dependencies": {
-		"typebase-io": "0.0.1",
+		"typebase-io": "latest",
 		"zod": "4.3.6"
 	}
 }
