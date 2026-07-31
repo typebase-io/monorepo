@@ -3,4 +3,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.db = void 0;
 const node_postgres_1 = require("drizzle-orm/node-postgres");
 const relations_js_1 = require("./relations.js");
-exports.db = (0, node_postgres_1.drizzle)(process.env.DATABASE_URL || "", { relations: relations_js_1.relations, casing: "snake_case" });
+const env_js_1 = require("../env.js");
+exports.db = (0, node_postgres_1.drizzle)(env_js_1.env.DATABASE_URL, { relations: relations_js_1.relations, casing: "snake_case" });

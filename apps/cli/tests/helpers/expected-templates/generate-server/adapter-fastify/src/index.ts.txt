@@ -1,5 +1,7 @@
 import 'dotenv/config';
 
+import "./env.ts";
+
 import Fastify from "fastify";
 import { RPCHandler } from "@orpc/server/fastify";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";

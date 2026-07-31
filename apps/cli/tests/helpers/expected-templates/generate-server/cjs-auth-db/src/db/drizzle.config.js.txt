@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const drizzle_kit_1 = require("drizzle-kit");
+const env_js_1 = require("../env.js");
 exports.default = (0, drizzle_kit_1.defineConfig)({
     out: "./drizzle",
     schema: "./src/db/schema.js",
     dialect: "postgresql",
     dbCredentials: {
-        url: process.env.DATABASE_URL || "",
+        url: env_js_1.env.DATABASE_URL,
         ssl: "verify-full",
     },
 });

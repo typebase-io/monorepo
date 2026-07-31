@@ -65,12 +65,15 @@ const JS_AUTH_DB = [
   'src/db/index.js',
   'src/db/relations.js',
   'src/db/schema.js',
+  'src/env.js',
   'src/index.js',
 ];
 
 const JS_DB_ONLY = JS_AUTH_DB.filter((f) => f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js');
 const JS_AUTH_ONLY = JS_AUTH_DB.filter((f) => !f.startsWith('src/db/'));
-const JS_BARE = JS_AUTH_DB.filter((f) => !f.startsWith('src/db/') && f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js');
+const JS_BARE = JS_AUTH_DB.filter(
+  (f) => !f.startsWith('src/db/') && f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js' && f !== 'src/env.js'
+);
 
 describe('deploy command', () => {
   let tmp: TempDir;

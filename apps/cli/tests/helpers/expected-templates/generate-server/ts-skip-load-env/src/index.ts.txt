@@ -1,3 +1,5 @@
+import "./env.ts";
+
 import { createServer } from "node:http";
 import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";

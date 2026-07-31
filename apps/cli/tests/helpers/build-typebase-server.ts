@@ -9,6 +9,7 @@ import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
 import { generateDBFiles } from '#helpers/generate-server/generate-db-files.ts';
+import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
 import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
@@ -16,6 +17,7 @@ import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
 import { hasDB } from '#helpers/shared/has-db.ts';
+import { hasEnv } from '#helpers/shared/has-env.ts';
 
 import { type TempDir } from '#tests/helpers/temp-dir.ts';
 
@@ -35,8 +37,11 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
 
   const schemaFilePath = path.join(projectDir, 'db', 'schema.ts');
   const authFilePath = path.join(projectDir, 'auth.ts');
+  const envFilePath = path.join(projectDir, 'env.ts');
+
   const includeDBFiles = hasDB(schemaFilePath);
   const includeAuthFile = hasAuth(authFilePath);
+  const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
 
   const tempServerDir = path.join(tmp.path, 'temp-server');
   const serverDir = path.join(tmp.path, 'server');
@@ -53,12 +58,26 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     skipLoadEnv,
     outDir: 'build',
     hasAuth: includeAuthFile,
+    hasEnv: includeEnvFile,
   });
+
+  if (includeEnvFile) {
+    await generateEnvFile({
+      envFilePath,
+      envOutputDirPath: path.join(tempServerDir, 'src'),
+      adapter,
+      hasDB: includeDBFiles,
+      hasAuth: includeAuthFile,
+      useTs: false,
+      target: undefined,
+    });
+  }
 
   await generateAction({
     serverOutputDirPath: path.join(tempServerDir, 'src', '_generated'),
     hasDB: includeDBFiles,
     hasAuth: includeAuthFile,
+    hasEnv: includeDBFiles || includeAuthFile || hasEnv(path.join(projectDir, 'env.ts')),
   });
 
   await generateActionsFiles({
@@ -85,6 +104,7 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     actionsOutputDirPath: path.join(tempServerDir, 'src', 'actions'),
     generation: output,
     hasAuth: includeAuthFile,
+    hasEnv: includeEnvFile,
     trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
   });
 

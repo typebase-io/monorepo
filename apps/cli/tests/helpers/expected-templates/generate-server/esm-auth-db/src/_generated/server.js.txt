@@ -2,6 +2,7 @@ import { os } from "@orpc/server";
 import { Action } from "typebase-io/server";
 import { db } from "../db/index.js";
 import { auth } from "../auth.js";
+import { env } from "../env.js";
 const base = os.$context();
 const providerMiddleware = base
     .$context()
@@ -10,6 +11,7 @@ const providerMiddleware = base
         context: {
             db: context.db ?? db,
             auth: context.auth ?? auth,
+            env: context.env ?? env,
         },
     });
 });

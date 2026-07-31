@@ -2,15 +2,17 @@ import { os } from "@orpc/server";
 import { Action } from "typebase-io/server";
 import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
 import { db } from "../db/index.ts";
+import { env } from "../env.ts";
 
 const base = os.$context<RequestHeadersPluginContext>();
 
 const providerMiddleware = base
-  .$context<{ db?: typeof db }>()
+  .$context<{ db?: typeof db; env?: typeof env }>()
   .middleware(async ({ context, next }) => {
     return next({
       context: {
         db: context.db ?? db,
+        env: context.env ?? env,
       },
     });
   });

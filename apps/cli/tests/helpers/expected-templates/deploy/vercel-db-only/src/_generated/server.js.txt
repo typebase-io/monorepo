@@ -1,6 +1,7 @@
 import { os } from "@orpc/server";
 import { Action } from "typebase-io/server";
 import { db } from "../db/index.js";
+import { env } from "../env.js";
 const base = os.$context();
 const providerMiddleware = base
     .$context()
@@ -8,6 +9,7 @@ const providerMiddleware = base
     return next({
         context: {
             db: context.db ?? db,
+            env: context.env ?? env,
         },
     });
 });

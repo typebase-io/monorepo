@@ -3,16 +3,18 @@ import { Action } from "typebase-io/server";
 import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
 import { db } from "../db/index.ts";
 import { auth } from "../auth.ts";
+import { env } from "../env.ts";
 
 const base = os.$context<RequestHeadersPluginContext>();
 
 const providerMiddleware = base
-  .$context<{ db?: typeof db; auth?: typeof auth }>()
+  .$context<{ db?: typeof db; auth?: typeof auth; env?: typeof env }>()
   .middleware(async ({ context, next }) => {
     return next({
       context: {
         db: context.db ?? db,
         auth: context.auth ?? auth,
+        env: context.env ?? env,
       },
     });
   });

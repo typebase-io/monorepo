@@ -5,6 +5,7 @@ const server_1 = require("@orpc/server");
 const server_2 = require("typebase-io/server");
 const index_ts_1 = require("../db/index.js");
 const auth_ts_1 = require("../auth.js");
+const env_ts_1 = require("../env.js");
 const base = server_1.os.$context();
 const providerMiddleware = base
     .$context()
@@ -13,6 +14,7 @@ const providerMiddleware = base
         context: {
             db: context.db ?? index_ts_1.db,
             auth: context.auth ?? auth_ts_1.auth,
+            env: context.env ?? env_ts_1.env,
         },
     });
 });

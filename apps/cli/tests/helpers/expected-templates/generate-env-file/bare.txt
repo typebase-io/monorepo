@@ -1,0 +1,28 @@
+import { createEnv } from "@t3-oss/env-core";
+
+export const env = createEnv({
+  server: {},
+  runtimeEnv: process.env,
+  emptyStringAsUndefined: true,
+  skipValidation: false,
+  onValidationError: (issues) => {
+    const entries = issues.map((issue) => ({ name: String(issue.path?.[0] ?? "?"), message: issue.message }));
+    const width = Math.max(0, ...entries.map((entry) => entry.name.length));
+
+    console.error(
+      [
+        "",
+        "✗ Typebase server failed to start.",
+        "",
+        "  Invalid environment variables:",
+        ...entries.map((entry) => `    ${entry.name.padEnd(width)}  ${entry.message}`),
+        "",
+        "  Set them with:",
+        "    npx typebase-io-cli env <target> add <KEY> <value>",
+        "",
+      ].join("\n"),
+    );
+
+    throw new Error("Typebase server failed to start: invalid environment variables.");
+  },
+});

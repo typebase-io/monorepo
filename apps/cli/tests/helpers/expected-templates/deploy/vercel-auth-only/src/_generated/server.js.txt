@@ -1,6 +1,7 @@
 import { os } from "@orpc/server";
 import { Action } from "typebase-io/server";
 import { auth } from "../auth.js";
+import { env } from "../env.js";
 const base = os.$context();
 const providerMiddleware = base
     .$context()
@@ -8,6 +9,7 @@ const providerMiddleware = base
     return next({
         context: {
             auth: context.auth ?? auth,
+            env: context.env ?? env,
         },
     });
 });

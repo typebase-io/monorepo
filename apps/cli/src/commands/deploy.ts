@@ -22,6 +22,7 @@ import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
 import { generateDBFiles } from '#helpers/generate-server/generate-db-files.ts';
+import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
 import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
@@ -145,6 +146,18 @@ export const deploy = new Command('deploy')
       });
 
       const generatedFile = await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
+
+      if (includeEnvFile) {
+        await generateEnvFile({
+          envFilePath,
+          envOutputDirPath: path.join(tempServerDirPath, 'src'),
+          adapter,
+          hasDB: includeDBFiles,
+          hasAuth: includeAuthFile,
+          useTs: false,
+          target,
+        });
+      }
 
       await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile, hasEnv: includeEnvFile });
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: false });

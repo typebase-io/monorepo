@@ -41,6 +41,7 @@ const TS_AUTH_DB = [
   'src/db/index.ts',
   'src/db/relations.ts',
   'src/db/schema.ts',
+  'src/env.ts',
   'src/index.ts',
   'tsconfig.json',
 ];
@@ -48,7 +49,9 @@ const TS_AUTH_DB = [
 const JS_AUTH_DB = TS_AUTH_DB.filter((f) => f !== 'tsconfig.json').map((f) => (f.endsWith('.ts') ? f.replace(/\.ts$/, '.js') : f));
 const TS_DB_ONLY = TS_AUTH_DB.filter((f) => f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts');
 const TS_AUTH_ONLY = TS_AUTH_DB.filter((f) => !f.startsWith('src/db/'));
-const TS_BARE = TS_AUTH_DB.filter((f) => !f.startsWith('src/db/') && f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts');
+const TS_BARE = TS_AUTH_DB.filter(
+  (f) => !f.startsWith('src/db/') && f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts' && f !== 'src/env.ts'
+);
 
 describe('generate-server command', () => {
   let tmp: TempDir;

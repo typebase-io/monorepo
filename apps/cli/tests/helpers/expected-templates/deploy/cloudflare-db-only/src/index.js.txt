@@ -1,3 +1,4 @@
+import "./env.js";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";

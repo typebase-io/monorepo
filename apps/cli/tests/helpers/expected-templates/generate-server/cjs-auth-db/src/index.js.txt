@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
+require("./env.js");
 const node_http_1 = require("node:http");
 const node_1 = require("@orpc/server/node");
 const plugins_1 = require("@orpc/server/plugins");
