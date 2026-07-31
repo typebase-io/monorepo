@@ -19,6 +19,7 @@ export const codegen = new Command('codegen')
     const tsConfigFilePath = path.join(typebaseDirPath, 'tsconfig.json');
     const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
+    const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
@@ -35,7 +36,7 @@ export const codegen = new Command('codegen')
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
     ]);
 
     spinner.succeed('Types generated!');

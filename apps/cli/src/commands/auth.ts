@@ -24,6 +24,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
 
       const tsConfigFilePath = path.join(typebaseDirPath, 'tsconfig.json');
       const authFilePath = path.join(typebaseDirPath, 'auth.ts');
+      const envFilePath = path.join(typebaseDirPath, 'env.ts');
       const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
       const relationsFilePath = path.join(typebaseDirPath, 'db', 'relations.ts');
       const actionsDirPath = path.join(typebaseDirPath, 'actions');
@@ -50,7 +51,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
 
       await Promise.all([
         generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-        generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, actionsDirPath, generatedDirPath }),
+        generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
       ]);
 
       typesSpinner.succeed('Types generated!');

@@ -123,7 +123,7 @@ export const deploy = new Command('deploy')
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
     ]);
 
     codegenSpinner.succeed('Types generated!');

@@ -4,7 +4,9 @@ import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs
 import type { auth as authConfig } from "../auth.ts";
 import type { relations } from "../db/relations.ts";
 
-export const router = {};
+import * as Action0 from "./actions/todos.ts";
+
+const router = {};
 
 export type Router = typeof router;
 export type RouterInputs = InferRouterInputs<typeof router>;

@@ -4,16 +4,10 @@ import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typeb
 
 import { filterActions } from "typebase-io/server";
 
-import * as ActionModule1 from "../actions/mutations/todos.ts";
-import * as ActionModule2 from "../actions/queries/todos.ts";
+import * as ActionModule0 from "../actions/hello.ts";
 
 export const router = {
-  mutations: {
-    todos: filterActions(ActionModule1),
-  },
-  queries: {
-    todos: filterActions(ActionModule2),
-  },
+  hello: filterActions(ActionModule0),
 };
 
 export type Router = typeof router;
