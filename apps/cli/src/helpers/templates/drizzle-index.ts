@@ -5,6 +5,7 @@ export const drizzleIndexTemplate = ({ ts, adapter }: { ts: boolean; adapter: Se
 
   return `${isCloudflare ? 'import { drizzle } from "drizzle-orm/neon-http";' : 'import { drizzle } from "drizzle-orm/node-postgres";'}
 import { relations } from "${ts ? './relations.ts' : './relations.js'}";
-${isCloudflare ? 'import { env } from "cloudflare:workers";\n' : ''}
-export const db = drizzle(${isCloudflare ? 'env.DATABASE_URL' : 'process.env.DATABASE_URL'} || "", { relations, casing: "snake_case" });`;
+import { env } from "${ts ? '../env.ts' : '../env.js'}";
+
+export const db = drizzle(env.DATABASE_URL, { relations, casing: "snake_case" });`;
 };

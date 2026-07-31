@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { relations } from "./relations.ts";
+import { env } from "../env.ts";
 
-export const db = drizzle(process.env.DATABASE_URL || "", { relations, casing: "snake_case" });
+export const db = drizzle(env.DATABASE_URL, { relations, casing: "snake_case" });
