@@ -74,6 +74,7 @@ describe('init command', () => {
         'actions/queries/todos.ts',
         'db/relations.ts',
         'db/schema.ts',
+        'env.ts',
         'tsconfig.json',
       ],
       { namespace: 'init' }
@@ -95,6 +96,7 @@ describe('init command', () => {
         'auth.ts',
         'db/relations.ts',
         'db/schema.ts',
+        'env.ts',
         'tsconfig.json',
       ],
       { namespace: 'init' }
@@ -141,6 +143,7 @@ describe('init command', () => {
         'actions/queries/todos.ts',
         'db/relations.ts',
         'db/schema.ts',
+        'env.ts',
         'tsconfig.json',
       ],
       { namespace: 'init' }

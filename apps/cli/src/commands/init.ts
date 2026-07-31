@@ -10,6 +10,7 @@ import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { addExampleTodosRelation } from '#helpers/init/add-example-todos-relation.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
+import { generateExampleEnv } from '#helpers/init/generate-example-env.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
 import { generateExampleSchema } from '#helpers/init/generate-example-schema.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -38,6 +39,7 @@ export const init = new Command('init')
 
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const exampleAuthFilePath = path.join(typebaseDirPath, 'auth.ts');
+    const exampleEnvFilePath = path.join(typebaseDirPath, 'env.ts');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
 
@@ -64,6 +66,7 @@ export const init = new Command('init')
         ? fs.writeFile(exampleRelationsPath, `${baseRelationsTemplate}\n`)
         : generateExampleRelations({ path: exampleRelationsPath, withAuth }),
       skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth }),
+      skipExample ? Promise.resolve() : generateExampleEnv(exampleEnvFilePath),
     ]);
 
     if (withAuth) {
@@ -89,6 +92,7 @@ export const init = new Command('init')
         tsConfigFilePath,
         schemaFilePath: exampleSchemaPath,
         authFilePath: exampleAuthFilePath,
+        envFilePath: exampleEnvFilePath,
         actionsDirPath,
         generatedDirPath,
       }),
