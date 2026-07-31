@@ -107,6 +107,7 @@
     "@orpc/client": "1.14.3",
     "@orpc/server": "1.14.3",
     "@orpc/tanstack-query": "1.14.3",
+    "@t3-oss/env-core": "0.13.11",
     "@types/pg": "8.20.0",
     "better-auth": "1.6.11",
     "drizzle-orm": "1.0.0-beta.22"

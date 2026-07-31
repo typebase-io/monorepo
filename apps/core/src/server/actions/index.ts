@@ -1,4 +1,4 @@
-import { type MergedCurrentContext, type MergedInitialContext, type Schema } from '@orpc/server';
+import { type Context, type MergedCurrentContext, type MergedInitialContext, type Schema } from '@orpc/server';
 import { type RequestHeadersPluginContext } from '@orpc/server/plugins';
 import { type AnyRelations, type EmptyRelations } from 'drizzle-orm';
 
@@ -18,32 +18,51 @@ interface AuthContext<TAuth> {
   auth: TAuth;
 }
 
-type MiddlewareContext<TRelations extends AnyRelations, TAuth> = [TAuth] extends [never]
-  ? DbContext<TRelations>
-  : DbContext<TRelations> & AuthContext<TAuth>;
+interface EnvContext<TEnv> {
+  env: TEnv;
+}
 
-type MiddlewareInitialContext<TRelations extends AnyRelations, TAuth> = [TAuth] extends [never]
-  ? { db?: DB<TRelations> } & Record<never, never>
-  : { db?: DB<TRelations>; auth?: TAuth } & Record<never, never>;
+type Env<TRelations extends AnyRelations, TAuth, TEnv> = ([TEnv] extends [never] ? Record<never, never> : TEnv) &
+  (EmptyRelations extends TRelations ? Record<never, never> : { DATABASE_URL: string }) &
+  ([TAuth] extends [never] ? Record<never, never> : { BETTER_AUTH_SECRET: string });
 
-export type ActionBuilder<TRelations extends AnyRelations = EmptyRelations, TAuth = never> = EmptyRelations extends TRelations
-  ? Action<
-      RequestHeadersPluginContext & Record<never, never>,
-      RequestHeadersPluginContext,
-      Schema<unknown, unknown>,
-      Schema<unknown, unknown>,
-      Record<never, never>,
-      Record<never, never>
-    >
-  : Action<
-      MergedInitialContext<
-        RequestHeadersPluginContext & Record<never, never>,
-        MiddlewareInitialContext<TRelations, TAuth>,
-        RequestHeadersPluginContext
-      >,
-      MergedCurrentContext<RequestHeadersPluginContext, MiddlewareContext<TRelations, TAuth>>,
-      Schema<unknown, unknown>,
-      Schema<unknown, unknown>,
-      Record<never, never>,
-      Record<never, never>
-    >;
+type MaybeDbContext<TRelations extends AnyRelations> = EmptyRelations extends TRelations ? Record<never, never> : DbContext<TRelations>;
+type MaybeAuthContext<TAuth> = [TAuth] extends [never] ? Record<never, never> : AuthContext<TAuth>;
+type MaybeEnvContext<TRelations extends AnyRelations, TAuth, TEnv> =
+  ProvidesContext<TRelations, TAuth, TEnv> extends false ? Record<never, never> : EnvContext<Env<TRelations, TAuth, TEnv>>;
+
+type MiddlewareContext<TRelations extends AnyRelations, TAuth, TEnv> = MaybeDbContext<TRelations> &
+  MaybeAuthContext<TAuth> &
+  MaybeEnvContext<TRelations, TAuth, TEnv>;
+
+type MiddlewareInitialContext<TRelations extends AnyRelations, TAuth, TEnv> = Partial<MiddlewareContext<TRelations, TAuth, TEnv>> &
+  Record<never, never>;
+
+type ProvidesContext<TRelations extends AnyRelations, TAuth, TEnv> = EmptyRelations extends TRelations
+  ? [TAuth] extends [never]
+    ? [TEnv] extends [never]
+      ? false
+      : true
+    : true
+  : true;
+
+type BuiltAction<TInitialContext extends Context, TCurrentContext extends Context> = Action<
+  TInitialContext,
+  TCurrentContext,
+  Schema<unknown, unknown>,
+  Schema<unknown, unknown>,
+  Record<never, never>,
+  Record<never, never>
+>;
+
+export type ActionBuilder<TRelations extends AnyRelations = EmptyRelations, TAuth = never, TEnv = never> =
+  ProvidesContext<TRelations, TAuth, TEnv> extends false
+    ? BuiltAction<RequestHeadersPluginContext & Record<never, never>, RequestHeadersPluginContext>
+    : BuiltAction<
+        MergedInitialContext<
+          RequestHeadersPluginContext & Record<never, never>,
+          MiddlewareInitialContext<TRelations, TAuth, TEnv>,
+          RequestHeadersPluginContext
+        >,
+        MergedCurrentContext<RequestHeadersPluginContext, MiddlewareContext<TRelations, TAuth, TEnv>>
+      >;
