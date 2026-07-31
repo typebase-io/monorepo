@@ -125,6 +125,7 @@ export const generateServer = new Command('generate-server')
         actionsOutputDirPath,
         generation: output,
         hasAuth: includeAuthFile,
+        hasEnv: includeEnvFile,
         trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
       });
 

@@ -167,6 +167,7 @@ export const deploy = new Command('deploy')
         actionsOutputDirPath,
         generation: output,
         hasAuth: includeAuthFile,
+        hasEnv: includeEnvFile,
         trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
       });
 

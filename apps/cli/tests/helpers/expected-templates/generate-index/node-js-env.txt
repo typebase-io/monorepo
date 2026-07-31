@@ -1,6 +1,7 @@
-import "./env.ts";
+import "./env.js";
 
-import { RPCHandler } from "@orpc/server/fetch";
+import { createServer } from "node:http";
+import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 
@@ -21,15 +22,20 @@ const handler = new RPCHandler(router, {
   ],
 });
 
-Deno.serve({ port: 8080 }, async (request) => {
-  const { matched, response } = await handler.handle(request, {
+const server = createServer(async (req, res) => {
+  const { matched } = await handler.handle(req, res, {
     prefix: "/rpc",
     context: {},
   });
 
   if (matched) {
-    return response;
+    return;
   }
 
-  return new Response("Not found", { status: 404 });
+  res.statusCode = 404;
+  res.end("Not found");
 });
+
+server.listen(8080, "127.0.0.1", () =>
+  console.log("Listening on 127.0.0.1:8080"),
+);

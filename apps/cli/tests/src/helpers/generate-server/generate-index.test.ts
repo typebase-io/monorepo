@@ -36,6 +36,7 @@ describe('generateIndex', () => {
       actionsOutputDirPath: path.join(tmp.path, 'actions'),
       generation: 'ts',
       hasAuth: false,
+      hasEnv: true,
       trustedOrigins: ['http://localhost:3000'],
       ...overrides,
     });
@@ -75,5 +76,17 @@ describe('generateIndex', () => {
     await run({ adapter: 'hono', skipLoadEnv: true, hasAuth: true });
 
     expect(tmp.read('out/index.ts')).toEqualTemplate('generate-index', 'hono.txt');
+  });
+
+  it('imports the env module as .js when the server is emitted as JavaScript', async () => {
+    await run({ adapter: 'node', skipLoadEnv: true, generation: 'esm', outputFilePath: path.join(tmp.path, 'out', 'index.js') });
+
+    expect(tmp.read('out/index.js')).toEqualTemplate('generate-index', 'node-js-env.txt');
+  });
+
+  it('imports no env module when the project has none', async () => {
+    await run({ adapter: 'node', skipLoadEnv: true, hasEnv: false });
+
+    expect(tmp.read('out/index.ts')).toEqualTemplate('generate-index', 'node-no-env.txt');
   });
 });

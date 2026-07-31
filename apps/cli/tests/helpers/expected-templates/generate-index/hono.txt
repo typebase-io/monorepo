@@ -1,3 +1,5 @@
+import "./env.ts";
+
 import { Hono } from "hono";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";

@@ -22,6 +22,7 @@ export const generateIndex = async ({
   actionsOutputDirPath,
   generation,
   hasAuth,
+  hasEnv,
   trustedOrigins,
 }: {
   adapter: ServerAdapter;
@@ -33,6 +34,7 @@ export const generateIndex = async ({
   actionsOutputDirPath: string;
   generation: 'ts' | 'esm' | 'cjs';
   hasAuth: boolean;
+  hasEnv: boolean;
   trustedOrigins: string[];
 }) => {
   const [routerImports, router] = await getServerRouter({
@@ -54,6 +56,10 @@ export const generateIndex = async ({
     .with('fastify', () => fastifyIndexFileTemplate(routerCode, port, hasAuth, trustedOrigins))
     .with('hono', () => honoIndexFileTemplate(routerCode, hasAuth, trustedOrigins))
     .exhaustive();
+
+  if (hasEnv) {
+    indexFile = `import "${generation === 'ts' ? './env.ts' : './env.js'}";\n\n${indexFile}`;
+  }
 
   if (!skipLoadEnv) {
     indexFile = `import 'dotenv/config';\n\n${indexFile}`;
