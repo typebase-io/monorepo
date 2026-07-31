@@ -104,7 +104,7 @@ export const generateServer = new Command('generate-server')
       });
 
       await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
-      await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile });
+      await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile, hasEnv: includeEnvFile });
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: output === 'ts' });
 
       if (includeDBFiles) {

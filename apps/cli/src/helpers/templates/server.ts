@@ -1,14 +1,22 @@
-export const serverTemplate = (hasDB: boolean, hasAuth: boolean) => {
+export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean) => {
   const imports = [
     'import { os } from "@orpc/server";',
     'import { Action } from "typebase-io/server";',
     'import type { RequestHeadersPluginContext } from "@orpc/server/plugins";',
     hasDB ? 'import { db } from "../db/index.ts";' : '',
     hasAuth ? 'import { auth } from "../auth.ts";' : '',
+    hasEnv ? 'import { env } from "../env.ts";' : '',
   ].filter(Boolean);
 
-  const contextEntries = [hasDB ? 'db: context.db ?? db,' : '', hasAuth ? 'auth: context.auth ?? auth,' : ''].filter(Boolean);
-  const contextType = [hasDB ? 'db?: typeof db' : '', hasAuth ? 'auth?: typeof auth' : ''].filter(Boolean).join('; ');
+  const contextEntries = [
+    hasDB ? 'db: context.db ?? db,' : '',
+    hasAuth ? 'auth: context.auth ?? auth,' : '',
+    hasEnv ? 'env: context.env ?? env,' : '',
+  ].filter(Boolean);
+
+  const contextType = [hasDB ? 'db?: typeof db' : '', hasAuth ? 'auth?: typeof auth' : '', hasEnv ? 'env?: typeof env' : '']
+    .filter(Boolean)
+    .join('; ');
 
   const lines = [...imports, ''];
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, test } from 'vitest';
 
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
 
@@ -21,33 +21,57 @@ describe('generateAction', () => {
   it('creates the output directory tree even when it does not exist yet', async () => {
     const serverOutputDirPath = path.join(tmp.path, 'does', 'not', 'exist', 'src');
 
-    await generateAction({ serverOutputDirPath, hasDB: true, hasAuth: true });
+    await generateAction({ serverOutputDirPath, hasDB: true, hasAuth: true, hasEnv: false });
 
     expect(fs.statSync(serverOutputDirPath).isDirectory()).toBe(true);
     expect(fs.existsSync(path.join(serverOutputDirPath, 'server.ts'))).toBe(true);
   });
 
-  it('writes the server template with db and auth', async () => {
-    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: true });
+  test('when nothing is present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: false, hasEnv: false });
 
-    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'with-db-auth.txt');
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'none.txt');
   });
 
-  it('writes the server template with db but without auth', async () => {
-    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: false });
+  test('when only db is present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: false, hasEnv: false });
 
-    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'db-only.txt');
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'only-db.txt');
   });
 
-  it('writes the server template with auth but without db', async () => {
-    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: true });
+  test('when only auth is present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: true, hasEnv: false });
 
-    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'auth-only.txt');
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'only-auth.txt');
   });
 
-  it('writes the server template without db and auth', async () => {
-    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: false });
+  test('when only env is present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: false, hasEnv: true });
 
-    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'without-db-auth.txt');
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'only-env.txt');
+  });
+
+  test('when db and auth are present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: true, hasEnv: false });
+
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'db-and-auth.txt');
+  });
+
+  test('when db and env are present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: false, hasEnv: true });
+
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'db-and-env.txt');
+  });
+
+  test('when auth and env are present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: false, hasAuth: true, hasEnv: true });
+
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'auth-and-env.txt');
+  });
+
+  test('when everything is present', async () => {
+    await generateAction({ serverOutputDirPath: path.join(tmp.path, 'src'), hasDB: true, hasAuth: true, hasEnv: true });
+
+    expect(tmp.read('src/server.ts')).toEqualTemplate('generate-action', 'all.txt');
   });
 });
