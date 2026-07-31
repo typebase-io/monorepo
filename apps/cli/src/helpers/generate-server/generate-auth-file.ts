@@ -1,11 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { IndentationText, type ObjectLiteralExpression, Project, SyntaxKind } from 'ts-morph';
+import { IndentationText, Project } from 'ts-morph';
 import { match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
+import { findDefineCalls } from '#helpers/shared/find-define-calls.ts';
 import { fixImportExtensions } from '#helpers/shared/fix-import-extensions.ts';
+import { resolveDefineOptions } from '#helpers/shared/resolve-define-options.ts';
 
 export const generateAuthFile = async ({
   authFilePath,
@@ -40,23 +42,8 @@ export const generateAuthFile = async ({
 
   let transformed = false;
 
-  for (const callExpr of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
-    if (callExpr.getExpression().getText() !== 'defineAuth') {
-      continue;
-    }
-
-    const arg = callExpr.getArguments()[0];
-    let optionsObject: ObjectLiteralExpression | undefined;
-
-    if (arg?.isKind(SyntaxKind.ObjectLiteralExpression)) {
-      optionsObject = arg;
-    } else if (arg?.isKind(SyntaxKind.Identifier)) {
-      const initializer = sourceFile.getVariableDeclaration(arg.getText())?.getInitializer();
-
-      if (initializer?.isKind(SyntaxKind.ObjectLiteralExpression)) {
-        optionsObject = initializer;
-      }
-    }
+  for (const callExpr of findDefineCalls(sourceFile, 'defineAuth')) {
+    const optionsObject = resolveDefineOptions(callExpr);
 
     if (!optionsObject) {
       throw new Error(

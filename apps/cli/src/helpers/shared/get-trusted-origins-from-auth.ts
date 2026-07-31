@@ -1,66 +1,15 @@
 import chalk from 'chalk';
-import { type Node, type ObjectLiteralExpression, Project, SyntaxKind } from 'ts-morph';
+import { Project, SyntaxKind } from 'ts-morph';
 
-const MAX_RESOLVE_DEPTH = 8;
+import { findDefineCalls } from '#helpers/shared/find-define-calls.ts';
+import { resolveDefineOptions } from '#helpers/shared/resolve-define-options.ts';
 
 export const getTrustedOriginsFromAuth = (authFilePath: string): string[] => {
   const project = new Project({ skipAddingFilesFromTsConfig: true, skipLoadingLibFiles: true });
   const sourceFile = project.addSourceFileAtPath(authFilePath);
 
-  for (const callExpr of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
-    if (callExpr.getExpression().getText() !== 'defineAuth') {
-      continue;
-    }
-
-    let node: Node | undefined = callExpr.getArguments()[0];
-    let optionsObject: ObjectLiteralExpression | undefined;
-
-    for (let depth = 0; node && depth < MAX_RESOLVE_DEPTH; depth++) {
-      if (node.isKind(SyntaxKind.ObjectLiteralExpression)) {
-        optionsObject = node;
-
-        break;
-      }
-
-      if (node.isKind(SyntaxKind.ParenthesizedExpression) || node.isKind(SyntaxKind.AsExpression) || node.isKind(SyntaxKind.SatisfiesExpression)) {
-        node = node.getExpression();
-
-        continue;
-      }
-
-      if (node.isKind(SyntaxKind.Identifier)) {
-        const declaration = node.getSymbol()?.getValueDeclaration();
-
-        node = declaration?.isKind(SyntaxKind.VariableDeclaration) ? declaration.getInitializer() : undefined;
-
-        continue;
-      }
-
-      if (node.isKind(SyntaxKind.CallExpression)) {
-        const callee = node.getExpression();
-        const declaration = callee.isKind(SyntaxKind.Identifier) ? callee.getSymbol()?.getValueDeclaration() : undefined;
-
-        let functionBody: Node | undefined;
-
-        if (declaration?.isKind(SyntaxKind.FunctionDeclaration)) {
-          functionBody = declaration.getBody();
-        } else if (declaration?.isKind(SyntaxKind.VariableDeclaration)) {
-          const initializer = declaration.getInitializer();
-
-          if (initializer?.isKind(SyntaxKind.ArrowFunction) || initializer?.isKind(SyntaxKind.FunctionExpression)) {
-            functionBody = initializer.getBody();
-          }
-        }
-
-        node = functionBody?.isKind(SyntaxKind.Block)
-          ? functionBody.getDescendantsOfKind(SyntaxKind.ReturnStatement)[0]?.getExpression()
-          : functionBody;
-
-        continue;
-      }
-
-      node = undefined;
-    }
+  for (const callExpr of findDefineCalls(sourceFile, 'defineAuth')) {
+    const optionsObject = resolveDefineOptions(callExpr);
 
     if (!optionsObject) {
       continue;
