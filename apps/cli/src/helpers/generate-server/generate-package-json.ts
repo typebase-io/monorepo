@@ -14,6 +14,7 @@ export const generatePackageJson = async ({
   skipLoadEnv,
   outDir,
   hasAuth,
+  hasEnv,
 }: {
   adapter: ServerAdapter;
   typebaseDirPath: string;
@@ -22,6 +23,7 @@ export const generatePackageJson = async ({
   skipLoadEnv: boolean;
   outDir: string;
   hasAuth: boolean;
+  hasEnv: boolean;
 }) => {
   const defaultSkipDirs = new Set(['node_modules', 'dist', 'build', outDir]);
   const userDependencies = await getPackageDeps({ sourceDirPath: typebaseDirPath, skipDirs: (name) => defaultSkipDirs.has(name) });
@@ -67,6 +69,10 @@ export const generatePackageJson = async ({
   if (hasAuth) {
     dependencies[DEPS['better-auth'].name] = DEPS['better-auth'].version;
     dependencies[DEPS['@better-auth/drizzle-adapter'].name] = DEPS['@better-auth/drizzle-adapter'].version;
+  }
+
+  if (hasEnv) {
+    dependencies[DEPS['@t3-oss/env-core'].name] = DEPS['@t3-oss/env-core'].version;
   }
 
   if (generation === 'ts') {

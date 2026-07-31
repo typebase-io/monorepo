@@ -20,6 +20,7 @@ import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-f
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
 import { hasDB } from '#helpers/shared/has-db.ts';
+import { hasEnv } from '#helpers/shared/has-env.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 
 export const generateServer = new Command('generate-server')
@@ -54,6 +55,7 @@ export const generateServer = new Command('generate-server')
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
+    const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
 
     const serverDistDirPath = path.resolve(typebaseDirPath, outDir);
@@ -75,6 +77,7 @@ export const generateServer = new Command('generate-server')
 
     const includeDBFiles = hasDB(schemaFilePath);
     const includeAuthFile = hasAuth(authFilePath);
+    const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
 
     validateTypes({
       dirPath: typebaseDirPath,
@@ -97,6 +100,7 @@ export const generateServer = new Command('generate-server')
         skipLoadEnv,
         outDir,
         hasAuth: includeAuthFile,
+        hasEnv: includeEnvFile,
       });
 
       await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });

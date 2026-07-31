@@ -43,6 +43,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: false,
       outDir: '_server',
       hasAuth: true,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-ts-auth-pnpm.txt');
@@ -61,6 +62,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'cloudflare-esm.txt');
@@ -79,6 +81,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: false,
       outDir: '_server',
       hasAuth: true,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'fastify-cjs-auth-bun.txt');
@@ -97,6 +100,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: false,
       outDir: '_server',
       hasAuth: false,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'fastify-esm-noauth.txt');
@@ -115,6 +119,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'typebase-version-from-scoped-devdep.txt');
@@ -135,6 +140,7 @@ describe('generatePackageJson', () => {
       skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'pins-server-dep-over-user-dep.txt');
@@ -153,8 +159,28 @@ describe('generatePackageJson', () => {
       skipLoadEnv: false,
       outDir: '_server',
       hasAuth: false,
+      hasEnv: true,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'hono-ts-unknown.txt');
+  });
+
+  it('omits @t3-oss/env-core for a project without an env module', async () => {
+    vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+    const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0' } });
+
+    await generatePackageJson({
+      adapter: 'node',
+      typebaseDirPath,
+      outputDirPath,
+      generation: 'esm',
+      skipLoadEnv: true,
+      outDir: '_server',
+      hasAuth: false,
+      hasEnv: false,
+    });
+
+    expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-no-env.txt');
   });
 });

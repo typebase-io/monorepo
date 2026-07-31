@@ -34,6 +34,7 @@ import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-f
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
 import { hasDB } from '#helpers/shared/has-db.ts';
+import { hasEnv } from '#helpers/shared/has-env.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 import { writeEnvFile } from '#helpers/shared/write-env-file.ts';
 import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
@@ -88,6 +89,7 @@ export const deploy = new Command('deploy')
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
+    const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
 
     const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
@@ -103,6 +105,7 @@ export const deploy = new Command('deploy')
 
     const includeDBFiles = hasDB(schemaFilePath);
     const includeAuthFile = hasAuth(authFilePath);
+    const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
 
     const env: { key: string; value: string; secret: boolean }[] = [];
     let hadDatabaseUrl = false;
@@ -138,6 +141,7 @@ export const deploy = new Command('deploy')
         skipLoadEnv,
         outDir,
         hasAuth: includeAuthFile,
+        hasEnv: includeEnvFile,
       });
 
       const generatedFile = await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });

@@ -29,6 +29,10 @@ export const DEPS = {
     name: '@orpc/server',
     version: '1.14.3',
   },
+  '@t3-oss/env-core': {
+    name: '@t3-oss/env-core',
+    version: '0.13.11',
+  },
   '@types/node': {
     name: '@types/node',
     version: '24.1.0',
