@@ -410,6 +410,8 @@ Run `npx typebase-io-cli codegen` whenever any of these change presence:
 - `env.ts` is added or removed.
 - `db/schema.ts` or `db/relations.ts` is added or removed.
 
+**Also run it right after upgrading `typebase-io` or `typebase-io-cli`.** `_generated/` is written by the version that generated it, so a folder left over from an older version can describe a context the new runtime doesn't provide. Rerunning `codegen` re-syncs it.
+
 Editing the contents of an existing file does **not** require codegen — types update automatically on the next build. That includes adding or removing keys inside an existing `env.ts`. After running `codegen`, the `db` context property only appears in handlers if `db/schema.ts` exists; same for `auth` and `auth.ts`, and for `env` (which appears when any of `env.ts`, `db/schema.ts`, or `auth.ts` exists).
 
 `deploy dev` / `deploy prod` and `generate-server` all rerun codegen before they build (and type-check against the result), so an explicit `codegen` run is only needed to refresh editor types without rebuilding.

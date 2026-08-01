@@ -9,14 +9,19 @@ Regenerate the type definitions in `_generated/`.
 npx typebase-io-cli codegen
 ```
 
-Only run this after you:
+Run this after you:
 
 - Add, remove, or rename a file inside `actions/`
 - Add or remove `auth.ts`
 - Add or remove `env.ts`
 - Add or remove `db/schema.ts` or `db/relations.ts`
+- Upgrade `typebase-io` or `typebase-io-cli`
 
-You do not need to run it when editing the contents of existing files. This command updates:
+You do not need to run it when editing the contents of existing files.
+
+The upgrade case matters because `_generated/` is written by the version that generated it. A folder left over from an older version can describe a context your server no longer provides. Rerunning `codegen` re-syncs it.
+
+This command updates:
 
 - `_generated/server.ts`: the router type and action builder
 - `_generated/db.d.ts`: the database types
