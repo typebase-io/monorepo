@@ -36,7 +36,7 @@ export declare const action: ActionBuilder<typeof relations, typeof authConfig, 
 export declare const getDB: GetDBBuilder<typeof relations>;
 ```
 
-The imports and the type arguments track what your project actually has. A project without auth gets `never` in the second slot and no `authConfig` import; one without an `env.ts` gets `never` in the third.
+The imports and the type arguments track what your project actually has. Every slot your project doesn't have is `never`, and its import is left out: no `db/schema.ts` gives `never` in the first slot, no `auth.ts` in the second, no `env.ts` in the third. Each `never` slot also drops the matching key from the handler context.
 
 **`router`**: an object that mirrors your `actions/` folder structure. Every file becomes a namespace, every exported action becomes a method. Non-action exports from the same file are not added to the router. This is what your client imports as `Router` to get full type safety.
 

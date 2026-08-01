@@ -1,5 +1,4 @@
 import { type RequestHeadersPluginContext } from '@orpc/server/plugins';
-import { type EmptyRelations } from 'drizzle-orm';
 import { describe, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
@@ -41,8 +40,8 @@ describe('ActionBuilder', () => {
       expectTypeOf<Ctx>().not.toHaveProperty('env');
     });
 
-    it('behaves the same when spelled out with empty relations', () => {
-      expectTypeOf<Context<ActionBuilder<EmptyRelations, never, never>>>().toEqualTypeOf<Ctx>();
+    it('behaves the same when the absent db, auth and env are spelled out', () => {
+      expectTypeOf<Context<ActionBuilder<never, never, never>>>().toEqualTypeOf<Ctx>();
     });
   });
 
@@ -66,7 +65,7 @@ describe('ActionBuilder', () => {
   });
 
   describe('with auth', () => {
-    type Ctx = Context<ActionBuilder<EmptyRelations, Auth, never>>;
+    type Ctx = Context<ActionBuilder<never, Auth, never>>;
 
     it('provides the auth instance', () => {
       expectTypeOf<Ctx['auth']>().toEqualTypeOf<Auth>();
@@ -83,7 +82,7 @@ describe('ActionBuilder', () => {
   });
 
   describe('with env', () => {
-    type Ctx = Context<ActionBuilder<EmptyRelations, never, Env>>;
+    type Ctx = Context<ActionBuilder<never, never, Env>>;
 
     it('provides the validated variables', () => {
       expectTypeOf<Ctx['env']['STRIPE_KEY']>().toEqualTypeOf<string>();
@@ -122,7 +121,7 @@ describe('ActionBuilder', () => {
   });
 
   describe('with auth and env', () => {
-    type Ctx = Context<ActionBuilder<EmptyRelations, Auth, Env>>;
+    type Ctx = Context<ActionBuilder<never, Auth, Env>>;
 
     it('merges the project variables with the auth secret', () => {
       expectTypeOf<Ctx['env']['STRIPE_KEY']>().toEqualTypeOf<string>();
