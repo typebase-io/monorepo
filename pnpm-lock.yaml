@@ -91,7 +91,7 @@ importers:
         version: 2.7.1
       auth:
         specifier: 1.6.11
-        version: 1.6.11(@better-fetch/fetch@1.1.21)(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(better-call@1.3.5(zod@4.4.3))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(magicast@0.5.3)(nanostores@1.3.0)(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9)
+        version: 1.6.11(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(magicast@0.5.3)(nanostores@1.3.0)(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)
       chalk:
         specifier: 5.6.2
         version: 5.6.2
@@ -143,7 +143,7 @@ importers:
         version: 4.1.9(vitest@4.1.9)
       better-auth:
         specifier: 1.6.11
-        version: 1.6.11(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9)
+        version: 1.6.11(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)
       vitest:
         specifier: 4.1.9
         version: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
@@ -158,7 +158,7 @@ importers:
         version: 1.14.3
       '@orpc/server':
         specifier: 1.14.3
-        version: 1.14.3(crossws@0.3.5)
+        version: 1.14.3
       '@orpc/tanstack-query':
         specifier: 1.14.3
         version: 1.14.3(@orpc/client@1.14.3)(@tanstack/query-core@5.99.0)
@@ -173,7 +173,7 @@ importers:
         version: 8.20.0
       better-auth:
         specifier: 1.6.11
-        version: 1.6.11(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.1.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9)
+        version: 1.6.11(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)
       drizzle-orm:
         specifier: 1.0.0-beta.22
         version: 1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3)
@@ -182,13 +182,23 @@ importers:
         version: 1.15.11
       next:
         specifier: '>=15.0.0'
-        version: 16.1.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: 4.1.9
+        version: 4.1.9(vitest@4.1.9)
+      vitest:
+        specifier: 4.1.9
+        version: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   apps/docs:
     dependencies:
       '@vercel/analytics':
         specifier: 2.0.1
-        version: 2.0.1(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))
+        version: 2.0.1(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       fumadocs-core:
         specifier: 16.11.5
         version: 16.11.5(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.4)(@types/mdast@4.0.4)(@types/react@19.2.17)(lucide-react@1.25.0(react@19.2.7))(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@4.4.3)
@@ -1548,31 +1558,16 @@ packages:
   '@neondatabase/api-client@2.7.1':
     resolution: {integrity: sha512-hEYOJ89xIa2eEXBu9HRKYTJc9lrmszhNc0SIxzJvNE/3Av4xK7vkXWQ3LWy0DTTFY4Kn6wfM2wAjRIjf/jOu6w==}
 
-  '@next/env@16.1.6':
-    resolution: {integrity: sha512-N1ySLuZjnAtN3kFnwhAwPvZah8RJxKasD7x1f8shFqhncnWZn4JMfg37diLNuoHsLAlrDfM3g4mawVdtAG8XLQ==}
-
   '@next/env@16.2.10':
     resolution: {integrity: sha512-zLPxg9M0MEHmygpj5OuxjQ+vHMiy/K7cSp74G8ecYolmgUWw0RwN02tF56npup/+qaI8JB97hQgS/r2Hb6QwVA==}
 
   '@next/eslint-plugin-next@16.2.10':
     resolution: {integrity: sha512-Gs8D2m21VnJeFo9qvYIIqJH94frWerWYu41BprU1pLtRVF7PCQNLiFZZ3fG+iPuj3K83Cwv/rt+msLOy8Qgu3Q==}
 
-  '@next/swc-darwin-arm64@16.1.6':
-    resolution: {integrity: sha512-wTzYulosJr/6nFnqGW7FrG3jfUUlEf8UjGA0/pyypJl42ExdVgC6xJgcXQ+V8QFn6niSG2Pb8+MIG1mZr2vczw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
   '@next/swc-darwin-arm64@16.2.10':
     resolution: {integrity: sha512-v9IdJCa0H0mbo+8z5zwUpOk1Vj7RjkcI5uNYf5Ws1y6szf/p3Mzl9hLaST8SCt6L9h8NGnruZcd2+o0NTNwDhA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
-    os: [darwin]
-
-  '@next/swc-darwin-x64@16.1.6':
-    resolution: {integrity: sha512-BLFPYPDO+MNJsiDWbeVzqvYd4NyuRrEYVB5k2N3JfWncuHAy2IVwMAOlVQDFjj+krkWzhY2apvmekMkfQR0CUQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
     os: [darwin]
 
   '@next/swc-darwin-x64@16.2.10':
@@ -1581,26 +1576,12 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-linux-arm64-gnu@16.1.6':
-    resolution: {integrity: sha512-OJYkCd5pj/QloBvoEcJ2XiMnlJkRv9idWA/j0ugSuA34gMT6f5b7vOiCQHVRpvStoZUknhl6/UxOXL4OwtdaBw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [glibc]
-
   '@next/swc-linux-arm64-gnu@16.2.10':
     resolution: {integrity: sha512-GRQRsRtuciNJvB54AvvuQTiq0oZtFwa1owQqtZD8wwnGpM2L39MV22kpI72YSXLKIyY40LC66EiLFv4PiicXxg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
-
-  '@next/swc-linux-arm64-musl@16.1.6':
-    resolution: {integrity: sha512-S4J2v+8tT3NIO9u2q+S0G5KdvNDjXfAv06OhfOzNDaBn5rw84DGXWndOEB7d5/x852A20sW1M56vhC/tRVbccQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-    libc: [musl]
 
   '@next/swc-linux-arm64-musl@16.2.10':
     resolution: {integrity: sha512-zkN9MQYS7UQBro+FnISUq1itaQjXI9xqISzuQ+2bc921NcJ1x4yPCqrn77tVN6/dOOXaaWVX3k6/bR07pPwK+A==}
@@ -1609,26 +1590,12 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@next/swc-linux-x64-gnu@16.1.6':
-    resolution: {integrity: sha512-2eEBDkFlMMNQnkTyPBhQOAyn2qMxyG2eE7GPH2WIDGEpEILcBPI/jdSv4t6xupSP+ot/jkfrCShLAa7+ZUPcJQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    libc: [glibc]
-
   '@next/swc-linux-x64-gnu@16.2.10':
     resolution: {integrity: sha512-iCVJnwvrPYECvA6WM/7+oo+OiTvedIKLxtCLAZP4xZR3nXa1zmzZyLPbYCmWvpd4CvMYF1EMTafd0ii3DygLvA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
-
-  '@next/swc-linux-x64-musl@16.1.6':
-    resolution: {integrity: sha512-oicJwRlyOoZXVlxmIMaTq7f8pN9QNbdes0q2FXfRsPhfCi8n8JmOZJm5oo1pwDaFbnnD421rVU409M3evFbIqg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-    libc: [musl]
 
   '@next/swc-linux-x64-musl@16.2.10':
     resolution: {integrity: sha512-ov2g4H0dHY9bPoOU83m91hWT7Iq5qy13bUnyyshLU3HGR1Ownn0X9QpmDPc5iIUaahTp7f7LeGAhV4DSFtackw==}
@@ -1637,22 +1604,10 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@next/swc-win32-arm64-msvc@16.1.6':
-    resolution: {integrity: sha512-gQmm8izDTPgs+DCWH22kcDmuUp7NyiJgEl18bcr8irXA5N2m2O+JQIr6f3ct42GOs9c0h8QF3L5SzIxcYAAXXw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
   '@next/swc-win32-arm64-msvc@16.2.10':
     resolution: {integrity: sha512-DwAnhLX76HQiFFQNgWlcK+JzlnD1rZ+UK/WY0ZMI/deXpvgnesjNYrqcfo1JzBuz4Kf7o3brIBL0glI1junatA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
-    os: [win32]
-
-  '@next/swc-win32-x64-msvc@16.1.6':
-    resolution: {integrity: sha512-NRfO39AIrzBnixKbjuo2YiYhB6o9d8v/ymU9m/Xk8cyVk+k7XylniXkHwjs4s70wedVffc6bQNbufk5v0xEm0A==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
     os: [win32]
 
   '@next/swc-win32-x64-msvc@16.2.10':
@@ -3107,11 +3062,6 @@ packages:
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
-  baseline-browser-mapping@2.10.0:
-    resolution: {integrity: sha512-lIyg0szRfYbiy67j9KN8IyeD7q7hcmqnJ1ddWmNt19ItGpNN64mnllmxUNFIOdOm6by97jlL6wfpTTJrmnjWAA==}
-    engines: {node: '>=6.0.0'}
-    hasBin: true
-
   baseline-browser-mapping@2.10.19:
     resolution: {integrity: sha512-qCkNLi2sfBOn8XhZQ0FXsT1Ki/Yo5P90hrkRamVFRS7/KV9hpfA4HkoWNU152+8w0zPjnxo5psx5NL3PSGgv5g==}
     engines: {node: '>=6.0.0'}
@@ -3259,9 +3209,6 @@ packages:
   callsites@3.1.0:
     resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
     engines: {node: '>=6'}
-
-  caniuse-lite@1.0.30001777:
-    resolution: {integrity: sha512-tmN+fJxroPndC74efCdp12j+0rk0RHwV5Jwa1zWaFVyw2ZxAuPeG8ZgWC3Wz7uSjT3qMRQ5XHZ4COgQmsCMJAQ==}
 
   caniuse-lite@1.0.30001788:
     resolution: {integrity: sha512-6q8HFp+lOQtcf7wBK+uEenxymVWkGKkjFpCvw5W25cmMwEDU45p1xQFBQv8JDlMMry7eNxyBaR+qxgmTUZkIRQ==}
@@ -5078,27 +5025,6 @@ packages:
       react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
       react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
-  next@16.1.6:
-    resolution: {integrity: sha512-hkyRkcu5x/41KoqnROkfTm2pZVbKxvbZRuNvKXLRXxs3VfyO0WhY50TQS40EuKO9SW3rBj/sF3WbVwDACeMZyw==}
-    engines: {node: '>=20.9.0'}
-    hasBin: true
-    peerDependencies:
-      '@opentelemetry/api': ^1.1.0
-      '@playwright/test': ^1.51.1
-      babel-plugin-react-compiler: '*'
-      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      react-dom: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      sass: ^1.3.0
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
-      '@playwright/test':
-        optional: true
-      babel-plugin-react-compiler:
-        optional: true
-      sass:
-        optional: true
-
   next@16.2.10:
     resolution: {integrity: sha512-2som5AVXb3kE6Yjine3/mNbBayYF58eguBWIVVUdr1y/L426xyVEgYxgBG+1QC34P2x5E+tcDup6XkuOAX3dCA==}
     engines: {node: '>=20.9.0'}
@@ -5857,10 +5783,6 @@ packages:
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
-
-  tinyexec@1.0.2:
-    resolution: {integrity: sha512-W/KYk+NFhkmsYpuHq5JykngiOCnxeVL8v8dFnqxSD8qEEdRfXk1SDM6JzNqcERbcGYj9tMrDQBYV9cjgnunFIg==}
-    engines: {node: '>=18'}
 
   tinyexec@1.2.4:
     resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
@@ -7287,57 +7209,31 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@next/env@16.1.6': {}
-
   '@next/env@16.2.10': {}
 
   '@next/eslint-plugin-next@16.2.10':
     dependencies:
       fast-glob: 3.3.1
 
-  '@next/swc-darwin-arm64@16.1.6':
-    optional: true
-
   '@next/swc-darwin-arm64@16.2.10':
-    optional: true
-
-  '@next/swc-darwin-x64@16.1.6':
     optional: true
 
   '@next/swc-darwin-x64@16.2.10':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@16.1.6':
-    optional: true
-
   '@next/swc-linux-arm64-gnu@16.2.10':
-    optional: true
-
-  '@next/swc-linux-arm64-musl@16.1.6':
     optional: true
 
   '@next/swc-linux-arm64-musl@16.2.10':
     optional: true
 
-  '@next/swc-linux-x64-gnu@16.1.6':
-    optional: true
-
   '@next/swc-linux-x64-gnu@16.2.10':
-    optional: true
-
-  '@next/swc-linux-x64-musl@16.1.6':
     optional: true
 
   '@next/swc-linux-x64-musl@16.2.10':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@16.1.6':
-    optional: true
-
   '@next/swc-win32-arm64-msvc@16.2.10':
-    optional: true
-
-  '@next/swc-win32-x64-msvc@16.1.6':
     optional: true
 
   '@next/swc-win32-x64-msvc@16.2.10':
@@ -7385,7 +7281,7 @@ snapshots:
 
   '@orpc/interop@1.14.3': {}
 
-  '@orpc/server@1.14.3(crossws@0.3.5)':
+  '@orpc/server@1.14.3':
     dependencies:
       '@orpc/client': 1.14.3
       '@orpc/contract': 1.14.3
@@ -7398,8 +7294,6 @@ snapshots:
       '@orpc/standard-server-node': 1.14.3
       '@orpc/standard-server-peer': 1.14.3
       cookie: 1.1.1
-    optionalDependencies:
-      crossws: 0.3.5
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - fastify
@@ -7932,27 +7826,6 @@ snapshots:
     dependencies:
       acorn: 8.16.0
 
-  '@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))':
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      '@sveltejs/acorn-typescript': 1.0.9(acorn@8.16.0)
-      '@sveltejs/vite-plugin-svelte': 7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
-      '@types/cookie': 0.6.0
-      acorn: 8.16.0
-      cookie: 0.6.0
-      devalue: 5.7.1
-      esm-env: 1.2.2
-      kleur: 4.1.5
-      magic-string: 0.30.21
-      mrmime: 2.0.1
-      set-cookie-parser: 3.1.0
-      sirv: 3.0.2
-      svelte: 5.55.3(@typescript-eslint/types@8.58.2)
-      vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)
-    optionalDependencies:
-      typescript: 5.9.3
-    optional: true
-
   '@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -7972,16 +7845,6 @@ snapshots:
       vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
     optionalDependencies:
       typescript: 5.9.3
-
-  '@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))':
-    dependencies:
-      deepmerge: 4.3.1
-      magic-string: 0.30.21
-      obug: 2.1.1
-      svelte: 5.55.3(@typescript-eslint/types@8.58.2)
-      vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)
-      vitefu: 1.1.3(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
-    optional: true
 
   '@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
@@ -8388,12 +8251,10 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.11.1':
     optional: true
 
-  '@vercel/analytics@2.0.1(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))':
+  '@vercel/analytics@2.0.1(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
     optionalDependencies:
-      '@sveltejs/kit': 2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       next: 16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
-      svelte: 5.55.3(@typescript-eslint/types@8.58.2)
 
   '@vitest/coverage-v8@4.1.9(vitest@4.1.9)':
     dependencies:
@@ -8407,7 +8268,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
+      vitest: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
 
   '@vitest/expect@4.1.9':
     dependencies:
@@ -8433,7 +8294,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
-    optional: true
 
   '@vitest/pretty-format@4.1.9':
     dependencies:
@@ -8718,7 +8578,7 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  auth@1.6.11(@better-fetch/fetch@1.1.21)(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(better-call@1.3.5(zod@4.4.3))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(magicast@0.5.3)(nanostores@1.3.0)(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9):
+  auth@1.6.11(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(magicast@0.5.3)(nanostores@1.3.0)(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
@@ -8728,7 +8588,7 @@ snapshots:
       '@better-auth/utils': 0.4.0
       '@clack/prompts': 0.11.0
       '@mrleebo/prisma-ast': 0.13.1
-      better-auth: 1.6.11(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9)
+      better-auth: 1.6.11(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9)
       c12: 3.3.3(magicast@0.5.3)
       chalk: 5.6.2
       commander: 12.1.0
@@ -8828,11 +8688,9 @@ snapshots:
 
   base64-js@1.5.1: {}
 
-  baseline-browser-mapping@2.10.0: {}
-
   baseline-browser-mapping@2.10.19: {}
 
-  better-auth@1.6.11(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9):
+  better-auth@1.6.11(drizzle-kit@1.0.0-beta.22)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9):
     dependencies:
       '@better-auth/core': 1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(nanostores@1.3.0)
       '@better-auth/drizzle-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))
@@ -8852,20 +8710,18 @@ snapshots:
       nanostores: 1.3.0
       zod: 4.4.3
     optionalDependencies:
-      '@sveltejs/kit': 2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
       drizzle-kit: 1.0.0-beta.22
       drizzle-orm: 1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3)
       next: 16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       pg: 8.20.0
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
-      svelte: 5.55.3(@typescript-eslint/types@8.58.2)
       vitest: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
       - '@opentelemetry/api'
 
-  better-auth@1.6.11(@sveltejs/kit@2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.1.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vitest@4.1.9):
+  better-auth@1.6.11(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.9):
     dependencies:
       '@better-auth/core': 1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(nanostores@1.3.0)
       '@better-auth/drizzle-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(better-call@1.3.5(zod@4.4.3))(jose@6.2.2)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3))
@@ -8885,13 +8741,11 @@ snapshots:
       nanostores: 1.3.0
       zod: 4.4.3
     optionalDependencies:
-      '@sveltejs/kit': 2.57.1(@sveltejs/vite-plugin-svelte@7.0.0(svelte@5.55.3(@typescript-eslint/types@8.58.2))(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)))(svelte@5.55.3(@typescript-eslint/types@8.58.2))(typescript@5.9.3)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       drizzle-orm: 1.0.0-beta.22(@types/pg@8.20.0)(pg@8.20.0)(zod@4.4.3)
-      next: 16.1.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      next: 16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       pg: 8.20.0
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
-      svelte: 5.55.3(@typescript-eslint/types@8.58.2)
       vitest: 4.1.9(@types/node@24.1.0)(@vitest/coverage-v8@4.1.9)(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
@@ -9002,8 +8856,6 @@ snapshots:
       get-intrinsic: 1.3.0
 
   callsites@3.1.0: {}
-
-  caniuse-lite@1.0.30001777: {}
 
   caniuse-lite@1.0.30001788: {}
 
@@ -9840,6 +9692,10 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.4
 
+  fdir@6.5.0(picomatch@4.0.5):
+    optionalDependencies:
+      picomatch: 4.0.5
+
   fflate@0.8.2: {}
 
   file-entry-cache@8.0.0:
@@ -10649,7 +10505,7 @@ snapshots:
   magicast@0.5.3:
     dependencies:
       '@babel/parser': 7.29.7
-      '@babel/types': 7.29.0
+      '@babel/types': 7.29.7
       source-map-js: 1.2.1
 
   make-dir@4.0.0:
@@ -11163,30 +11019,6 @@ snapshots:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  next@16.1.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
-    dependencies:
-      '@next/env': 16.1.6
-      '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.10.0
-      caniuse-lite: 1.0.30001777
-      postcss: 8.4.31
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      styled-jsx: 5.1.6(@babel/core@7.29.0)(react@19.2.7)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 16.1.6
-      '@next/swc-darwin-x64': 16.1.6
-      '@next/swc-linux-arm64-gnu': 16.1.6
-      '@next/swc-linux-arm64-musl': 16.1.6
-      '@next/swc-linux-x64-gnu': 16.1.6
-      '@next/swc-linux-x64-musl': 16.1.6
-      '@next/swc-win32-arm64-msvc': 16.1.6
-      '@next/swc-win32-x64-msvc': 16.1.6
-      sharp: 0.34.5
-    transitivePeerDependencies:
-      - '@babel/core'
-      - babel-plugin-macros
-
   next@16.2.10(@babel/core@7.29.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
       '@next/env': 16.2.10
@@ -11236,7 +11068,7 @@ snapshots:
     dependencies:
       citty: 0.2.1
       pathe: 2.0.3
-      tinyexec: 1.0.2
+      tinyexec: 1.2.4
 
   object-assign@4.1.1: {}
 
@@ -12111,14 +11943,12 @@ snapshots:
 
   tinybench@2.9.0: {}
 
-  tinyexec@1.0.2: {}
-
   tinyexec@1.2.4: {}
 
   tinyglobby@0.2.15:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tinyglobby@0.2.16:
     dependencies:
@@ -12127,8 +11957,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tinyrainbow@3.1.0: {}
 
@@ -12407,11 +12237,6 @@ snapshots:
       jiti: 2.7.0
       yaml: 2.9.0
 
-  vitefu@1.1.3(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)):
-    optionalDependencies:
-      vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)
-    optional: true
-
   vitefu@1.1.3(vite@8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)):
     optionalDependencies:
       vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
@@ -12430,11 +12255,11 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.5
       std-env: 4.1.0
       tinybench: 2.9.0
-      tinyexec: 1.0.2
-      tinyglobby: 0.2.16
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.0)(jiti@2.7.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
@@ -12458,11 +12283,11 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.4
+      picomatch: 4.0.5
       std-env: 4.1.0
       tinybench: 2.9.0
-      tinyexec: 1.0.2
-      tinyglobby: 0.2.16
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vite: 8.0.8(@types/node@24.1.0)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
       why-is-node-running: 2.3.0
@@ -12471,7 +12296,6 @@ snapshots:
       '@vitest/coverage-v8': 4.1.9(vitest@4.1.9)
     transitivePeerDependencies:
       - msw
-    optional: true
 
   web-namespaces@2.0.1: {}
 

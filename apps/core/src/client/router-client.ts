@@ -4,11 +4,9 @@ import { type AnyRouter, type RouterClient } from '@orpc/server';
 import { type CreateRouterUtilsOptions, type RouterUtils, createTanstackQueryUtils } from '@orpc/tanstack-query';
 
 const buildClient = <TRouter extends AnyRouter>(options: RPCLinkOptions<ClientContext>): RouterClient<TRouter> => {
-  if (typeof options.url === 'string') {
-    options.url = `${options.url}/rpc`;
-  }
+  const url = typeof options.url === 'string' ? `${options.url.replace(/\/+$/, '')}/rpc` : options.url;
 
-  return createORPCClient(new RPCLink(options));
+  return createORPCClient(new RPCLink({ ...options, url }));
 };
 
 export const createRouterClient = <TRouter extends AnyRouter = never>(

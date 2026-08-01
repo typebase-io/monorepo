@@ -32,7 +32,9 @@
   "scripts": {
     "build": "node ../build-apps/src/index.ts build --app core",
     "dev": "node src/index.ts",
-    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint ."
+    "lint": "tsc --build --noEmit && prettier --check . --ignore-path ../../.prettierignore && eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "imports": {
     "#client/*": [
@@ -111,6 +113,11 @@
     "@types/pg": "8.20.0",
     "better-auth": "1.6.11",
     "drizzle-orm": "1.0.0-beta.22"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.9",
+    "vitest": "4.1.9",
+    "zod": "4.4.3"
   },
   "peerDependencies": {
     "@sveltejs/kit": ">=2.20.0",
