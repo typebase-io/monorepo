@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateServer } from '#commands/generate-server.ts';
 
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
+import { watchServer } from '#helpers/generate-server/watch-server.ts';
+import { runUntilStopped } from '#helpers/shared/run-until-stopped.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 
 import { expectProject } from '#tests/helpers/expect-project.ts';
@@ -28,6 +30,8 @@ const { passThrough } = vi.hoisted(() => ({
 }));
 
 vi.mock('#helpers/shared/validate-types.ts', () => ({ validateTypes: vi.fn() }));
+vi.mock('#helpers/generate-server/watch-server.ts', () => ({ watchServer: vi.fn() }));
+vi.mock('#helpers/shared/run-until-stopped.ts', () => ({ runUntilStopped: vi.fn() }));
 vi.mock('#helpers/generate-server/generate-package-json.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 
 const TS_AUTH_DB = [
@@ -84,6 +88,100 @@ describe('generate-server command', () => {
   };
 
   const succeeded = () => vi.mocked(ora()).succeed.mock.calls.flat().map(String).join('\n');
+
+  const started = () => vi.mocked(ora).mock.calls.flat().map(String).join('\n');
+
+  describe('--watch', () => {
+    const typebaseDirPath = () => path.join(tmp.path, 'typebase');
+
+    const watchOptions = () => vi.mocked(watchServer).mock.calls[0]?.[0];
+
+    beforeEach(() => {
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+    });
+
+    it('does not watch unless asked to', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expect(watchServer).not.toHaveBeenCalled();
+      expect(runUntilStopped).not.toHaveBeenCalled();
+    });
+
+    it('watches the typebase directory, stoppable like `logs`', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch'], { from: 'user' }));
+
+      expect(runUntilStopped).toHaveBeenCalledOnce();
+      expect(watchOptions()?.dirPath).toBe(typebaseDirPath());
+      expect(watchOptions()?.signal).toBeInstanceOf(AbortSignal);
+    });
+
+    it('ignores the directories generation writes to, so a build cannot retrigger itself', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch'], { from: 'user' }));
+
+      expect(watchOptions()?.ignoredDirPaths).toEqual(
+        expect.arrayContaining([path.join(typebaseDirPath(), '_server'), path.join(typebaseDirPath(), '_generated')])
+      );
+    });
+
+    it('ignores a custom output directory', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch', '--out-dir', 'dist'], { from: 'user' }));
+
+      expect(watchOptions()?.ignoredDirPaths).toEqual(expect.arrayContaining([path.join(typebaseDirPath(), 'dist')]));
+    });
+
+    it('does not also ignore the configured output directory that `--out-dir` replaced', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { outDir: '.' } }));
+
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch', '--out-dir', 'dist'], { from: 'user' }));
+
+      expect(watchOptions()?.ignoredDirPaths).toContain(path.join(typebaseDirPath(), 'dist'));
+      expect(watchOptions()?.ignoredDirPaths).not.toContain(typebaseDirPath());
+    });
+
+    it('builds the same server on every rebuild', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch'], { from: 'user' }));
+
+      await withCwd(tmp.path, () => watchOptions()?.build(new AbortController().signal, { rebuild: true }));
+
+      expectServer('ts-auth-db', TS_AUTH_DB);
+    });
+
+    it('narrates every step of the first build', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch'], { from: 'user' }));
+
+      await withCwd(tmp.path, () => watchOptions()?.build(new AbortController().signal, { rebuild: false }));
+
+      expect(started()).toContain('Generating types...');
+      expect(started()).toContain('Generating server files...');
+      expect(succeeded()).toContain('Server files generated in');
+      expect(started()).not.toContain('Regenerating...');
+    });
+
+    it('reports a rebuild as a single line instead of repeating every step', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--watch'], { from: 'user' }));
+
+      vi.mocked(ora).mockClear();
+      vi.mocked(ora()).succeed.mockClear();
+
+      await withCwd(tmp.path, () => watchOptions()?.build(new AbortController().signal, { rebuild: true }));
+
+      expect(started()).toContain('Regenerating...');
+      expect(succeeded()).toContain('Server regenerated!');
+
+      expect(started()).not.toContain('Generating types...');
+      expect(started()).not.toContain('Type-checking');
+      expect(started()).not.toContain('Generating server files...');
+      expect(succeeded()).not.toContain('Server files generated in');
+    });
+  });
 
   const expectServer = (outcome: string, files: string[], root = '_server') => {
     expectProject(tmp, outcome, files, { namespace: 'generate-server', root: `typebase/${root}` });
@@ -170,12 +268,26 @@ describe('generate-server command', () => {
       expectServer('esm-auth-db', JS_AUTH_DB);
     });
 
-    it('refuses an output dir that resolves to the non-empty project root', async () => {
+    it('refuses an output dir that contains the typebase directory', async () => {
       await setupProject({ withAuth: true, withDb: true });
 
-      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--out-dir', '..'], { from: 'user' }))).rejects.toThrow('Refusing to replace');
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--out-dir', '..'], { from: 'user' }))).rejects.toThrow(
+        'contains your typebase directory'
+      );
 
       expect(tmp.exists('src/index.ts')).toBe(false);
+      expect(tmp.exists('typebase/actions')).toBe(true);
+    });
+
+    it('refuses even when the containing directory looks like a previously generated server', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      tmp.write('package.json', JSON.stringify({ name: '@typebase-io/server' }));
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--out-dir', '..'], { from: 'user' }))).rejects.toThrow(
+        'contains your typebase directory'
+      );
+
       expect(tmp.exists('typebase/actions')).toBe(true);
     });
   });
@@ -298,14 +410,17 @@ export const auth = defineAuth({
       expect(tmp.read('important/notes.txt')).toBe('do not delete');
     });
 
-    it('reports the absolute path when the server is generated into the current directory', async () => {
+    it('reports the absolute path when the output directory is the current directory', async () => {
       await setupProject({ withAuth: true, withDb: true });
 
-      tmp.write('package.json', JSON.stringify({ name: '@typebase-io/server' }));
+      const outDirPath = tmp.mkdir('out');
 
-      await withCwd(tmp.path, () => generateServer.parseAsync(['--out-dir', '..'], { from: 'user' }));
+      tmp.write('out/typebase.json', JSON.stringify({ projectPath: '../typebase', server: { outDir: '../out' } }));
+      tmp.write('out/package.json', JSON.stringify({ name: '@typebase-io/server' }));
 
-      expect(succeeded()).toContain(`Server files generated in \`${tmp.path}\`.`);
+      await withCwd(outDirPath, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expect(succeeded()).toContain(`Server files generated in \`${outDirPath}\`.`);
     });
 
     it('rejects an invalid --port value', async () => {

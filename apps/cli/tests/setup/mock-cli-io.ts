@@ -14,6 +14,8 @@ vi.mock('ora', () => {
     stop: vi.fn(() => spinner),
     fail: vi.fn(() => spinner),
     succeed: vi.fn(() => spinner),
+    info: vi.fn(() => spinner),
+    warn: vi.fn(() => spinner),
     text: '',
   };
 

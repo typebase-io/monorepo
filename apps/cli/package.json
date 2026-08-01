@@ -58,6 +58,7 @@
     "@neondatabase/api-client": "2.7.1",
     "auth": "1.6.11",
     "chalk": "5.6.2",
+    "chokidar": "4.0.3",
     "commander": "14.0.3",
     "dotenv": "17.4.2",
     "drizzle-kit": "1.0.0-beta.22",

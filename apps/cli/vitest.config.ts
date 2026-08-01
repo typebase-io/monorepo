@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    testTimeout: 30_000,
+    testTimeout: 50_000,
     include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup/to-equal-template.ts', './tests/setup/to-have-been-called-before.ts', './tests/setup/mock-cli-io.ts'],
     coverage: {

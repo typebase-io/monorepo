@@ -1,28 +1,13 @@
-import fs from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
 import ora from 'ora';
 
 import { serverAdapters } from '#helpers/constants.ts';
-import { canReplaceServerDir } from '#helpers/generate-server/can-replace-server-dir.ts';
-import { generateAction } from '#helpers/generate-server/generate-action.ts';
-import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
-import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
-import { generateDBFiles } from '#helpers/generate-server/generate-db-files.ts';
-import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
-import { generateIndex } from '#helpers/generate-server/generate-index.ts';
-import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
-import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
-import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
-import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
-import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
-import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
-import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
+import { buildServer } from '#helpers/generate-server/build-server.ts';
+import { watchServer } from '#helpers/generate-server/watch-server.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
-import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
-import { validateTypes } from '#helpers/shared/validate-types.ts';
+import { runUntilStopped } from '#helpers/shared/run-until-stopped.ts';
 
 export const generateServer = new Command('generate-server')
   .summary('Generate the server code locally')
@@ -31,6 +16,7 @@ export const generateServer = new Command('generate-server')
   .addOption(new Option('--output <type>', 'Generate TypeScript, CommonJS or ESM server files').choices(['ts', 'esm', 'cjs']))
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
   .option('--out-dir <path>', 'Output directory for generated server files')
+  .option('--watch', 'Rebuild whenever a file inside the typebase directory changes. Press "x" or Ctrl+C to stop')
   .option('--port <number>', 'Port the generated server listens on', (value) => {
     const parsed = Number(value);
 
@@ -50,145 +36,47 @@ export const generateServer = new Command('generate-server')
 
     const typebaseDirPath = path.resolve(projectPath);
 
-    const tsConfigFilePath = path.join(typebaseDirPath, 'tsconfig.json');
-    const actionsDirPath = path.join(typebaseDirPath, 'actions');
-    const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
-    const authFilePath = path.join(typebaseDirPath, 'auth.ts');
-    const envFilePath = path.join(typebaseDirPath, 'env.ts');
-    const dbDirPath = path.join(typebaseDirPath, 'db');
-    const generatedDirPath = path.join(typebaseDirPath, '_generated');
-    const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
+    const build = async (signal?: AbortSignal, { rebuild = false } = {}) => {
+      const spinner = rebuild ? ora('Regenerating...').start() : undefined;
 
-    const serverDistDirPath = path.resolve(typebaseDirPath, outDir);
-    const canWriteFiles = await canReplaceServerDir(serverDistDirPath);
-
-    if (!canWriteFiles) {
-      throw new Error(
-        `Refusing to replace \`${serverDistDirPath}\`: it is not empty and does not look like a previously generated Typebase server. Choose an empty or new directory, or delete it manually.`
-      );
-    }
-
-    const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
-    const tempDistDirPath = `${tempServerDirPath}-dist`;
-    const tsConfigFileOutputPath = path.join(tempServerDirPath, 'tsconfig.json');
-    const actionsOutputDirPath = path.join(tempServerDirPath, 'src', 'actions');
-    const dbOutputDirPath = path.join(tempServerDirPath, 'src', 'db');
-    const serverOutputDirPath = path.join(tempServerDirPath, 'src', '_generated');
-    const indexFileOutPath = path.join(tempServerDirPath, 'src', 'index.ts');
-
-    const {
-      hasDB: includeDBFiles,
-      hasAuth: includeAuthFile,
-      needsEnvModule: includeEnvFile,
-    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
-
-    const codegenSpinner = ora('Generating types...').start();
-
-    await Promise.all([
-      generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
-    ]);
-
-    codegenSpinner.succeed('Types generated!');
-
-    validateTypes({
-      dirPath: typebaseDirPath,
-      tsConfigFilePath,
-      skipErrors: false,
-      quiet: false,
-      excludeDirPaths: [generatedDirPath, serverDistDirPath, path.resolve(typebaseDirPath, server.outDir)],
-    });
-
-    const spinner = ora('Generating server files...').start();
-
-    try {
-      await generateTsConfig({ path: tsConfigFileOutputPath, addWarning: false });
-
-      await generatePackageJson({
-        adapter,
-        typebaseDirPath,
-        outputDirPath: tempServerDirPath,
-        generation: output,
-        outDir,
-        hasAuth: includeAuthFile,
-        hasEnv: includeEnvFile,
-      });
-
-      await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
-
-      if (includeEnvFile) {
-        await generateEnvFile({
-          envFilePath,
-          envOutputDirPath: path.join(tempServerDirPath, 'src'),
+      try {
+        const { serverDistDirPath } = await buildServer({
+          projectPath,
+          output,
           adapter,
-          hasDB: includeDBFiles,
-          hasAuth: includeAuthFile,
-          useTs: output === 'ts',
-          target: undefined,
-        });
-      }
-
-      await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile, hasEnv: includeEnvFile });
-      await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: output === 'ts' });
-
-      if (includeDBFiles) {
-        await generateDBFiles({ dbDirPath, dbOutputDirPath, useTs: output === 'ts', adapter });
-      }
-
-      if (includeAuthFile) {
-        await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDirPath, 'src'), useTs: output === 'ts', provider: undefined });
-      }
-
-      await generateIndex({
-        adapter,
-        port,
-        tsConfigFilePath,
-        actionsDirPath,
-        outputFilePath: indexFileOutPath,
-        actionsOutputDirPath,
-        generation: output,
-        hasAuth: includeAuthFile,
-        hasEnv: includeEnvFile,
-        trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
-      });
-
-      spinner.succeed('Server files generated!');
-
-      let outputDirPath = tempServerDirPath;
-
-      if (output !== 'ts') {
-        transpileTsToJs({
-          tsConfigFilePath: tsConfigFileOutputPath,
-          cjs: output === 'cjs',
-          quiet: false,
-          tempServerDirPath,
-          serverDistDirPath: tempDistDirPath,
+          outDir,
+          configuredOutDir: server.outDir,
+          port,
+          signal,
+          quiet: rebuild,
         });
 
-        await fs.cp(tempServerDirPath, tempDistDirPath, {
-          recursive: true,
-          filter: (src) => !src.startsWith(path.join(tempServerDirPath, 'src')) && src !== path.join(tempServerDirPath, 'tsconfig.json'),
-        });
+        if (spinner) {
+          spinner.succeed('Server regenerated!');
 
-        outputDirPath = tempDistDirPath;
-      }
-
-      const previousEntries = await fs.readdir(serverDistDirPath).catch(() => []);
-
-      for (const entry of previousEntries) {
-        if (entry !== '.env' && entry !== 'node_modules') {
-          await fs.rm(path.join(serverDistDirPath, entry), { recursive: true, force: true });
+          return;
         }
-      }
 
-      await fs.cp(outputDirPath, serverDistDirPath, { recursive: true });
-    } catch (err) {
-      spinner.stop();
-      throw err;
-    } finally {
-      await fs.rm(tempServerDirPath, { recursive: true, force: true });
-      await fs.rm(tempDistDirPath, { recursive: true, force: true });
+        ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
+      } catch (err) {
+        spinner?.stop();
+
+        throw err;
+      }
+    };
+
+    if (!params.watch) {
+      await build();
+
+      return;
     }
 
-    ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
+    await runUntilStopped((signal) =>
+      watchServer({
+        build,
+        dirPath: typebaseDirPath,
+        ignoredDirPaths: [path.resolve(typebaseDirPath, outDir), path.join(typebaseDirPath, '_generated')],
+        signal,
+      })
+    );
   });
