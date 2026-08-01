@@ -11,7 +11,7 @@ export const serverTypesTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: bo
     .join('\n');
 
   const actionType = (() => {
-    const dBPart = hasDB ? 'typeof relations' : '{}';
+    const dBPart = hasDB ? 'typeof relations' : 'never';
     const authPart = hasAuth ? 'typeof authConfig' : 'never';
     const envPart = hasEnv ? 'typeof envSchema' : 'never';
 
