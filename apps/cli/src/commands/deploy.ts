@@ -112,14 +112,6 @@ export const deploy = new Command('deploy')
     let hadDatabaseUrl = false;
     let hadAuthSecret = false;
 
-    validateTypes({
-      dirPath: typebaseDirPath,
-      tsConfigFilePath,
-      skipErrors: false,
-      quiet: false,
-      excludeDirPaths: [generatedDirPath, path.resolve(typebaseDirPath, server.outDir)],
-    });
-
     const codegenSpinner = ora('Generating types...').start();
 
     await Promise.all([
@@ -128,6 +120,14 @@ export const deploy = new Command('deploy')
     ]);
 
     codegenSpinner.succeed('Types generated!');
+
+    validateTypes({
+      dirPath: typebaseDirPath,
+      tsConfigFilePath,
+      skipErrors: false,
+      quiet: false,
+      excludeDirPaths: [generatedDirPath, path.resolve(typebaseDirPath, server.outDir)],
+    });
 
     const spinner = ora('Generating server files...').start();
 

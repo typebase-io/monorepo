@@ -22,6 +22,7 @@ You do not need to run it when editing the contents of existing files. This comm
 - `_generated/db.d.ts`: the database types
 
 <Callout type="info">
-  [`npx typebase-io-cli deploy`](/docs/cli/deploy) runs the same logic as part of every deploy, so you only need this command when you're iterating
-  without redeploying (for example, while running the server [locally](/docs/work-locally)).
+  [`npx typebase-io-cli deploy`](/docs/cli/deploy) and [`npx typebase-io-cli generate-server`](/docs/cli/generate-server) both run the same logic
+  before they build, so you rarely need this command on its own. Reach for it when you're iterating without rebuilding — for example, to refresh your
+  editor's types right after adding an action file.
 </Callout>

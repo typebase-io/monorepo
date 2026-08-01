@@ -6,7 +6,17 @@ import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
-const router = {};
+import { filterActions } from "typebase-io/server";
+import * as ActionModule1 from "./actions/mutations/todos.js";
+import * as ActionModule2 from "./actions/queries/todos.js";
+const router = {
+    mutations: {
+        todos: filterActions(ActionModule1),
+    },
+    queries: {
+        todos: filterActions(ActionModule2),
+    },
+};
 const handler = new RPCHandler(router, {
     plugins: [
         new CORSPlugin({

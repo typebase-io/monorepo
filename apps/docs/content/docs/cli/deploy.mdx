@@ -36,8 +36,8 @@ After the first deploy, the CLI remembers your choices in `typebase.json`, so fu
 
 When you run `npx typebase-io-cli deploy`, the CLI performs these steps automatically:
 
-1. **Validates your TypeScript**: Checks for type errors in your `typebase/` directory.
-2. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand before deploying.
+1. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand before deploying.
+2. **Validates your TypeScript**: Checks your `typebase/` directory against those freshly generated types, so what gets checked is what gets built.
 3. **Generates server files**: Builds the server code from your actions, schema, and auth config.
 4. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
 5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).

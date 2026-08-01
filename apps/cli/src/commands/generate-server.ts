@@ -16,6 +16,8 @@ import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
+import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
+import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
@@ -57,6 +59,7 @@ export const generateServer = new Command('generate-server')
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
+    const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
 
     const serverDistDirPath = path.resolve(typebaseDirPath, outDir);
     const canWriteFiles = await canReplaceServerDir(serverDistDirPath);
@@ -80,6 +83,15 @@ export const generateServer = new Command('generate-server')
       hasAuth: includeAuthFile,
       needsEnvModule: includeEnvFile,
     } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
+
+    const codegenSpinner = ora('Generating types...').start();
+
+    await Promise.all([
+      generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
+    ]);
+
+    codegenSpinner.succeed('Types generated!');
 
     validateTypes({
       dirPath: typebaseDirPath,

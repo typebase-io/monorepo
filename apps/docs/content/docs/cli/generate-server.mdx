@@ -17,6 +17,8 @@ npx typebase-io-cli generate-server
 
 This generates a complete, runnable server in the `typebase/_server/` directory (by default).
 
+It regenerates `_generated/` first (the same work [`codegen`](/docs/cli/codegen) does), then type-checks your project against those fresh types, then builds.
+
 ## Output formats
 
 You can choose between three output formats:

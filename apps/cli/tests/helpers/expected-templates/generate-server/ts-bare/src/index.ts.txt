@@ -5,7 +5,19 @@ import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 
-const router = {};
+import { filterActions } from "typebase-io/server";
+
+import * as ActionModule0 from "./actions/mutations/todos.ts";
+import * as ActionModule1 from "./actions/queries/todos.ts";
+
+const router = {
+  mutations: {
+    todos: filterActions(ActionModule0),
+  },
+  queries: {
+    todos: filterActions(ActionModule1),
+  },
+};
 
 const handler = new RPCHandler(router, {
   plugins: [

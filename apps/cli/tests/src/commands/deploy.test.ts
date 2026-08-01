@@ -448,7 +448,41 @@ describe('deploy command', () => {
       expect(vercel).toHaveBeenCalledOnce();
     });
 
-    it('aborts before codegen or deploy when the project has a real type error', async () => {
+    it('type-checks against freshly generated types when the project just gained a database', async () => {
+      await generateTypebaseProject(tmp, { withAuth: false });
+
+      fs.rmSync(path.join(tmp.path, 'typebase/db'), { recursive: true, force: true });
+      fs.rmSync(path.join(tmp.path, 'typebase/actions'), { recursive: true, force: true });
+
+      tmp.write(
+        'typebase/actions/queries/ping.ts',
+        'import { action } from "../../_generated/server.ts";\n\nexport const ping = action.handler(async () => "ok");\n'
+      );
+
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      await generateTypebaseProject(tmp, { withAuth: false });
+      await useRealValidateTypes();
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+
+    it('catches actions left behind by a removed auth config instead of deploying them', async () => {
+      await scaffoldTypeCleanProject();
+      await useRealValidateTypes();
+
+      fs.rmSync(path.join(tmp.path, 'typebase/auth.ts'));
+
+      await expect(withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }))).rejects.toThrow(
+        /Type checking failed/
+      );
+
+      expect(vercel).not.toHaveBeenCalled();
+    });
+
+    it('aborts before pushing or deploying when the project has a real type error', async () => {
       await scaffoldTypeCleanProject();
       await useRealValidateTypes();
 
