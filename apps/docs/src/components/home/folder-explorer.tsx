@@ -12,7 +12,7 @@ import { S } from '#components/home/code-card/s.tsx';
 import { T } from '#components/home/code-card/t.tsx';
 import { V } from '#components/home/code-card/v.tsx';
 
-type FileId = 'mutations' | 'queries' | 'relations' | 'schema' | 'auth';
+type FileId = 'mutations' | 'queries' | 'relations' | 'schema' | 'auth' | 'env';
 
 const rows: { id?: FileId; label: string; depth: number }[] = [
   { label: 'typebase/', depth: 0 },
@@ -25,6 +25,7 @@ const rows: { id?: FileId; label: string; depth: number }[] = [
   { id: 'relations', label: 'relations.ts', depth: 2 },
   { id: 'schema', label: 'schema.ts', depth: 2 },
   { id: 'auth', label: 'auth.ts', depth: 1 },
+  { id: 'env', label: 'env.ts', depth: 1 },
 ];
 
 const files: Record<FileId, { path: string; chip: string; content: React.ReactNode }> = {
@@ -238,6 +239,45 @@ const files: Record<FileId, { path: string; chip: string; content: React.ReactNo
         <Line indent={2}>{`},`}</Line>
         <Line indent={1}>{`},`}</Line>
         <Line>{`});`}</Line>
+      </>
+    ),
+  },
+  env: {
+    path: 'typebase/env.ts',
+    chip: 'you write this',
+    content: (
+      <>
+        <Line>
+          <C>{"// missing one? the server won't boot."}</C>
+        </Line>
+        <Line />
+        <Line>
+          <K>import</K> {`{ `}
+          <V>defineEnv</V>
+          {` } `}
+          <K>from</K> <S>{"'typebase-io/server'"}</S>;
+        </Line>
+        <Line>
+          <K>import</K> {`{ `}
+          <V>z</V>
+          {` } `}
+          <K>from</K> <S>{"'zod'"}</S>;
+        </Line>
+        <Line />
+        <Line>
+          <K>export const</K> <F>env</F> = <F>defineEnv</F>({`{`}
+        </Line>
+        <Line indent={1}>
+          <T>RESEND_API_KEY</T>: <V>z</V>.<F>string</F>().<F>min</F>(1),
+        </Line>
+        <Line indent={1}>
+          <T>STRIPE_SECRET_KEY</T>: <V>z</V>.<F>string</F>().<F>startsWith</F>(<S>{"'sk_'"}</S>),
+        </Line>
+        <Line>{`});`}</Line>
+        <Line />
+        <Line>
+          <C>{'// then in any action: ({ env }) => env.RESEND_API_KEY'}</C>
+        </Line>
       </>
     ),
   },

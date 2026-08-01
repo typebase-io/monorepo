@@ -18,8 +18,8 @@ const steps = [
     body: (
       <>
         Define tables in <code className="font-mono text-fd-foreground/90">db/schema.ts</code>, export actions from{' '}
-        <code className="font-mono text-fd-foreground/90">actions/</code>, drop in <code className="font-mono text-fd-foreground/90">auth.ts</code>.
-        Every export is typechecked end to end.
+        <code className="font-mono text-fd-foreground/90">actions/</code>, drop in <code className="font-mono text-fd-foreground/90">auth.ts</code>{' '}
+        and <code className="font-mono text-fd-foreground/90">env.ts</code>. Every export is typechecked end to end.
       </>
     ),
   },
