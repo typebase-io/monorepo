@@ -10,6 +10,8 @@ export { filterActions } from '#server/actions/filter-actions.ts';
 
 export type { InferRouterInputs, InferRouterOutputs } from '@orpc/server';
 
+type Simplify<T> = { -readonly [K in keyof T]: T[K] } & {};
+
 interface DbContext<TRelations extends AnyRelations> {
   db: DB<TRelations>;
 }
@@ -29,7 +31,7 @@ type Env<TRelations extends AnyRelations, TAuth, TEnv> = ([TEnv] extends [never]
 type MaybeDbContext<TRelations extends AnyRelations> = [TRelations] extends [never] ? Record<never, never> : DbContext<TRelations>;
 type MaybeAuthContext<TAuth> = [TAuth] extends [never] ? Record<never, never> : AuthContext<TAuth>;
 type MaybeEnvContext<TRelations extends AnyRelations, TAuth, TEnv> =
-  ProvidesContext<TRelations, TAuth, TEnv> extends false ? Record<never, never> : EnvContext<Env<TRelations, TAuth, TEnv>>;
+  ProvidesContext<TRelations, TAuth, TEnv> extends false ? Record<never, never> : EnvContext<Simplify<Env<TRelations, TAuth, TEnv>>>;
 
 type MiddlewareContext<TRelations extends AnyRelations, TAuth, TEnv> = MaybeDbContext<TRelations> &
   MaybeAuthContext<TAuth> &

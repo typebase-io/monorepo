@@ -59,6 +59,10 @@ describe('ActionBuilder', () => {
       expectTypeOf<Ctx['env']>().not.toHaveProperty('BETTER_AUTH_SECRET');
     });
 
+    it('resolves the env to a flat object, so it hovers as its keys', () => {
+      expectTypeOf<Ctx['env']>().toEqualTypeOf<{ DATABASE_URL: string }>();
+    });
+
     it('provides no auth', () => {
       expectTypeOf<Ctx>().not.toHaveProperty('auth');
     });
@@ -139,6 +143,11 @@ describe('ActionBuilder', () => {
       expectTypeOf<Ctx['env']['STRIPE_KEY']>().toEqualTypeOf<string>();
       expectTypeOf<Ctx['env']['DATABASE_URL']>().toEqualTypeOf<string>();
       expectTypeOf<Ctx['env']['BETTER_AUTH_SECRET']>().toEqualTypeOf<string>();
+    });
+
+    it('merges the project variables and the injected ones into one flat object', () => {
+      expectTypeOf<Ctx['env']>().toEqualTypeOf<{ STRIPE_KEY: string; DATABASE_URL: string; BETTER_AUTH_SECRET: string }>();
+      expectTypeOf<keyof Ctx['env']>().toEqualTypeOf<'STRIPE_KEY' | 'DATABASE_URL' | 'BETTER_AUTH_SECRET'>();
     });
 
     it('still provides the request headers', () => {
