@@ -16,6 +16,7 @@ Creates a `typebase/` directory with:
 - `db/relations.ts`: example relations
 - `actions/queries/todos.ts`: example query actions
 - `actions/mutations/todos.ts`: example mutation actions
+- `env.ts`: an empty [env schema](/docs/env) with a commented-out example key
 - `_generated/`: auto-generated type files
 
 ## Options
@@ -24,9 +25,10 @@ Creates a `typebase/` directory with:
 | ---------------- | --------------------------------------------------------------------- |
 | `-f, --force`    | Overwrite `tsconfig.json` and regenerate the scaffolded example files |
 | `--with-auth`    | Include an example `auth.ts` with email/password authentication       |
-| `--skip-example` | Skip generating the example schema and actions                        |
+| `--skip-example` | Skip generating the example schema, actions, and `env.ts`             |
 
 <Callout type="warn">
   `init --force` does more than recreate `tsconfig.json`. It reruns the scaffold step and overwrites the generated example files too, including
-  `db/schema.ts`, `db/relations.ts`, `actions/queries/todos.ts`, `actions/mutations/todos.ts`, and the example `auth.ts` when `--with-auth` is used.
+  `db/schema.ts`, `db/relations.ts`, `actions/queries/todos.ts`, `actions/mutations/todos.ts`, `env.ts`, and the example `auth.ts` when `--with-auth`
+  is used.
 </Callout>

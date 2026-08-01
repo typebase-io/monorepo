@@ -108,6 +108,7 @@ The `_generated/` folder is a snapshot taken the last time you ran `npx typebase
 
 - A file inside `actions/`
 - `auth.ts`
+- `env.ts`
 - `db/schema.ts` or `db/relations.ts`
 
 ```npm
@@ -128,6 +129,15 @@ Two things to check:
 2. You ran `npx typebase-io-cli codegen` after creating it. The action builder is regenerated based on what files exist.
 
 The same applies to `auth`. It requires a `typebase/auth.ts` file plus a fresh codegen run.
+
+### A key I declared in `env.ts` isn't on `env`
+
+`env` itself appears whenever you have an `env.ts`, a `db/schema.ts`, or an `auth.ts`, but the keys on it come from your `defineEnv` call. If a key you just added isn't showing up:
+
+1. Confirm it's inside the object passed to `defineEnv`, not somewhere else in the file.
+2. If you created `env.ts` in this session, run `npx typebase-io-cli codegen`. Adding or removing the file changes the handler context; editing the keys inside an existing one doesn't.
+
+See [Environment Variables](/docs/env).
 
 ## Deployment
 
@@ -158,6 +168,34 @@ npx typebase-io-cli env prod add DATABASE_URL <new-value>
 ```
 
 If `env get` prints `ENCRYPTED`, the provider is hiding the raw secret. In that case, check or replace the value from the original source instead, usually your provider dashboard or Neon project settings.
+
+### The server exits at boot with "invalid environment variables"
+
+The deployed server validates your [env schema](/docs/env) before it serves anything, and prints exactly which keys failed:
+
+```
+✗ Typebase server failed to start.
+
+  Invalid environment variables:
+    RESEND_API_KEY  Required
+
+  Set them with:
+    npx typebase-io-cli env prod add <KEY> <value>
+```
+
+Set the missing key against the target that's failing, then redeploy:
+
+```npm
+npx typebase-io-cli env prod add RESEND_API_KEY <value>
+```
+
+`DATABASE_URL` and `BETTER_AUTH_SECRET` are synced by `deploy` itself, so seeing one of those in the list usually means the provider value was removed or rotated by hand.
+
+### `generate-server` or `deploy` fails with "no `defineEnv` call was found"
+
+Your `typebase/env.ts` exists but the CLI can't find a `defineEnv(...)` call to read the schema from. It reads the file statically, so the call has to be visible in the source: `defineEnv({ ... })` with an inline object, or with a local variable that holds one. A schema built by a function call (`defineEnv(getSchema())`) can't be resolved, and reports "`defineEnv` must be called with an inline object literal" instead.
+
+If you don't need any variables of your own, keep the empty call that `init` scaffolds (`defineEnv({})`) or delete `env.ts` entirely and rerun codegen.
 
 ### Deploy fails partway through
 
@@ -321,7 +359,7 @@ Three things to check:
 
 1. `TYPEBASE_APP_URL` in your frontend's `.env` points to `http://localhost:8080` (or whichever port your local server uses).
 2. If you have an `auth.ts`, your frontend's local origin is in `trustedOrigins`.
-3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` (`DATABASE_URL` for the prod branch and `DATABASE_URL_DEV` for the dev branch) so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL`. If that returns `ENCRYPTED`, grab the value from the Neon console instead.
+3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`, along with every key you declared in [`env.ts`](/docs/env). A server missing any of them exits at startup with a list of what's wrong rather than serving requests. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` (`DATABASE_URL` for the prod branch and `DATABASE_URL_DEV` for the dev branch) so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL`. If that returns `ENCRYPTED`, grab the value from the Neon console instead.
 
 ## Still stuck?
 

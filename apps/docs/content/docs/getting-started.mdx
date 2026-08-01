@@ -91,6 +91,7 @@ This creates your backend directory with example files. If you want the examples
 <Files>
   <Folder name="typebase" defaultOpen>
     <File name="tsconfig.json" />
+    <File name="env.ts" comment="environment variables" />
     <Folder name="_generated" comment="auto-generated types, do not edit" />
     <Folder name="db" defaultOpen>
       <File name="schema.ts" comment="your database tables" />
@@ -152,7 +153,7 @@ export const getOne = action
   });
 ```
 
-Each exported action with a `.handler()` becomes a callable endpoint on your client. Feel free to edit these files or add new ones. Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `db/schema.ts`, or `db/relations.ts`:
+Each exported action with a `.handler()` becomes a callable endpoint on your client. Feel free to edit these files or add new ones. Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `db/schema.ts`, or `db/relations.ts`:
 
 ```npm
 npx typebase-io-cli codegen

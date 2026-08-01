@@ -23,6 +23,7 @@ Your project has two parts:
         <Folder name="queries" comment="read operations" />
         <Folder name="mutations" comment="write operations" />
       </Folder>
+      <File name="env.ts" comment="environment variables" />
     </Folder>
   </Folder>
 </Files>
@@ -49,6 +50,8 @@ You can put any server-side code you want inside `typebase/`. The CLI looks for 
 **`db/relations.ts`**: defines the relationships between your tables (one-to-one, one-to-many). Required if you have a schema. Every table must be registered here, even if it has no relations.
 
 **`auth.ts`**: configures authentication using better-auth. When this file exists alongside `db/schema.ts`, the CLI can generate the required auth tables and the auth object becomes available in your actions and middlewares.
+
+**`env.ts`**: declares the [environment variables](/docs/env) your server needs. They're validated when the server boots and typed on the handler context, so a missing variable is a startup error instead of an `undefined` in production.
 
 Everything else is up to you. You can add utilities, helpers, shared types, or any other server-side code alongside these files.
 

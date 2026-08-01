@@ -17,8 +17,8 @@ This writes a runnable server to `typebase/_server/`. See the [generate-server r
 
 <Callout type="warn">
   The generated server is a snapshot of your `typebase/` directory. It isn't watching your files. Re-run `generate-server` (and restart the local
-  server) any time you change anything inside `typebase/`, whether that's an action, your schema, or your auth config. Re-running replaces
-  `typebase/_server/` with a fresh build, but your `.env` and installed `node_modules` are preserved.
+  server) any time you change anything inside `typebase/`, whether that's an action, your schema, your auth config, or your env schema. Re-running
+  replaces `typebase/_server/` with a fresh build, but your `.env` and installed `node_modules` are preserved.
 </Callout>
 
 ## Start it
@@ -44,6 +44,20 @@ The generated server reads its config from a `.env` file in `typebase/_server/`.
 DATABASE_URL=postgresql://...   # only if your project has a db/schema.ts
 BETTER_AUTH_SECRET=...          # only if your project has an auth.ts
 ```
+
+Plus every key you declared in [`typebase/env.ts`](/docs/env). The server validates all of them on startup and exits with a list of what's missing, so you don't have to guess:
+
+```
+✗ Typebase server failed to start.
+
+  Invalid environment variables:
+    RESEND_API_KEY  Required
+
+  Set them with:
+    npx typebase-io-cli env <target> add <KEY> <value>
+```
+
+Locally, add them to `typebase/_server/.env` instead and restart. The `.env` file survives re-running `generate-server`.
 
 The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`) once. That provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
 

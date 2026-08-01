@@ -121,11 +121,12 @@ const myAction = action
 
 The base context available in every `.use()` function is built from your project setup:
 
-| Property     | Available when              | Description                   |
-| ------------ | --------------------------- | ----------------------------- |
-| `db`         | `db/schema.ts` exists       | Typed Drizzle database client |
-| `auth`       | `auth.ts` exists            | The better-auth instance      |
-| `reqHeaders` | Always (may be `undefined`) | Incoming request headers      |
+| Property     | Available when                                | Description                                  |
+| ------------ | --------------------------------------------- | -------------------------------------------- |
+| `db`         | `db/schema.ts` exists                         | Typed Drizzle database client                |
+| `auth`       | `auth.ts` exists                              | The better-auth instance                     |
+| `env`        | `env.ts`, `db/schema.ts`, or `auth.ts` exists | Validated [environment variables](/docs/env) |
+| `reqHeaders` | Always (may be `undefined`)                   | Incoming request headers                     |
 
 Note that `input` is not available in middleware. It is only injected into `.handler()` when `.input()` has been defined on the action.
 

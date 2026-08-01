@@ -96,6 +96,7 @@ Let's break that down:
 - **`.handler()`**: the function that runs on the server. It receives a context object with:
   - `input`: the validated input data
   - `db`: your Drizzle database client, ready to query
+  - `env`: your validated [environment variables](/docs/env)
 
 ## Input and output validation
 
@@ -245,15 +246,19 @@ The object your handler receives is built automatically based on your project se
 
 **`auth`**: present when your project has an `auth.ts` file. The better-auth instance, useful for reading the current session inside middleware.
 
+**`env`**: present when your project has an `env.ts` file, a `db/schema.ts`, or an `auth.ts`. Your validated [environment variables](/docs/env): every key you declared in `env.ts`, plus `DATABASE_URL` when you have a database and `BETTER_AUTH_SECRET` when you have auth. Each one is a plain `string`, never `undefined`, because the server refuses to boot without them.
+
 **`reqHeaders`**: always passed to the handler but may be `undefined`. The raw request headers, needed when calling `auth.api.getSession()` to verify a session in middleware.
 
 So an action that uses all of them might look like:
 
 ```ts
-export const getProfile = action.input(z.object({ id: z.number() })).handler(async ({ db, input, auth, reqHeaders }) => {
+export const getProfile = action.input(z.object({ id: z.number() })).handler(async ({ db, input, auth, env, reqHeaders }) => {
   const session = await auth.api.getSession({ headers: reqHeaders });
 
   if (!session) throw new ServerError('UNAUTHORIZED');
+
+  await notify(env.RESEND_API_KEY, session.user.email);
 
   return db.query.users.findFirst({ where: { id: input.id } });
 });
@@ -269,16 +274,25 @@ export const ping = action.handler(async () => {
 
 ## Environment variables
 
-Anywhere inside your `typebase/` directory (handlers, middleware, utility modules), you can read environment variables with `process.env`:
+Declare what your server needs in `typebase/env.ts`, and read it from the handler context as `env`:
+
+```ts title="typebase/env.ts"
+import { defineEnv } from 'typebase-io/server';
+import { z } from 'zod';
+
+export const env = defineEnv({
+  RESEND_API_KEY: z.string().min(1),
+});
+```
 
 ```ts
-export const sendEmail = action.input(z.object({ to: z.email(), subject: z.string() })).handler(async ({ input }) => {
-  const apiKey = process.env.RESEND_API_KEY;
+export const sendEmail = action.input(z.object({ to: z.email(), subject: z.string() })).handler(async ({ env, input }) => {
+  const apiKey = env.RESEND_API_KEY; // string, validated at boot
   // ...
 });
 ```
 
-In development, variables come from your local `.env` file. In production, they come from whatever you've configured on your deployment provider. Manage them with [`npx typebase-io-cli env`](/docs/cli/env).
+`process.env` still works anywhere inside `typebase/` for anything you haven't declared. In development, values come from your local `.env` file; in production, from whatever you've configured on your deployment provider. Manage them with [`npx typebase-io-cli env`](/docs/cli/env), and see [Environment Variables](/docs/env) for the full reference.
 
 ## How routing works
 
@@ -313,7 +327,7 @@ This same structure is what your client uses to call actions from the frontend. 
 
 ## Regenerating types
 
-Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `db/schema.ts`, or `db/relations.ts`:
+Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `db/schema.ts`, or `db/relations.ts`:
 
 ```npm
 npx typebase-io-cli codegen

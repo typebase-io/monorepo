@@ -9,6 +9,7 @@
     "actions",
     "database",
     "auth",
+    "env",
     "client",
     "generated",
     "[Deploy](/docs/cli/deploy)",

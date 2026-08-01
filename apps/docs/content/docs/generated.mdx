@@ -12,6 +12,7 @@ The `_generated/` folder is created and maintained by `npx typebase-io-cli codeg
 
 import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from 'typebase-io/server';
 import type { auth as authConfig } from '../auth.ts';
+import type { env as envSchema } from '../env.ts';
 import type { relations } from '../db/relations.ts';
 
 import { filterActions } from 'typebase-io/server';
@@ -31,9 +32,11 @@ export type Router = typeof router;
 export type RouterInputs = InferRouterInputs<typeof router>;
 export type RouterOutputs = InferRouterOutputs<typeof router>;
 
-export declare const action: ActionBuilder<typeof relations, typeof authConfig>;
+export declare const action: ActionBuilder<typeof relations, typeof authConfig, typeof envSchema>;
 export declare const getDB: GetDBBuilder<typeof relations>;
 ```
+
+The imports and the type arguments track what your project actually has. A project without auth gets `never` in the second slot and no `authConfig` import; one without an `env.ts` gets `never` in the third.
 
 **`router`**: an object that mirrors your `actions/` folder structure. Every file becomes a namespace, every exported action becomes a method. Non-action exports from the same file are not added to the router. This is what your client imports as `Router` to get full type safety.
 
@@ -49,7 +52,7 @@ type CreateTodoInput = RouterInputs['mutations']['todos']['create']; // what cre
 
 The output type comes from the action's `.output()` schema, or is inferred from the handler's return type when `.output()` is omitted.
 
-**`action`**: the builder you import in every action file to define your handler. It's typed with your schema relations and auth config, so the context object in `.handler()` is always accurate.
+**`action`**: the builder you import in every action file to define your handler. It's typed with your schema relations, auth config, and [env schema](/docs/env), so the context object in `.handler()` is always accurate. `DATABASE_URL` and `BETTER_AUTH_SECRET` are added to `env` by the builder itself whenever your project has a database or auth, so they're typed without appearing in your `env.ts`.
 
 **`getDB`**: a function that returns the Drizzle database instance. Use it when you need database access from code that runs outside of an action handler, such as a shared utility module:
 
