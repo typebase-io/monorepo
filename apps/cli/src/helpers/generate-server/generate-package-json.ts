@@ -11,7 +11,6 @@ export const generatePackageJson = async ({
   typebaseDirPath,
   outputDirPath,
   generation,
-  skipLoadEnv,
   outDir,
   hasAuth,
   hasEnv,
@@ -20,7 +19,6 @@ export const generatePackageJson = async ({
   typebaseDirPath: string;
   outputDirPath: string;
   generation: 'cjs' | 'esm' | 'ts';
-  skipLoadEnv: boolean;
   outDir: string;
   hasAuth: boolean;
   hasEnv: boolean;
@@ -43,10 +41,6 @@ export const generatePackageJson = async ({
   };
 
   const devDependencies: Record<string, string> = {};
-
-  if (!skipLoadEnv) {
-    dependencies[DEPS.dotenv.name] = DEPS.dotenv.version;
-  }
 
   if (adapter === 'cloudflare') {
     dependencies[DEPS['@neondatabase/serverless'].name] = DEPS['@neondatabase/serverless'].version;
@@ -73,6 +67,10 @@ export const generatePackageJson = async ({
 
   if (hasEnv) {
     dependencies[DEPS['@t3-oss/env-core'].name] = DEPS['@t3-oss/env-core'].version;
+
+    if (adapter !== 'cloudflare') {
+      dependencies[DEPS.dotenv.name] = DEPS.dotenv.version;
+    }
   }
 
   if (generation === 'ts') {

@@ -26,7 +26,6 @@ const NODE_BUILTINS = new Set(builtinModules);
 export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, options: { provider: ServerProvider }): Promise<string> => {
   const { provider } = options;
   const output = 'esm';
-  const skipLoadEnv = provider === 'cloudflare';
 
   const adapter = match(provider)
     .returnType<ServerAdapter>()
@@ -55,7 +54,6 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     typebaseDirPath: projectDir,
     outputDirPath: tempServerDir,
     generation: output,
-    skipLoadEnv,
     outDir: 'build',
     hasAuth: includeAuthFile,
     hasEnv: includeEnvFile,
@@ -97,7 +95,6 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
   await generateIndex({
     adapter,
     port: 3000,
-    skipLoadEnv,
     tsConfigFilePath: path.join(projectDir, 'tsconfig.json'),
     actionsDirPath: path.join(projectDir, 'actions'),
     outputFilePath: path.join(tempServerDir, 'src', 'index.ts'),

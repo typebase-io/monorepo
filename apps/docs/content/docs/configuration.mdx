@@ -14,7 +14,6 @@ Typebase uses a `typebase.json` file in your project root to store configuration
   "server": {
     "output": "ts",
     "adapter": "node",
-    "skipLoadEnv": false,
     "outDir": "_server"
   }
 }
@@ -67,7 +66,6 @@ Configuration for `npx typebase-io-cli generate-server`. These are the defaults 
   "server": {
     "output": "ts",
     "adapter": "node",
-    "skipLoadEnv": false,
     "outDir": "_server",
     "port": 8080
   }
@@ -93,14 +91,6 @@ The HTTP adapter for the generated server.
 | Type     | Options                                                            | Default  |
 | -------- | ------------------------------------------------------------------ | -------- |
 | `string` | `"node"`, `"bun"`, `"hono"`, `"fastify"`, `"deno"`, `"cloudflare"` | `"node"` |
-
-#### `server.skipLoadEnv`
-
-Whether to omit the `dotenv/config` import from the generated server. Set to `true` if your runtime handles environment variables natively (e.g., Cloudflare Workers).
-
-| Type      | Default |
-| --------- | ------- |
-| `boolean` | `false` |
 
 #### `server.outDir`
 
@@ -215,7 +205,6 @@ Here is the complete `typebase.json` schema with all optional fields:
   "server": {
     "output": "ts",
     "adapter": "node",
-    "skipLoadEnv": false,
     "outDir": "_server"
   },
   "vercel": {

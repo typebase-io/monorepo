@@ -56,7 +56,7 @@ describe('typebaseConfigSchema', () => {
     const result = typebaseConfigSchema.safeParse({
       projectPath: 'src/typebase',
       serverProvider: 'vercel',
-      server: { output: 'esm', adapter: 'hono', skipLoadEnv: true, outDir: 'out', port: 3000 },
+      server: { output: 'esm', adapter: 'hono', outDir: 'out', port: 3000 },
       vercel: { projectId: 'p', projectName: 'n' },
       neon: { orgId: 'o', projectId: 'p' },
     });

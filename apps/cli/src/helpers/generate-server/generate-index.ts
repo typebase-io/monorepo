@@ -15,7 +15,6 @@ import { nodeIndexFileTemplate } from '#helpers/templates/index-file/node.ts';
 export const generateIndex = async ({
   adapter,
   port,
-  skipLoadEnv,
   tsConfigFilePath,
   actionsDirPath,
   outputFilePath,
@@ -27,7 +26,6 @@ export const generateIndex = async ({
 }: {
   adapter: ServerAdapter;
   port: number;
-  skipLoadEnv: boolean;
   tsConfigFilePath: string;
   actionsDirPath: string;
   outputFilePath: string;
@@ -61,7 +59,7 @@ export const generateIndex = async ({
     indexFile = `import "${generation === 'ts' ? './env.ts' : './env.js'}";\n\n${indexFile}`;
   }
 
-  if (!skipLoadEnv) {
+  if (hasEnv && adapter !== 'cloudflare') {
     indexFile = `import 'dotenv/config';\n\n${indexFile}`;
   }
 

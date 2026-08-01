@@ -73,7 +73,6 @@ export const deploy = new Command('deploy')
     }
 
     const output = 'esm';
-    const skipLoadEnv = provider === 'cloudflare';
     const outDir = 'build';
 
     const adapter = match(provider)
@@ -139,7 +138,6 @@ export const deploy = new Command('deploy')
         typebaseDirPath,
         outputDirPath: tempServerDirPath,
         generation: output,
-        skipLoadEnv,
         outDir,
         hasAuth: includeAuthFile,
         hasEnv: includeEnvFile,
@@ -173,7 +171,6 @@ export const deploy = new Command('deploy')
       await generateIndex({
         adapter,
         port: 3000,
-        skipLoadEnv,
         tsConfigFilePath,
         actionsDirPath,
         outputFilePath: indexFileOutPath,

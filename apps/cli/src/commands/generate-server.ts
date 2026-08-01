@@ -30,7 +30,6 @@ export const generateServer = new Command('generate-server')
   .allowExcessArguments(false)
   .addOption(new Option('--output <type>', 'Generate TypeScript, CommonJS or ESM server files').choices(['ts', 'esm', 'cjs']))
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
-  .addOption(new Option('--skip-load-env', 'Omit dotenv/config import from generated server'))
   .option('--out-dir <path>', 'Output directory for generated server files')
   .option('--port <number>', 'Port the generated server listens on', (value) => {
     const parsed = Number(value);
@@ -46,7 +45,6 @@ export const generateServer = new Command('generate-server')
 
     const output = params.output ?? server.output;
     const adapter = params.adapter ?? server.adapter;
-    const skipLoadEnv = params.skipLoadEnv ?? server.skipLoadEnv;
     const outDir = params.outDir ?? server.outDir;
     const port = params.port ?? server.port;
 
@@ -111,7 +109,6 @@ export const generateServer = new Command('generate-server')
         typebaseDirPath,
         outputDirPath: tempServerDirPath,
         generation: output,
-        skipLoadEnv,
         outDir,
         hasAuth: includeAuthFile,
         hasEnv: includeEnvFile,
@@ -145,7 +142,6 @@ export const generateServer = new Command('generate-server')
       await generateIndex({
         adapter,
         port,
-        skipLoadEnv,
         tsConfigFilePath,
         actionsDirPath,
         outputFilePath: indexFileOutPath,

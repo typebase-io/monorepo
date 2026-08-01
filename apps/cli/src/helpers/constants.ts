@@ -101,7 +101,6 @@ export const typebaseConfigSchema = z.object({
     z.object({
       output: z.optional(z.enum(['ts', 'esm', 'cjs'])),
       adapter: z.optional(z.enum(serverAdapters)),
-      skipLoadEnv: z.optional(z.boolean()),
       outDir: z.optional(z.string().trim().min(1)),
       port: z.optional(z.number().int().positive()),
     })

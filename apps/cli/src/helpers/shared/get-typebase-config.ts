@@ -39,7 +39,6 @@ export const getTypebaseConfig = async () => {
     server: {
       output: config.data.server?.output ?? 'ts',
       adapter: config.data.server?.adapter ?? 'node',
-      skipLoadEnv: config.data.server?.skipLoadEnv ?? false,
       outDir: config.data.server?.outDir ?? '_server',
       port: config.data.server?.port ?? 8080,
     },

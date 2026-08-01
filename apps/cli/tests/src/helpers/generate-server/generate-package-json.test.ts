@@ -40,7 +40,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'ts',
-      skipLoadEnv: false,
       outDir: '_server',
       hasAuth: true,
       hasEnv: true,
@@ -59,7 +58,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
-      skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
       hasEnv: true,
@@ -78,7 +76,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'cjs',
-      skipLoadEnv: false,
       outDir: '_server',
       hasAuth: true,
       hasEnv: true,
@@ -97,7 +94,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
-      skipLoadEnv: false,
       outDir: '_server',
       hasAuth: false,
       hasEnv: true,
@@ -116,7 +112,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
-      skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
       hasEnv: true,
@@ -137,7 +132,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
-      skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
       hasEnv: true,
@@ -156,7 +150,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'ts',
-      skipLoadEnv: false,
       outDir: '_server',
       hasAuth: false,
       hasEnv: true,
@@ -165,7 +158,7 @@ describe('generatePackageJson', () => {
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'hono-ts-unknown.txt');
   });
 
-  it('omits @t3-oss/env-core for a project without an env module', async () => {
+  it('omits @t3-oss/env-core and dotenv for a project without an env module', async () => {
     vi.mocked(getPackageManager).mockResolvedValue('npm');
 
     const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0' } });
@@ -175,7 +168,6 @@ describe('generatePackageJson', () => {
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
-      skipLoadEnv: true,
       outDir: '_server',
       hasAuth: false,
       hasEnv: false,

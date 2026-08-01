@@ -96,7 +96,6 @@ describe('generate-server command', () => {
       { name: 'cjs-auth-db', withAuth: true, withDb: true, args: ['--output', 'cjs'], files: JS_AUTH_DB, root: '_server' },
       { name: 'ts-db-only', withAuth: false, withDb: true, args: [], files: TS_DB_ONLY, root: '_server' },
       { name: 'ts-bare', withAuth: false, withDb: false, args: [], files: TS_BARE, root: '_server' },
-      { name: 'ts-skip-load-env', withAuth: true, withDb: true, args: ['--skip-load-env'], files: TS_AUTH_DB, root: '_server' },
       { name: 'ts-port', withAuth: true, withDb: true, args: ['--port', '3000'], files: TS_AUTH_DB, root: '_server' },
       { name: 'ts-out-dir', withAuth: true, withDb: true, args: ['--out-dir', 'dist'], files: TS_AUTH_DB, root: 'dist' },
       { name: 'adapter-bun', withAuth: true, withDb: true, args: ['--adapter', 'bun'], files: TS_AUTH_DB, root: '_server' },
@@ -151,15 +150,6 @@ describe('generate-server command', () => {
       await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
 
       expectServer('ts-port', TS_AUTH_DB);
-    });
-
-    it('uses the configured skipLoadEnv', async () => {
-      tmp.write('typebase.json', JSON.stringify({ server: { skipLoadEnv: true } }));
-
-      await setupProject({ withAuth: true, withDb: true });
-      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
-
-      expectServer('ts-skip-load-env', TS_AUTH_DB);
     });
 
     it('uses the configured outDir', async () => {

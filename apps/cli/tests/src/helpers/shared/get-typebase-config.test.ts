@@ -25,7 +25,6 @@ describe('getTypebaseConfig', () => {
       server: {
         output: 'ts',
         adapter: 'node',
-        skipLoadEnv: false,
         outDir: '_server',
         port: 8080,
       },
@@ -62,7 +61,6 @@ describe('getTypebaseConfig', () => {
       server: {
         output: 'esm',
         adapter: 'hono',
-        skipLoadEnv: false,
         outDir: '_server',
         port: 3000,
       },

@@ -30,10 +30,6 @@
           "enum": ["node", "bun", "cloudflare", "deno", "fastify", "hono"],
           "description": "The server adapter to use."
         },
-        "skipLoadEnv": {
-          "type": "boolean",
-          "description": "Whether to skip loading environment variables."
-        },
         "outDir": {
           "type": "string",
           "description": "The output directory for the server build.",

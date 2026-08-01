@@ -78,7 +78,6 @@ npx typebase-io-cli generate-server --adapter fastify
 | --------------------- | -------------------------------------------------------------------- | --------- |
 | `--output <type>`     | Output format: `ts`, `esm`, or `cjs`                                 | `ts`      |
 | `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
-| `--skip-load-env`     | Don't include `dotenv/config` import                                 | `false`   |
 | `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
 | `--port <number>`     | Port the generated server listens on                                 | `8080`    |
 
@@ -91,7 +90,6 @@ You can set defaults in your `typebase.json` so you don't have to pass flags eve
   "server": {
     "output": "esm",
     "adapter": "hono",
-    "skipLoadEnv": false,
     "outDir": "_server",
     "port": 8080
   }
@@ -117,6 +115,8 @@ _server/
   package.json        # Dependencies for the server
   tsconfig.json       # TypeScript config
 ```
+
+`src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. `dotenv` is added to `package.json`, and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither.
 
 ## Regeneration
 

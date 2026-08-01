@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 import "./env.ts";
 
 import { RPCHandler } from "@orpc/server/fetch";
