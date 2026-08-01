@@ -56,6 +56,7 @@ export const generateServer = new Command('generate-server')
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
+    const generatedDirPath = path.join(typebaseDirPath, '_generated');
 
     const serverDistDirPath = path.resolve(typebaseDirPath, outDir);
     const canWriteFiles = await canReplaceServerDir(serverDistDirPath);
@@ -85,7 +86,7 @@ export const generateServer = new Command('generate-server')
       tsConfigFilePath,
       skipErrors: false,
       quiet: false,
-      excludeDirPaths: [serverDistDirPath, path.resolve(typebaseDirPath, server.outDir)],
+      excludeDirPaths: [generatedDirPath, serverDistDirPath, path.resolve(typebaseDirPath, server.outDir)],
     });
 
     const spinner = ora('Generating server files...').start();

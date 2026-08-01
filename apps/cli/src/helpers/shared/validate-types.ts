@@ -35,7 +35,11 @@ export const validateTypes = ({
     }
   }
 
-  const diagnostics = typeCheckProject.getPreEmitDiagnostics();
+  const diagnostics = typeCheckProject.getPreEmitDiagnostics().filter((diagnostic) => {
+    const diagnosticFilePath = diagnostic.getSourceFile()?.getFilePath();
+
+    return diagnosticFilePath === undefined || !excludePrefixes.some((prefix) => diagnosticFilePath.startsWith(prefix));
+  });
 
   if (diagnostics.length > 0) {
     const formattedDiagnostics = ts.formatDiagnosticsWithColorAndContext(

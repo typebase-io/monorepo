@@ -117,7 +117,7 @@ export const deploy = new Command('deploy')
       tsConfigFilePath,
       skipErrors: false,
       quiet: false,
-      excludeDirPaths: [path.resolve(typebaseDirPath, server.outDir)],
+      excludeDirPaths: [generatedDirPath, path.resolve(typebaseDirPath, server.outDir)],
     });
 
     const codegenSpinner = ora('Generating types...').start();

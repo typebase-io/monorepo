@@ -152,6 +152,25 @@ describe('codegen command', () => {
       expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
     });
 
+    it('drops a removed env schema without reporting the stale `_generated` import', async () => {
+      tmp.write('typebase/env.ts', 'import { defineEnv } from "typebase-io/server";\n\nexport const env = defineEnv({});\n');
+
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      expect(tmp.read('typebase/_generated/server.ts')).toContain('import type { env as envSchema } from "../env.ts";');
+
+      fs.rmSync(path.join(tmp.path, 'typebase/env.ts'));
+      vi.mocked(console.error).mockClear();
+
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      const reported = vi.mocked(console.error).mock.calls.flat().map(String).join('\n');
+
+      expect(reported).not.toContain('_generated/server.ts');
+      expect(reported).not.toContain("Cannot find module '../env.ts'");
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
+    });
+
     it('refuses to regenerate when the db schema is removed but auth.ts stays', async () => {
       await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
 

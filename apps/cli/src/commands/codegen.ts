@@ -32,7 +32,7 @@ export const codegen = new Command('codegen')
       tsConfigFilePath,
       skipErrors: true,
       quiet: false,
-      excludeDirPaths: [path.resolve(typebaseDirPath, config.server.outDir)],
+      excludeDirPaths: [generatedDirPath, path.resolve(typebaseDirPath, config.server.outDir)],
     });
 
     const spinner = ora('Generating types...').start();

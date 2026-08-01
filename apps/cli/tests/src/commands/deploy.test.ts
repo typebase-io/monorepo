@@ -432,6 +432,22 @@ describe('deploy command', () => {
       expect(vercel).toHaveBeenCalledOnce();
     });
 
+    it('deploys past a stale `_generated` file that still points at a removed env schema', async () => {
+      await scaffoldTypeCleanProject();
+      await useRealValidateTypes();
+
+      const generated = tmp.read('typebase/_generated/server.ts');
+
+      tmp.write(
+        'typebase/_generated/server.ts',
+        generated.replace('import type {', 'import type { env as envSchema } from "../env.ts";\nimport type {')
+      );
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+
     it('aborts before codegen or deploy when the project has a real type error', async () => {
       await scaffoldTypeCleanProject();
       await useRealValidateTypes();

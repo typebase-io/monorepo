@@ -14,6 +14,19 @@ describe('validateTypes', () => {
     include: ['./**/*.ts'],
   });
 
+  const TS_CONFIG_WITH_TS_IMPORTS = JSON.stringify({
+    compilerOptions: {
+      strict: true,
+      skipLibCheck: true,
+      noEmit: true,
+      target: 'ESNext',
+      module: 'Preserve',
+      moduleResolution: 'Bundler',
+      allowImportingTsExtensions: true,
+    },
+    include: ['./**/*.ts'],
+  });
+
   beforeEach(() => {
     tmp = createTempDir();
   });
@@ -87,6 +100,46 @@ describe('validateTypes', () => {
         excludeDirPaths: [path.join(tmp.path, 'skip')],
       });
     }).not.toThrow();
+  });
+
+  it('ignores errors inside an excluded directory even when a checked file imports it', () => {
+    tmp.write('tsconfig.json', TS_CONFIG_WITH_TS_IMPORTS);
+    tmp.write('user.ts', 'import { thing } from "./skip/api.ts";\n\nexport const value = thing;');
+    tmp.write('skip/api.ts', 'import { missing } from "../deleted.ts";\n\nexport const thing = missing;');
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(() => {
+      validateTypes({
+        dirPath: tmp.path,
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        skipErrors: false,
+        quiet: true,
+        excludeDirPaths: [path.join(tmp.path, 'skip')],
+      });
+    }).not.toThrow();
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('still reports errors in the files that import an excluded directory', () => {
+    tmp.write('tsconfig.json', TS_CONFIG_WITH_TS_IMPORTS);
+    tmp.write('user.ts', 'import { thing } from "./skip/api.ts";\n\nexport const value: number = thing;');
+    tmp.write('skip/api.ts', 'export const thing = "not a number";');
+
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(() => {
+      validateTypes({
+        dirPath: tmp.path,
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        skipErrors: false,
+        quiet: true,
+        excludeDirPaths: [path.join(tmp.path, 'skip')],
+      });
+    }).toThrow(/Type checking failed/);
+
+    expect(errorSpy.mock.calls.flat().map(String).join('\n')).toContain('user.ts');
   });
 
   it('labels the current working directory as "." in the spinner message', async () => {
