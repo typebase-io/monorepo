@@ -1,6 +1,6 @@
 {
   "name": "@typebase-io/core",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": false,
   "type": "module",
   "description": "A type-safe backend you write as TypeScript files inside your existing app.",
