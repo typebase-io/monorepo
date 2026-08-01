@@ -19,9 +19,7 @@ import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts'
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
-import { hasAuth } from '#helpers/shared/has-auth.ts';
-import { hasDB } from '#helpers/shared/has-db.ts';
-import { hasEnv } from '#helpers/shared/has-env.ts';
+import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 
 export const generateServer = new Command('generate-server')
@@ -76,9 +74,11 @@ export const generateServer = new Command('generate-server')
     const serverOutputDirPath = path.join(tempServerDirPath, 'src', '_generated');
     const indexFileOutPath = path.join(tempServerDirPath, 'src', 'index.ts');
 
-    const includeDBFiles = hasDB(schemaFilePath);
-    const includeAuthFile = hasAuth(authFilePath);
-    const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
+    const {
+      hasDB: includeDBFiles,
+      hasAuth: includeAuthFile,
+      needsEnvModule: includeEnvFile,
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
     validateTypes({
       dirPath: typebaseDirPath,

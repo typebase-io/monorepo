@@ -9,7 +9,7 @@ import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
-import { hasDB } from '#helpers/shared/has-db.ts';
+import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 
 export const auth = new Command('auth').summary('Manage authentication').addCommand(
   new Command('generate')
@@ -36,9 +36,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
         throw new Error('No auth config found. Create an auth file at auth.ts first.');
       }
 
-      if (!hasDB(schemaFilePath)) {
-        throw new Error('No database schema found. Create a schema file at db/schema.ts first.');
-      }
+      resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
       const authSpinner = ora('Generating auth tables...').start();
 

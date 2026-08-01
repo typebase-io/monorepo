@@ -133,8 +133,10 @@ describe('codegen command', () => {
       expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
 
       const schemaFile = tmp.read('typebase/db/schema.ts');
+      const authFile = tmp.read('typebase/auth.ts');
 
       fs.rmSync(path.join(tmp.path, 'typebase/db/schema.ts'));
+      fs.rmSync(path.join(tmp.path, 'typebase/auth.ts'));
 
       await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
 
@@ -142,11 +144,26 @@ describe('codegen command', () => {
       expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'after-removing-db-server.ts.txt');
 
       tmp.write('typebase/db/schema.ts', schemaFile);
+      tmp.write('typebase/auth.ts', authFile);
 
       await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
 
       expect(tmp.read('typebase/_generated/db.d.ts')).toEqualTemplate('codegen', 'db.d.ts.txt');
       expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
+    });
+
+    it('refuses to regenerate when the db schema is removed but auth.ts stays', async () => {
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      const before = tmp.read('typebase/_generated/server.ts');
+
+      fs.rmSync(path.join(tmp.path, 'typebase/db/schema.ts'));
+
+      await expect(withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }))).rejects.toThrow(
+        'Found `auth.ts` but no database schema at `db/schema.ts`'
+      );
+
+      expect(tmp.read('typebase/_generated/server.ts')).toBe(before);
     });
   });
 

@@ -33,9 +33,7 @@ import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
-import { hasAuth } from '#helpers/shared/has-auth.ts';
-import { hasDB } from '#helpers/shared/has-db.ts';
-import { hasEnv } from '#helpers/shared/has-env.ts';
+import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 import { writeEnvFile } from '#helpers/shared/write-env-file.ts';
 import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
@@ -104,9 +102,11 @@ export const deploy = new Command('deploy')
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
 
-    const includeDBFiles = hasDB(schemaFilePath);
-    const includeAuthFile = hasAuth(authFilePath);
-    const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
+    const {
+      hasDB: includeDBFiles,
+      hasAuth: includeAuthFile,
+      needsEnvModule: includeEnvFile,
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
     const env: { key: string; value: string; secret: boolean }[] = [];
     let hadDatabaseUrl = false;

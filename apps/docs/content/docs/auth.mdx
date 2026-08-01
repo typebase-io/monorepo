@@ -11,6 +11,12 @@ The `defineAuth` function in Typebase is a thin wrapper around better-auth, so a
   Authentication is optional. If your project doesn't need user accounts, you can skip this entirely. Typebase works just fine without it.
 </Callout>
 
+<Callout type="warn">
+  Auth requires a database. better-auth keeps users, sessions, accounts, and verifications in your schema, so a project with an `auth.ts` must also
+  have a `db/schema.ts`. When `auth.ts` exists but `db/schema.ts` doesn't, `codegen`, `generate-server`, `deploy`, and `auth generate` all stop with
+  an error instead of building a server whose auth could never work.
+</Callout>
+
 ## Overview
 
 Adding authentication to a Typebase project involves four steps:

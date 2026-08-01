@@ -157,7 +157,7 @@ describe('auth generate command', () => {
     fs.rmSync(path.join(tmp.path, 'typebase/db/schema.ts'));
 
     await expect(withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }))).rejects.toThrow(
-      'No database schema found. Create a schema file at db/schema.ts first.'
+      'Found `auth.ts` but no database schema at `db/schema.ts`'
     );
 
     expect(vi.mocked(getAndSaveAuthSecret)).not.toHaveBeenCalled();

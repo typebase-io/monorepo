@@ -40,6 +40,7 @@ Hard rules:
 - **`typebase/` runs on the server only.** The frontend cannot import runtime code from it; only types. The backend cannot import from the frontend.
 - **The folder structure of `actions/` is the API.** `actions/queries/todos.ts` exporting `getOne` becomes `client.queries.todos.getOne` on the frontend. `queries`/`mutations` are pure convention — flat or nested folders work too. Only exports that are full Typebase/oRPC procedures end up on the client; helpers next to them are fine.
 - **Files in `typebase/` can import each other freely.** Add utilities, shared types, helpers anywhere alongside your actions, schema, or auth.
+- **`auth.ts` requires `db/schema.ts`.** better-auth keeps users and sessions in the database, so there is no auth-without-db shape. `codegen`, `generate-server`, `deploy`, and `auth generate` all refuse to run on a project that has one without the other. Adding auth to a db-less project means adding a schema first.
 - **Codegen is required when files appear/disappear/rename**, not when their contents change. See "Codegen rules" below.
 - **No type escape hatches.** Typebase's entire value is that types flow from `db/schema.ts` through actions to the frontend client. Never use `as` casts (the type-safe `as const` is fine), `any`, or `@ts-ignore`/`@ts-expect-error` — not in `typebase/` and not in frontend code consuming the client. If a type doesn't line up, fix the code, not the type: the mismatch is usually a missing `.notNull()`, a table not registered in `relations.ts`, stale codegen, or a handler returning a shape that doesn't match `.output()`.
 
@@ -169,7 +170,7 @@ export const auth = defineAuth({
 });
 ```
 
-`defineAuth` accepts every better-auth option except `database` (Typebase manages it). After creating or modifying `auth.ts`:
+`defineAuth` accepts every better-auth option except `database` (Typebase manages it). The project must already have a `db/schema.ts` — creating `auth.ts` in a db-less project makes every CLI command fail until you add one. After creating or modifying `auth.ts`:
 
 1. Run `npx typebase-io-cli auth generate` — appends `users`, `sessions`, `accounts`, `verifications` tables to `db/schema.ts`, registers them in `db/relations.ts`, writes `BETTER_AUTH_SECRET` to `.env` if missing, and reruns codegen.
 2. Run `npx typebase-io-cli db dev push` (or just `deploy dev`) so the new tables exist in the database. Sign-in failures with auth "configured but tables missing" almost always mean step 2 was skipped.
@@ -420,6 +421,7 @@ Editing the contents of an existing file does **not** require codegen — types 
 - **Build fails with "no `defineEnv` call was found" / "`defineEnv` must be called with an inline object literal"** → `env.ts` exists but the CLI can't statically read the schema. Use an inline object literal (or a local variable holding one); a schema returned from a function call can't be resolved. An empty `defineEnv({})` is valid; so is deleting `env.ts` and rerunning `codegen`.
 - **"No relations found" / `db.query.X` undefined** → table missing from `db/relations.ts`. Add `tableName: {}` if it has no relations.
 - **"Relation does not exist" at runtime** → schema added in code but not pushed. Run `db dev push` / `db prod push`, or `deploy dev/prod` (which pushes as part of deploying).
+- **Every command fails with "Found `auth.ts` but no database schema at `db/schema.ts`"** → the project has auth but no schema, which cannot be built. Either add `typebase/db/schema.ts` (then `auth generate` + `db dev push`), or delete `typebase/auth.ts` and rerun `codegen`. Usually happens after deleting a schema from a project that had auth.
 - **Sign-in fails right after enabling auth** → forgot the `db dev push` after `auth generate`. The auth tables don't exist yet.
 - **Sessions don't persist on the frontend** → proxy missing or misconfigured. Cookies must land on the frontend's domain.
 - **"Origin not trusted"** → add the exact origin to `trustedOrigins`. For Expo dev, include scheme entries (`myapp://`, `exp://**`).
@@ -459,7 +461,7 @@ Editing the contents of an existing file does **not** require codegen — types 
 
 - "Add a backend endpoint" → create or edit a file in `typebase/actions/...`, export an `action.input(...).output(...).handler(...)`. If it's a brand-new file, run `codegen` afterwards.
 - "Add a database table" → edit `typebase/db/schema.ts`, register it in `typebase/db/relations.ts` (even with `{}`), then `db dev push` (no codegen needed for content edits).
-- "Add auth" → create `typebase/auth.ts` → `auth generate` → `db dev push`. Then wire the auth client + proxy in the frontend.
+- "Add auth" → confirm `typebase/db/schema.ts` exists first (auth cannot be built without one) → create `typebase/auth.ts` → `auth generate` → `db dev push`. Then wire the auth client + proxy in the frontend.
 - "Protect an action" → create or import an `authedAction` builder via `action.use(...)` and use it instead of `action`.
 - "Read env var on the server" → two steps, both required: (1) declare it in `typebase/env.ts` (`defineEnv`) — this is what puts it on the context as `env.X`; (2) set the value with `npx typebase-io-cli env <target> add KEY value` (provider, per target) or in `typebase/_server/.env` (local). Running only step 2 is the common mistake: the value exists but `env.X` doesn't. `process.env.X` still works for optional values you don't want validated. Never declare `DATABASE_URL`/`BETTER_AUTH_SECRET` just to read them — they're already on `env`.
 - "Ship to production" → `npx typebase-io-cli deploy prod`. URL lands in project `.env` as `TYPEBASE_APP_URL`.

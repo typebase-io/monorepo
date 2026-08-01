@@ -73,16 +73,16 @@ describe('generateServerTypes', () => {
     tmp.write('tsconfig.json', TS_CONFIG);
     tmp.write('auth.ts', 'export const auth = {};');
 
-    await generateServerTypes({
-      tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
-      schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
-      authFilePath: path.join(tmp.path, 'auth.ts'),
-      envFilePath: path.join(tmp.path, 'env.ts'),
-      actionsDirPath: path.join(tmp.path, 'actions'),
-      generatedDirPath: path.join(tmp.path, 'generated'),
-    });
-
-    expect(tmp.read('generated/server.ts')).toEqualTemplate('generate-server-types', 'only-auth.txt');
+    await expect(
+      generateServerTypes({
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
+        authFilePath: path.join(tmp.path, 'auth.ts'),
+        envFilePath: path.join(tmp.path, 'env.ts'),
+        actionsDirPath: path.join(tmp.path, 'actions'),
+        generatedDirPath: path.join(tmp.path, 'generated'),
+      })
+    ).rejects.toThrow('Found `auth.ts` but no database schema at `db/schema.ts`');
   });
 
   test('when only env is present', async () => {
@@ -123,16 +123,16 @@ describe('generateServerTypes', () => {
     tmp.write('actions/hello.ts', `export const hello = { '~orpc': {} as unknown };`);
     tmp.write('auth.ts', 'export const auth = {};');
 
-    await generateServerTypes({
-      tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
-      schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
-      authFilePath: path.join(tmp.path, 'auth.ts'),
-      envFilePath: path.join(tmp.path, 'env.ts'),
-      actionsDirPath: path.join(tmp.path, 'actions'),
-      generatedDirPath: path.join(tmp.path, 'generated'),
-    });
-
-    expect(tmp.read('generated/server.ts')).toEqualTemplate('generate-server-types', 'router-and-auth.txt');
+    await expect(
+      generateServerTypes({
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
+        authFilePath: path.join(tmp.path, 'auth.ts'),
+        envFilePath: path.join(tmp.path, 'env.ts'),
+        actionsDirPath: path.join(tmp.path, 'actions'),
+        generatedDirPath: path.join(tmp.path, 'generated'),
+      })
+    ).rejects.toThrow('Found `auth.ts` but no database schema at `db/schema.ts`');
   });
 
   test('when router and env are present', async () => {
@@ -191,16 +191,16 @@ describe('generateServerTypes', () => {
     tmp.write('auth.ts', 'export const auth = {};');
     tmp.write('env.ts', 'export const env = {};');
 
-    await generateServerTypes({
-      tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
-      schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
-      authFilePath: path.join(tmp.path, 'auth.ts'),
-      envFilePath: path.join(tmp.path, 'env.ts'),
-      actionsDirPath: path.join(tmp.path, 'actions'),
-      generatedDirPath: path.join(tmp.path, 'generated'),
-    });
-
-    expect(tmp.read('generated/server.ts')).toEqualTemplate('generate-server-types', 'auth-and-env.txt');
+    await expect(
+      generateServerTypes({
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
+        authFilePath: path.join(tmp.path, 'auth.ts'),
+        envFilePath: path.join(tmp.path, 'env.ts'),
+        actionsDirPath: path.join(tmp.path, 'actions'),
+        generatedDirPath: path.join(tmp.path, 'generated'),
+      })
+    ).rejects.toThrow('Found `auth.ts` but no database schema at `db/schema.ts`');
   });
 
   test('when router, db and auth are present', async () => {
@@ -245,16 +245,16 @@ describe('generateServerTypes', () => {
     tmp.write('auth.ts', 'export const auth = {};');
     tmp.write('env.ts', 'export const env = {};');
 
-    await generateServerTypes({
-      tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
-      schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
-      authFilePath: path.join(tmp.path, 'auth.ts'),
-      envFilePath: path.join(tmp.path, 'env.ts'),
-      actionsDirPath: path.join(tmp.path, 'actions'),
-      generatedDirPath: path.join(tmp.path, 'generated'),
-    });
-
-    expect(tmp.read('generated/server.ts')).toEqualTemplate('generate-server-types', 'router-auth-and-env.txt');
+    await expect(
+      generateServerTypes({
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        schemaFilePath: path.join(tmp.path, 'db', 'schema.ts'),
+        authFilePath: path.join(tmp.path, 'auth.ts'),
+        envFilePath: path.join(tmp.path, 'env.ts'),
+        actionsDirPath: path.join(tmp.path, 'actions'),
+        generatedDirPath: path.join(tmp.path, 'generated'),
+      })
+    ).rejects.toThrow('Found `auth.ts` but no database schema at `db/schema.ts`');
   });
 
   test('when db, auth and env are present', async () => {

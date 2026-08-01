@@ -48,7 +48,6 @@ const TS_AUTH_DB = [
 
 const JS_AUTH_DB = TS_AUTH_DB.filter((f) => f !== 'tsconfig.json').map((f) => (f.endsWith('.ts') ? f.replace(/\.ts$/, '.js') : f));
 const TS_DB_ONLY = TS_AUTH_DB.filter((f) => f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts');
-const TS_AUTH_ONLY = TS_AUTH_DB.filter((f) => !f.startsWith('src/db/'));
 const TS_BARE = TS_AUTH_DB.filter(
   (f) => !f.startsWith('src/db/') && f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts' && f !== 'src/env.ts'
 );
@@ -96,7 +95,6 @@ describe('generate-server command', () => {
       { name: 'esm-auth-db', withAuth: true, withDb: true, args: ['--output', 'esm'], files: JS_AUTH_DB, root: '_server' },
       { name: 'cjs-auth-db', withAuth: true, withDb: true, args: ['--output', 'cjs'], files: JS_AUTH_DB, root: '_server' },
       { name: 'ts-db-only', withAuth: false, withDb: true, args: [], files: TS_DB_ONLY, root: '_server' },
-      { name: 'ts-auth-only', withAuth: true, withDb: false, args: [], files: TS_AUTH_ONLY, root: '_server' },
       { name: 'ts-bare', withAuth: false, withDb: false, args: [], files: TS_BARE, root: '_server' },
       { name: 'ts-skip-load-env', withAuth: true, withDb: true, args: ['--skip-load-env'], files: TS_AUTH_DB, root: '_server' },
       { name: 'ts-port', withAuth: true, withDb: true, args: ['--port', '3000'], files: TS_AUTH_DB, root: '_server' },
@@ -115,6 +113,16 @@ describe('generate-server command', () => {
 
       expectServer(name, files, root);
     });
+  });
+
+  it('refuses to build a project that has auth but no database schema', async () => {
+    await setupProject({ withAuth: true, withDb: false });
+
+    await expect(withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }))).rejects.toThrow(
+      'Found `auth.ts` but no database schema at `db/schema.ts`'
+    );
+
+    expect(fs.existsSync(path.join(tmp.path, 'typebase/_server'))).toBe(false);
   });
 
   describe('reads options from typebase.json', () => {

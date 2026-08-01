@@ -6,6 +6,7 @@ import ora from 'ora';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 
 export const codegen = new Command('codegen')
@@ -23,6 +24,8 @@ export const codegen = new Command('codegen')
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
+
+    resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
     validateTypes({
       dirPath: typebaseDirPath,

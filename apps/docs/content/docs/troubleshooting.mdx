@@ -117,6 +117,17 @@ npx typebase-io-cli codegen
 
 You don't need to re-run codegen when you only change the contents of an existing file. The action body, schema columns, or auth options will pick up automatically the next time you build.
 
+### "Found `auth.ts` but no database schema at `db/schema.ts`"
+
+better-auth stores users, sessions, accounts, and verifications in your database, so auth can't be built without a schema. You'll see this from `codegen`, `generate-server`, `deploy`, and `auth generate` alike.
+
+Pick whichever you meant:
+
+- **You want auth**: create `typebase/db/schema.ts` (a plain `export const` per table is enough to start), then run `npx typebase-io-cli auth generate` to append the auth tables and `npx typebase-io-cli db dev push` to create them.
+- **You don't want auth**: delete `typebase/auth.ts` and run `npx typebase-io-cli codegen`.
+
+This most often shows up after deleting `db/schema.ts` from a project that already had auth wired up.
+
 ### Codegen fails with "cannot find module" or path errors
 
 This usually means `projectPath` in `typebase.json` doesn't match where your `typebase/` directory actually lives. Check the [Configuration](/docs/configuration) page and confirm `projectPath` is correct relative to your project root.

@@ -70,7 +70,6 @@ const JS_AUTH_DB = [
 ];
 
 const JS_DB_ONLY = JS_AUTH_DB.filter((f) => f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js');
-const JS_AUTH_ONLY = JS_AUTH_DB.filter((f) => !f.startsWith('src/db/'));
 const JS_BARE = JS_AUTH_DB.filter(
   (f) => !f.startsWith('src/db/') && f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js' && f !== 'src/env.js'
 );
@@ -150,15 +149,12 @@ describe('deploy command', () => {
     const cases = [
       { name: 'vercel-auth-db', provider: 'vercel', withAuth: true, withDb: true, files: JS_AUTH_DB },
       { name: 'vercel-db-only', provider: 'vercel', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'vercel-auth-only', provider: 'vercel', withAuth: true, withDb: false, files: JS_AUTH_ONLY },
       { name: 'vercel-bare', provider: 'vercel', withAuth: false, withDb: false, files: JS_BARE },
       { name: 'deno-auth-db', provider: 'deno', withAuth: true, withDb: true, files: JS_AUTH_DB },
       { name: 'deno-db-only', provider: 'deno', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'deno-auth-only', provider: 'deno', withAuth: true, withDb: false, files: JS_AUTH_ONLY },
       { name: 'deno-bare', provider: 'deno', withAuth: false, withDb: false, files: JS_BARE },
       { name: 'cloudflare-auth-db', provider: 'cloudflare', withAuth: true, withDb: true, files: JS_AUTH_DB },
       { name: 'cloudflare-db-only', provider: 'cloudflare', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'cloudflare-auth-only', provider: 'cloudflare', withAuth: true, withDb: false, files: JS_AUTH_ONLY },
       { name: 'cloudflare-bare', provider: 'cloudflare', withAuth: false, withDb: false, files: JS_BARE },
     ] as const;
 
@@ -174,6 +170,16 @@ describe('deploy command', () => {
         if (other !== provider) expect(fn).not.toHaveBeenCalled();
       }
     });
+  });
+
+  it('refuses to deploy a project that has auth but no database schema', async () => {
+    await setupProject({ withAuth: true, withDb: false });
+
+    await expect(withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }))).rejects.toThrow(
+      'Found `auth.ts` but no database schema at `db/schema.ts`'
+    );
+
+    expect(vercel).not.toHaveBeenCalled();
   });
 
   describe('provider resolution', () => {
@@ -278,7 +284,7 @@ describe('deploy command', () => {
     });
 
     it('skips neon and the database env when there is no schema', async () => {
-      await setupProject({ withAuth: true, withDb: false });
+      await setupProject({ withAuth: false, withDb: false });
       await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
 
       expect(neon).not.toHaveBeenCalled();

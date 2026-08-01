@@ -2,9 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { getServerRouter } from '#helpers/shared/get-server-router.ts';
-import { hasAuth } from '#helpers/shared/has-auth.ts';
-import { hasDB } from '#helpers/shared/has-db.ts';
-import { hasEnv } from '#helpers/shared/has-env.ts';
+import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 import { serverTypesTemplate } from '#helpers/templates/server-types.ts';
 
 export const generateServerTypes = async ({
@@ -23,9 +21,7 @@ export const generateServerTypes = async ({
   generatedDirPath: string;
 }) => {
   const serverTypesOutputPath = path.join(generatedDirPath, 'server.ts');
-  const includeDB = hasDB(schemaFilePath);
-  const includeAuth = includeDB ? hasAuth(authFilePath) : false;
-  const includeEnv = hasEnv(envFilePath);
+  const { hasDB: includeDB, hasAuth: includeAuth, hasEnv: includeEnv } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
   const skeleton = serverTypesTemplate(includeDB, includeAuth, includeEnv, '', 'export const router = {\n};');
 
