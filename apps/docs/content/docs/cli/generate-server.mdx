@@ -79,6 +79,7 @@ npx typebase-io-cli generate-server --adapter fastify
 | `--output <type>`     | Output format: `ts`, `esm`, or `cjs`                                 | `ts`      |
 | `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
 | `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
+| `--watch`             | Rebuild on every change inside your `typebase/` directory            | `false`   |
 | `--port <number>`     | Port the generated server listens on                                 | `8080`    |
 
 ## Default configuration
@@ -117,6 +118,39 @@ _server/
 ```
 
 `src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. `dotenv` is added to `package.json`, and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither.
+
+## Watch mode
+
+`generate-server` is a snapshot, so every edit normally means running it again. `--watch` does that for you:
+
+```npm
+npx typebase-io-cli generate-server --watch
+```
+
+It builds once, then rebuilds whenever anything inside your `typebase/` directory changes. Press `x` or Ctrl+C to stop.
+
+The first build reports each step. Every rebuild after that is a single `Regenerating...` line, so a long session stays
+readable. Errors are still printed in full.
+
+Changes to `_generated/` and to the output directory are ignored. Generation writes to both, so watching them would
+make every build trigger the next one.
+
+If you save again while a build is running, that build is cancelled and a new one starts, so the output always reflects
+your latest sources rather than a half-finished older run. A build is only cancellable up to the point where it starts
+replacing the output directory; the final copy always runs to completion, so the directory is never left half written.
+
+A failed build, a type error most often, does not stop the watcher. The error is printed and the next change
+triggers another attempt.
+
+<Callout type="warn">
+  Watch mode rebuilds the files in the output directory. A server you already started from them keeps running the old code until you restart it. See
+  [Work locally](/docs/work-locally#rebuild-on-every-change).
+</Callout>
+
+<Callout type="info">
+  Watch mode is a long-running command. If you drive the CLI from a script or an agent, run it in the background or with a timeout, and stop it with
+  SIGINT rather than `x` when the output is piped.
+</Callout>
 
 ## Regeneration
 

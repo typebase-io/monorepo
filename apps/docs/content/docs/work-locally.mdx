@@ -16,8 +16,8 @@ npx typebase-io-cli generate-server
 This writes a runnable server to `typebase/_server/`. See the [generate-server reference](/docs/cli/generate-server) for output formats and adapters.
 
 <Callout type="warn">
-  The generated server is a snapshot of your `typebase/` directory. It isn't watching your files. Re-run `generate-server` (and restart the local
-  server) any time you change anything inside `typebase/`, whether that's an action, your schema, your auth config, or your env schema. Re-running
+  Each run is a snapshot of your `typebase/` directory. Re-run `generate-server` any time you change anything inside `typebase/`, whether that's an
+  action, your schema, your auth config, or your env schema. Or use [watch mode](#rebuild-on-every-change) to have it re-run for you. Re-running
   replaces `typebase/_server/` with a fresh build, but your `.env` and installed `node_modules` are preserved.
 </Callout>
 
@@ -34,6 +34,22 @@ The server listens on `http://localhost:8080` by default. Pass `--port` to `gene
 <Callout type="info">
   `generate-server` defaults to TypeScript output and the `node` adapter. If you'd rather run plain JavaScript, pass `--output esm` or `--output cjs`
   and run the built files with `node src/index.js`.
+</Callout>
+
+## Rebuild on every change
+
+Passing `--watch` keeps `generate-server` running and rebuilds whenever a file inside `typebase/` changes:
+
+```npm
+npx typebase-io-cli generate-server --watch
+```
+
+Press `x` or Ctrl+C to stop it. The first build reports each step; later ones are a single `Regenerating...` line. A build that fails (a type error,
+usually) is printed and leaves the watcher running, so fixing the file triggers the next attempt.
+
+<Callout type="warn">
+  Watch mode rebuilds the files in `typebase/_server/`, but the server process you started from them keeps running the old code. Restart it to pick up
+  a rebuild.
 </Callout>
 
 ## Environment variables

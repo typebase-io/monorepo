@@ -362,7 +362,9 @@ For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://*
 
 ### `generate-server` output is stale
 
-The generated server in `typebase/_server/` is a snapshot. It doesn't watch your files. Re-run `npx typebase-io-cli generate-server` and restart the local server every time you change anything inside `typebase/`. If you find yourself doing this constantly, deploying to dev is usually the smoother loop. See [Work locally](/docs/work-locally).
+The generated server in `typebase/_server/` is a snapshot of the moment you ran the command. Re-run `npx typebase-io-cli generate-server` and restart the local server after changing anything inside `typebase/`.
+
+To stop doing that by hand, run `npx typebase-io-cli generate-server --watch`: it rebuilds on every change and stops on `x` or Ctrl+C. The rebuilt files still need the server process restarted to take effect. If you find yourself in this loop constantly, deploying to dev is usually smoother. See [Work locally](/docs/work-locally).
 
 ### Local server starts but my frontend can't reach it
 
