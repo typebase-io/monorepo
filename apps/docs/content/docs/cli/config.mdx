@@ -1,0 +1,69 @@
+---
+title: typebase-io-cli config
+description: Print the config schema annotated with the current values.
+---
+
+Print the `typebase.json` JSON Schema with every property annotated with the value in effect.
+
+```npm
+npx typebase-io-cli config
+```
+
+The output has three keys:
+
+| Key           | What it holds                                              |
+| ------------- | ---------------------------------------------------------- |
+| `projectRoot` | Absolute path of the directory the command ran in          |
+| `configPath`  | Absolute path of `typebase.json`, whether or not it exists |
+| `schema`      | The JSON Schema, annotated as described below              |
+
+Each option in `schema` carries two extra keys alongside its normal type information:
+
+- **`x-current-value`**: The value in effect for that option, or `null` when it has neither a value nor a default. Only leaf options carry it, an object such as `server` is just a container for the options below it.
+- **`x-is-default`**: `true` when the value came from a built-in default rather than `typebase.json`.
+
+Two keys are stripped on the way out: the top-level `$schema`, and every `additionalProperties`. What the command prints describes how a project is configured right now, so it is meant for reading rather than for validating a `typebase.json` against.
+
+```json title="npx typebase-io-cli config"
+{
+  "projectRoot": "/Users/you/my-app",
+  "configPath": "/Users/you/my-app/typebase.json",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "projectPath": {
+        "type": "string",
+        "minLength": 1,
+        "title": "Project path",
+        "description": "Path to the Typebase project directory.",
+        "x-current-value": "typebase",
+        "x-is-default": true
+      },
+      "server": {
+        "type": "object",
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "enum": ["node", "bun", "cloudflare", "deno", "fastify", "hono"],
+            "title": "Adapter",
+            "description": "The server adapter to use.",
+            "x-current-value": "hono",
+            "x-is-default": false
+          }
+        },
+        "title": "Server",
+        "description": "Server build configuration."
+      }
+    }
+  }
+}
+```
+
+Because the titles, descriptions and enums travel with the values, a tool can render a project's whole configuration (including options it has never heard of) without knowing the schema in advance.
+
+If `typebase.json` is malformed or fails validation, the command writes the error to stderr and exits with code `1`, printing nothing to stdout.
+
+<Callout type="info">
+  This command exists so that other tools do not have to reimplement the config schema or its defaults. It reads a file and never writes one, and
+  unlike most commands it does not require `typebase-io` to be installed.
+</Callout>
