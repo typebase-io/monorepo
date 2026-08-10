@@ -9,6 +9,7 @@ const spies = vi.hoisted(() => ({
   deploy: vi.fn(),
   logs: vi.fn(),
   env: vi.fn(),
+  config: vi.fn(),
   isTypebaseIoInstalled: vi.fn(),
 }));
 
@@ -60,6 +61,12 @@ vi.mock('#commands/env.ts', async () => {
   return { env: new Command('env').action(spies.env) };
 });
 
+vi.mock('#commands/config.ts', async () => {
+  const { Command } = await import('@commander-js/extra-typings');
+
+  return { config: new Command('config').action(spies.config) };
+});
+
 vi.mock('#helpers/shared/is-typebase-io-installed.ts', () => {
   return { isTypebaseIoInstalled: spies.isTypebaseIoInstalled };
 });
@@ -109,7 +116,7 @@ describe('cli entrypoint', () => {
     expect(exitSpy).toHaveBeenCalled();
   });
 
-  it.each(['env', 'logs'] as const)('runs the %s command without checking for the typebase-io install', async (command) => {
+  it.each(['env', 'logs', 'config'] as const)('runs the %s command without checking for the typebase-io install', async (command) => {
     spies.isTypebaseIoInstalled.mockReturnValue(false);
 
     await runCli([command]);

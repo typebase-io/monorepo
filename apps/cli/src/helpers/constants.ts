@@ -95,42 +95,117 @@ export const PACKAGE_MANAGER_FIELD_NAMES = {
 } as const satisfies Record<Exclude<PackageManager, 'unknown'>, string>;
 
 export const typebaseConfigSchema = z.object({
-  projectPath: z.optional(z.string().trim().min(1)),
-  serverProvider: z.optional(z.enum(serverProviders)),
-  server: z.optional(
-    z.object({
-      output: z.optional(z.enum(['ts', 'esm', 'cjs'])),
-      adapter: z.optional(z.enum(serverAdapters)),
-      outDir: z.optional(z.string().trim().min(1)),
-      port: z.optional(z.number().int().positive()),
+  projectPath: z.optional(
+    z.string().trim().min(1).meta({
+      title: 'Project path',
+      description: 'Path to the Typebase project directory.',
     })
+  ),
+  serverProvider: z.optional(
+    z.enum(serverProviders).meta({
+      title: 'Server provider',
+      description: 'The server provider to deploy to.',
+    })
+  ),
+  server: z.optional(
+    z
+      .object({
+        output: z.optional(
+          z.enum(['ts', 'esm', 'cjs']).meta({
+            title: 'Output',
+            description: 'The output format for the server build.',
+          })
+        ),
+        adapter: z.optional(
+          z.enum(serverAdapters).meta({
+            title: 'Adapter',
+            description: 'The server adapter to use.',
+          })
+        ),
+        outDir: z.optional(
+          z.string().trim().min(1).meta({
+            title: 'Output directory',
+            description: 'The output directory for the server build.',
+          })
+        ),
+        port: z.optional(
+          z.number().int().positive().meta({
+            title: 'Port',
+            description: 'The port the generated server listens on.',
+          })
+        ),
+      })
+      .meta({ title: 'Server', description: 'Server build configuration.' })
   ),
   vercel: z.optional(
-    z.object({
-      projectId: z.string(),
-      projectName: z.string(),
-      orgId: z.optional(z.string()),
-    })
+    z
+      .object({
+        projectId: z.string().meta({
+          title: 'Project ID',
+          description: 'The Vercel project ID.',
+        }),
+        projectName: z.string().meta({
+          title: 'Project name',
+          description: 'The Vercel project name.',
+        }),
+        orgId: z.optional(
+          z.string().meta({
+            title: 'Organization ID',
+            description: 'The Vercel organization ID.',
+          })
+        ),
+      })
+      .meta({ title: 'Vercel', description: 'Vercel deployment configuration.' })
   ),
   cloudflare: z.optional(
-    z.object({
-      accountId: z.string(),
-      workerName: z.string(),
-      subdomain: z.string(),
-    })
+    z
+      .object({
+        accountId: z.string().meta({
+          title: 'Account ID',
+          description: 'The Cloudflare account ID.',
+        }),
+        workerName: z.string().meta({
+          title: 'Worker name',
+          description: 'The Cloudflare Worker name.',
+        }),
+        subdomain: z.string().meta({
+          title: 'Subdomain',
+          description: 'The Cloudflare Workers subdomain.',
+        }),
+      })
+      .meta({ title: 'Cloudflare', description: 'Cloudflare deployment configuration.' })
   ),
   deno: z.optional(
-    z.object({
-      org: z.string(),
-      projectId: z.string(),
-      slug: z.string(),
-    })
+    z
+      .object({
+        org: z.string().meta({
+          title: 'Organization',
+          description: 'The Deno Deploy organization.',
+        }),
+        projectId: z.string().meta({
+          title: 'Project ID',
+          description: 'The Deno Deploy project ID.',
+        }),
+        slug: z.string().meta({
+          title: 'Slug',
+          description: 'The Deno Deploy project slug.',
+        }),
+      })
+      .meta({ title: 'Deno', description: 'Deno Deploy configuration.' })
   ),
   neon: z.optional(
-    z.object({
-      orgId: z.string(),
-      projectId: z.string(),
-    })
+    z
+      .object({
+        orgId: z.string().meta({
+          title: 'Organization ID',
+          description: 'The Neon organization ID.',
+        }),
+        projectId: z.string().meta({
+          title: 'Project ID',
+          description: 'The Neon project ID.',
+        }),
+      })
+      .meta({ title: 'Neon', description: 'Neon database configuration.' })
   ),
 });
 

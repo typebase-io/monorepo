@@ -1,0 +1,203 @@
+{
+  "projectRoot": "<project-root>",
+  "configPath": "<project-root>/typebase.json",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "projectPath": {
+        "type": "string",
+        "minLength": 1,
+        "title": "Project path",
+        "description": "Path to the Typebase project directory.",
+        "x-current-value": "typebase",
+        "x-is-default": true
+      },
+      "serverProvider": {
+        "type": "string",
+        "enum": [
+          "vercel",
+          "cloudflare",
+          "deno"
+        ],
+        "title": "Server provider",
+        "description": "The server provider to deploy to.",
+        "x-current-value": null,
+        "x-is-default": true
+      },
+      "server": {
+        "type": "object",
+        "properties": {
+          "output": {
+            "type": "string",
+            "enum": [
+              "ts",
+              "esm",
+              "cjs"
+            ],
+            "title": "Output",
+            "description": "The output format for the server build.",
+            "x-current-value": "ts",
+            "x-is-default": true
+          },
+          "adapter": {
+            "type": "string",
+            "enum": [
+              "node",
+              "bun",
+              "cloudflare",
+              "deno",
+              "fastify",
+              "hono"
+            ],
+            "title": "Adapter",
+            "description": "The server adapter to use.",
+            "x-current-value": "node",
+            "x-is-default": true
+          },
+          "outDir": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Output directory",
+            "description": "The output directory for the server build.",
+            "x-current-value": "_server",
+            "x-is-default": true
+          },
+          "port": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991,
+            "title": "Port",
+            "description": "The port the generated server listens on.",
+            "x-current-value": 8080,
+            "x-is-default": true
+          }
+        },
+        "title": "Server",
+        "description": "Server build configuration."
+      },
+      "vercel": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "title": "Project ID",
+            "description": "The Vercel project ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "projectName": {
+            "type": "string",
+            "title": "Project name",
+            "description": "The Vercel project name.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "orgId": {
+            "type": "string",
+            "title": "Organization ID",
+            "description": "The Vercel organization ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          }
+        },
+        "required": [
+          "projectId",
+          "projectName"
+        ],
+        "title": "Vercel",
+        "description": "Vercel deployment configuration."
+      },
+      "cloudflare": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "title": "Account ID",
+            "description": "The Cloudflare account ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "workerName": {
+            "type": "string",
+            "title": "Worker name",
+            "description": "The Cloudflare Worker name.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "subdomain": {
+            "type": "string",
+            "title": "Subdomain",
+            "description": "The Cloudflare Workers subdomain.",
+            "x-current-value": null,
+            "x-is-default": true
+          }
+        },
+        "required": [
+          "accountId",
+          "workerName",
+          "subdomain"
+        ],
+        "title": "Cloudflare",
+        "description": "Cloudflare deployment configuration."
+      },
+      "deno": {
+        "type": "object",
+        "properties": {
+          "org": {
+            "type": "string",
+            "title": "Organization",
+            "description": "The Deno Deploy organization.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Project ID",
+            "description": "The Deno Deploy project ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug",
+            "description": "The Deno Deploy project slug.",
+            "x-current-value": null,
+            "x-is-default": true
+          }
+        },
+        "required": [
+          "org",
+          "projectId",
+          "slug"
+        ],
+        "title": "Deno",
+        "description": "Deno Deploy configuration."
+      },
+      "neon": {
+        "type": "object",
+        "properties": {
+          "orgId": {
+            "type": "string",
+            "title": "Organization ID",
+            "description": "The Neon organization ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Project ID",
+            "description": "The Neon project ID.",
+            "x-current-value": null,
+            "x-is-default": true
+          }
+        },
+        "required": [
+          "orgId",
+          "projectId"
+        ],
+        "title": "Neon",
+        "description": "Neon database configuration."
+      }
+    }
+  }
+}

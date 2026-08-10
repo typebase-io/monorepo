@@ -5,6 +5,7 @@ import { chalkStderr } from 'chalk';
 
 import { auth } from '#commands/auth.ts';
 import { codegen } from '#commands/codegen.ts';
+import { config } from '#commands/config.ts';
 import { db } from '#commands/db.ts';
 import { deploy } from '#commands/deploy.ts';
 import { env } from '#commands/env.ts';
@@ -22,7 +23,7 @@ const main = async () => {
     .usage('<command> [options]')
     .description('Start developing with Typebase by running `npx typebase-io-cli init`.')
     .hook('preSubcommand', (_program, subcommand) => {
-      if (subcommand.name() === 'env' || subcommand.name() === 'logs' || isTypebaseIoInstalled()) {
+      if (subcommand.name() === 'env' || subcommand.name() === 'logs' || subcommand.name() === 'config' || isTypebaseIoInstalled()) {
         return;
       }
 
@@ -39,7 +40,8 @@ const main = async () => {
     .addCommand(db)
     .addCommand(deploy)
     .addCommand(logs)
-    .addCommand(env);
+    .addCommand(env)
+    .addCommand(config);
 
   try {
     await program.parseAsync(process.argv);
