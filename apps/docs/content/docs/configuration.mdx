@@ -3,12 +3,13 @@ title: Configuration
 description: Customize Typebase with the typebase.json configuration file.
 ---
 
-Typebase uses a `typebase.json` file in your project root to store configuration. This file is created and updated automatically by CLI commands, but you can also edit it manually.
+Typebase uses a `typebase.json` file in your project root to store configuration. [`init`](/docs/cli/init) creates it with a `$schema` reference and nothing else, so every option starts on its default. Other CLI commands update it as you go, and you can edit it manually.
 
 ## Example
 
 ```json title="typebase.json"
 {
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
   "projectPath": "src/lib/typebase/server/",
   "serverProvider": "vercel",
   "server": {
@@ -229,4 +230,5 @@ Here is the complete `typebase.json` schema with all optional fields:
 }
 ```
 
-All fields are optional. The CLI will use sensible defaults and prompt you interactively when needed.
+All fields are optional. The CLI will use sensible defaults and prompt you interactively when needed. Alongside them, the `$schema` key written by
+`init` points at this schema so your editor can autocomplete and validate the file; the CLI keeps it in place whenever it updates the config.

@@ -106,7 +106,11 @@ This creates your backend directory with example files. If you want the examples
       </Folder>
     </Folder>
   </Folder>
+  <File name="typebase.json" comment="CLI configuration" />
 </Files>
+
+It also creates a [`typebase.json`](/docs/configuration) at your project root. It starts out with only a `$schema` reference, which is enough for your
+editor to autocomplete the options.
 
 <Callout type="info">
   If your project has a `src/` directory, Typebase will create the files inside `src/typebase/` instead. You can customize this path in

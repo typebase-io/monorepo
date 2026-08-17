@@ -19,6 +19,10 @@ Creates a `typebase/` directory with:
 - `env.ts`: an empty [env schema](/docs/env) with a commented-out example key
 - `_generated/`: auto-generated type files
 
+It also creates a [`typebase.json`](/docs/configuration) at the project root if there isn't one, holding just a `$schema` reference so your editor
+autocompletes the config as you fill it in. Every option stays on its default until you set it. Running `init` over an existing `typebase.json` keeps
+the values already in it.
+
 ## Options
 
 | Flag             | Description                                                           |
