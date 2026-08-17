@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { init } from '#commands/init.ts';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
+import { TYPEBASE_CONFIG_SCHEMA_URL } from '#helpers/constants.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
@@ -13,6 +14,7 @@ import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
 
 import { expectProject } from '#tests/helpers/expect-project.ts';
 import { linkTypebaseIo } from '#tests/helpers/link-typebase-io.ts';
@@ -40,6 +42,7 @@ vi.mock('#helpers/shared/generate-db-types.ts', async (o) => passThrough(await o
 vi.mock('#helpers/shared/generate-server-types.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/shared/generate-ts-config.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/shared/get-typebase-config.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
+vi.mock('#helpers/shared/write-typebase-config.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 
 describe('init command', () => {
   let tmp: TempDir;
@@ -79,6 +82,24 @@ describe('init command', () => {
       ],
       { namespace: 'init' }
     );
+  });
+
+  it('creates a `typebase.json` holding nothing but the `$schema` reference', async () => {
+    await withCwd(tmp.path, () => init.parseAsync([], { from: 'user' }));
+
+    expect(JSON.parse(tmp.read('typebase.json'))).toEqual({ $schema: TYPEBASE_CONFIG_SCHEMA_URL });
+  });
+
+  it('keeps the values already in `typebase.json`', async () => {
+    tmp.write('typebase.json', JSON.stringify({ serverProvider: 'cloudflare', server: { port: 9000 } }));
+
+    await withCwd(tmp.path, () => init.parseAsync([], { from: 'user' }));
+
+    expect(JSON.parse(tmp.read('typebase.json'))).toEqual({
+      $schema: TYPEBASE_CONFIG_SCHEMA_URL,
+      serverProvider: 'cloudflare',
+      server: { port: 9000 },
+    });
   });
 
   it('scaffolds the example project with auth', async () => {
@@ -124,6 +145,7 @@ describe('init command', () => {
     expect(vi.mocked(console.error).mock.calls[0]?.[0]).toContain('already exists');
     expect(tmp.read('typebase/tsconfig.json')).toBe('{ "existing": true }');
     expect(listFiles(path.join(tmp.path, 'typebase'))).toEqual(['tsconfig.json']);
+    expect(tmp.exists('typebase.json')).toBe(false);
   });
 
   it('regenerates the project when --force is passed over an existing tsconfig', async () => {
@@ -158,6 +180,7 @@ describe('init command', () => {
     expect(process.exitCode).toBe(0);
     expect(tmp.read('tsconfig.json')).toEqualTemplate('init', 'default', 'tsconfig.json.txt');
     expect(tmp.read('db/schema.ts')).toEqualTemplate('init', 'default', 'db', 'schema.ts.txt');
+    expect(JSON.parse(tmp.read('typebase.json'))).toEqual({ $schema: TYPEBASE_CONFIG_SCHEMA_URL, projectPath: '.' });
   });
 
   it('rejects conflicting --with-auth and --skip-example options', async () => {
@@ -178,6 +201,7 @@ describe('init command', () => {
   describe('propagates generator failures', () => {
     const cases: { name: string; mock: () => { mockRejectedValueOnce: (e: Error) => unknown }; args: string[] }[] = [
       { name: 'getTypebaseConfig', mock: () => vi.mocked(getTypebaseConfig), args: [] },
+      { name: 'writeTypebaseConfig', mock: () => vi.mocked(writeTypebaseConfig), args: [] },
       { name: 'generateTsConfig', mock: () => vi.mocked(generateTsConfig), args: [] },
       { name: 'generateExampleSchema', mock: () => vi.mocked(generateExampleSchema), args: [] },
       { name: 'generateExampleRelations', mock: () => vi.mocked(generateExampleRelations), args: [] },

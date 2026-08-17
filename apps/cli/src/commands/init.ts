@@ -7,6 +7,7 @@ import chalk, { chalkStderr } from 'chalk';
 import ora from 'ora';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
+import { TYPEBASE_CONFIG_FILE_NAME } from '#helpers/constants.ts';
 import { addExampleTodosRelation } from '#helpers/init/add-example-todos-relation.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
@@ -17,12 +18,13 @@ import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
 import { baseRelationsTemplate } from '#helpers/templates/base-relations.ts';
 import { baseSchemaTemplate } from '#helpers/templates/base-schema.ts';
 
 export const init = new Command('init')
   .summary('Create a basic Typebase project structure')
-  .description('Create a `typebase/` directory with a default `tsconfig.json` and example files.')
+  .description(`Create a \`typebase/\` directory with a default \`tsconfig.json\` and example files, plus a \`${TYPEBASE_CONFIG_FILE_NAME}\`.`)
   .allowExcessArguments(false)
   .option('-f, --force', 'Regenerates the scaffolded example files if they already exist')
   .addOption(new Option('--with-auth', 'Creates the example with auth').default(false).conflicts('skipExample'))
@@ -59,6 +61,7 @@ export const init = new Command('init')
     const spinner = ora('Generating files...').start();
 
     await Promise.all([
+      writeTypebaseConfig({}),
       generateTsConfig({ path: tsConfigFilePath, addWarning: true }),
       withAuth ? generateExampleAuth(exampleAuthPath) : Promise.resolve(),
       skipExample ? fs.writeFile(exampleSchemaPath, `${baseSchemaTemplate}\n`) : generateExampleSchema({ path: exampleSchemaPath, withAuth }),
