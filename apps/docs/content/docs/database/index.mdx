@@ -21,6 +21,11 @@ A **schema** is the blueprint that describes the shape of those tables: what col
 
 </details>
 
+<Callout type="info">
+  Already have a database with tables in it? [`npx typebase-io-cli db pull`](/docs/cli/db#db-pull) reads it and writes both files described on this
+  page for you, so you can start from what you have instead of retyping it.
+</Callout>
+
 ## Schema
 
 Your entire database schema lives in a single file: `typebase/db/schema.ts`. Each table is defined using `p.pgTable()` from the `typebase-io/db` package.

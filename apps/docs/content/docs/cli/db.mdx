@@ -3,9 +3,11 @@ title: typebase-io-cli db
 description: Manage your database schema.
 ---
 
-Push your Drizzle schema changes to your database.
+Move your schema in either direction: push the Drizzle schema in your project to a database, or pull a database you already have into your project.
 
-## `db dev push`
+## Pushing your schema
+
+### `db dev push`
 
 Push your schema to the dev Neon database.
 
@@ -13,7 +15,7 @@ Push your schema to the dev Neon database.
 npx typebase-io-cli db dev push
 ```
 
-## `db prod push`
+### `db prod push`
 
 Push your schema to the production Neon database.
 
@@ -21,7 +23,7 @@ Push your schema to the production Neon database.
 npx typebase-io-cli db prod push
 ```
 
-## `db local push`
+### `db local push`
 
 Push your schema to a Postgres instance running on your own machine (Docker, Postgres.app, a managed Postgres you connect to directly, etc.).
 
@@ -37,16 +39,72 @@ Or set `DATABASE_URL` (in your shell or in your project-root `.env`) and omit th
 npx typebase-io-cli db local push
 ```
 
-## What happens
+### What happens
 
-These commands:
+Every `db push`:
 
-1. Build your schema files
-2. Connect to your database
-3. Push the schema changes using Drizzle Kit
+1. Builds your schema files
+2. Connects to your database
+3. Pushes the schema changes using Drizzle Kit
 
 <Callout type="warn">
   `db push` applies schema changes directly to the database. Additive changes (new tables, new columns) are safe, but destructive changes (dropped
   columns, renamed tables) cannot be undone. The CLI will detect these and prompt for confirmation before continuing. Treat `db prod push` with extra
   care since dropped data is unrecoverable.
 </Callout>
+
+## Pulling an existing database
+
+### `db pull`
+
+The opposite direction: read an existing PostgreSQL database and write it into your project as `db/schema.ts` and `db/relations.ts`. This is how you
+start from a database you already have, whether that's a Supabase project, a database from another framework, or one you run yourself.
+
+```npm
+npx typebase-io-cli db pull
+```
+
+The CLI asks for the connection string of the database to read, or you can pass it directly:
+
+```npm
+npx typebase-io-cli db pull --url postgres://user:pass@host:5432/mydb
+```
+
+<Callout type="info">
+  The database needs to be reachable from your machine, so include whatever SSL parameters your provider expects in the connection string (Supabase
+  and Neon both want `?sslmode=require`).
+</Callout>
+
+What you get:
+
+- **`db/schema.ts`**: every table in the database's `public` schema, as Drizzle tables written with `p`. Column types, nullability, defaults, primary
+  keys (including composite ones), unique constraints, indexes, foreign keys with their `onDelete` behavior, enums, and views all come across.
+- **`db/relations.ts`**: a `q.defineRelations` call with a relation for every foreign key, plus an entry for every other table (Typebase needs each
+  table registered, even the ones with no relations).
+- Regenerated `_generated/` types, so the pulled tables are typed on `db` inside your actions right away.
+
+A pull gives you a schema that is _equivalent_ to the database, not a copy of the file that created it. Table order follows the database, relation
+names are derived from foreign keys, and anything that only ever existed in TypeScript (`$onUpdate`, your own relation names, your comments) cannot be
+read back out of Postgres. What it does guarantee is that pushing what you pulled reports no changes.
+
+### Options
+
+| Flag          | Description                                                        |
+| ------------- | ------------------------------------------------------------------ |
+| `--url <url>` | Connection string of the database to read. Prompted for if omitted |
+| `-f, --force` | Replace `db/schema.ts` and `db/relations.ts` without asking        |
+
+### What to watch out for
+
+<Callout type="warn">
+  `db pull` replaces both files with whatever the database contains. It asks first, unless you pass `--force`. If you had run [`auth
+  generate`](/docs/cli/auth), your better-auth tables are part of `schema.ts` and go with it, so run `auth generate` again afterwards unless the
+  database you pulled from already holds those tables.
+</Callout>
+
+Only the `public` schema is read, so Supabase's `storage.*` tables stay behind. The one exception is a table you reference across schemas: a `user_id`
+pointing at Supabase's `auth.users` brings that table along as a `p.pgSchema('auth')` block, because the reference in the file has to resolve. The CLI
+tells you when that happens, and those are the lines to clean up first.
+
+The pulled schema describes the database you read, not the one Typebase deploys to. Review it, then [push it](#pushing-your-schema) with `db dev push`
+to create the same tables on your own database, or point [`db local push --url`](#db-local-push) at wherever you want them.
