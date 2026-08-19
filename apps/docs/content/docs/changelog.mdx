@@ -1,0 +1,195 @@
+---
+title: Changelog
+description: What changed in each release of typebase-io and typebase-io-cli.
+---
+
+`typebase-io` and `typebase-io-cli` are released together and always share a version number, so upgrade them as a pair:
+
+```package-install
+typebase-io@latest
+```
+
+```package-install
+-D typebase-io-cli@latest
+```
+
+<Callout type="info">
+  Run [`npx typebase-io-cli codegen`](/docs/cli/codegen) after every upgrade. `_generated/` is written by the version that generated it, so a folder
+  left over from an older release can describe a context your server no longer provides.
+</Callout>
+
+## 0.1.13 [#v0-1-13]
+
+_2026-08-19._
+
+**Added**
+
+- [`db pull`](/docs/cli/db#db-pull): read an existing PostgreSQL database and write it to `db/schema.ts` and `db/relations.ts`, then regenerate the
+  types. Column types, defaults, primary keys, unique constraints, indexes, foreign keys, enums and views all come across, every table gets registered
+  in relations (Drizzle only writes the ones that have a foreign key), and the result is written in the shorthand a Typebase schema is normally written
+  in. It asks before replacing existing files unless you pass `--force`.
+
+## 0.1.12 [#v0-1-12]
+
+_2026-08-17._
+
+**Added**
+
+- [`config`](/docs/cli/config): prints the `typebase.json` JSON Schema with every option annotated with the value in effect and whether it came from a
+  default. Read-only, and the one command that doesn't need `typebase-io` installed, so tooling can read a project's setup without reimplementing the
+  schema or its defaults.
+- [`init`](/docs/cli/init) now creates a `typebase.json` holding a `$schema` reference, so your editor autocompletes the config from the start. Values
+  already in an existing file are kept.
+
+## 0.1.11 [#v0-1-11]
+
+_2026-08-02._
+
+**Added**
+
+- `generate-server --watch` keeps the command running and rebuilds `typebase/_server/` whenever anything inside `typebase/` changes. See
+  [Work locally](/docs/work-locally#rebuild-on-every-change).
+
+## 0.1.10 [#v0-1-10]
+
+_2026-08-01._
+
+**Fixed**
+
+- Simplified the `env` type, so editors show the keys you declared instead of an expanded internal type.
+
+## 0.1.9 [#v0-1-9]
+
+_2026-08-01._
+
+**Added**
+
+- [`defineEnv`](/docs/env): declare the variables your server needs in `typebase/env.ts` and read them from the handler context as `env`, each one a
+  plain `string`. The generated server validates the whole schema before it serves a single request, so a missing variable is a startup error instead
+  of an `undefined` surfacing deep inside a handler later. `DATABASE_URL` and `BETTER_AUTH_SECRET` are added for you.
+- The generated server carries its own env module, and `@t3-oss/env-core` is added to its dependencies only when the project needs one.
+
+**Changed**
+
+- Empty database and relation types are `never` rather than `{}`, so a project without a schema no longer offers a `db` you can't use.
+- A project with an `auth.ts` but no `db/schema.ts` is now refused instead of building a server whose auth could never work.
+- Removed `skipLoadEnv`.
+
+**Fixed**
+
+- Types are generated before they are validated, so the first run type-checks against fresh types.
+- Type errors inside `_generated/` are no longer reported as yours.
+
+## 0.1.8 [#v0-1-8]
+
+_2026-07-29._
+
+**Added**
+
+- [`logs <dev|prod>`](/docs/cli/logs): stream runtime logs from Vercel, Cloudflare Workers or Deno Deploy until you stop it.
+- `deploy <target> --logs` tails the server as soon as the deploy goes live.
+
+**Fixed**
+
+- `proxyToTypebase` strips `x-forwarded-*` headers from the proxied request, which some providers rejected.
+
+## 0.1.7 [#v0-1-7]
+
+_2026-07-20._
+
+**Added**
+
+- `server.port` is part of the config schema, so editors validate it in `typebase.json`.
+
+**Changed**
+
+- `generate-server` removes the files an earlier run left behind instead of writing over them.
+
+**Fixed**
+
+- `init --with-auth` writes the correct relations for the example.
+- Clearer failures instead of silent ones: an unreadable `auth.ts`, code that cannot be parsed, and relations that `auth generate` cannot update now
+  stop with an explanation.
+
+## 0.1.6 [#v0-1-6]
+
+_2026-07-03._
+
+**Added**
+
+- `RouterInputs` and `RouterOutputs` in the generated server types, plus `InferRouterInputs` and `InferRouterOutputs` from `typebase-io`, so you can
+  name an action's input or output type without redeclaring its shape. See [Generated Code](/docs/generated).
+
+## 0.1.5 [#v0-1-5]
+
+_2026-07-03._
+
+**Fixed**
+
+- `auth generate` adds the plugin import to the generated auth file when a plugin needs one.
+- A formatting error in generated files.
+
+## 0.1.4 [#v0-1-4]
+
+_2026-07-01._
+
+**Changed**
+
+- The CLI got a test suite, and CI now runs it on every change.
+
+## 0.1.3 [#v0-1-3]
+
+_2026-06-10._
+
+**Changed**
+
+- `env <target> add` takes `--no-encrypted` instead of `--encrypted`, so values are encrypted unless you opt out.
+
+**Fixed**
+
+- Writing the project `.env` keeps the variables already in it.
+- Router generation handles nested action files correctly.
+- Type validation ignores `_generated/`.
+- A command run in a project without `typebase-io` installed says so, and failures exit with a non-zero code.
+- `defineAuth` warns when it cannot read `trustedOrigins` instead of carrying on with an empty list.
+
+## 0.1.2 [#v0-1-2]
+
+_2026-06-08._
+
+**Added**
+
+- Every built-in better-auth plugin is re-exported through `typebase-io/server/auth-plugins` and `typebase-io/client/auth-plugins`, so you don't have
+  to depend on `better-auth` directly. See [Auth](/docs/auth#plugins).
+- `init --skip-example` still writes base `db/schema.ts` and `db/relations.ts` files.
+
+**Changed**
+
+- `deploy` regenerates types as part of every deploy.
+
+## 0.1.1 [#v0-1-1]
+
+_2026-06-03._
+
+**Fixed**
+
+- `defineAuth` infers its options correctly, so plugin and provider config reaches the client types.
+- The example relations file generated with `--with-auth` registers the auth tables.
+
+## 0.1.0 [#v0-1-0]
+
+_2026-05-13._
+
+**Added**
+
+- The [AI Skill](/docs/skill): a single `SKILL.md` that teaches a coding agent the file layout, CLI commands and conventions.
+- `generate-server --port`, with a new default port.
+- Dev deploys save their URL to `.env` as `TYPEBASE_APP_URL_DEV`, so the dev and prod URLs coexist.
+- The generated server records a `packageManager` field and installs with the package manager your project uses.
+
+**Fixed**
+
+- Vercel: a placeholder is deployed on a first `dev` deploy when there is no production deployment yet.
+- Neon: the CLI waits for a new dev branch to be ready, and no longer copies data into it.
+- Deno Deploy: fixed the deploy flow and a terminal read error.
+- Only actions end up on the router; helpers exported alongside them are ignored.
