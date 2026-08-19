@@ -1,0 +1,15 @@
+import { pgSchema, pgTable, uuid, text, foreignKey, primaryKey } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+
+export const auth = pgSchema("auth");
+
+export const usersInAuth = auth.table("users", {
+	id: uuid().defaultRandom().primaryKey(),
+	email: text(),
+});
+
+export const todos = pgTable("todos", {
+	id: uuid().defaultRandom().primaryKey(),
+	userId: uuid("user_id").notNull().references(() => usersInAuth.id, { onDelete: "cascade" } ),
+	value: text().notNull(),
+});

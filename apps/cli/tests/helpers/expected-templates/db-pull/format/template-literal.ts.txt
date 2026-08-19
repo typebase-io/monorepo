@@ -1,0 +1,1 @@
+const view = sql`SELECT * FROM todos WHERE status = 'open'`;

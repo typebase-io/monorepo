@@ -1,0 +1,5 @@
+export const logs = p.pgTable('logs', {
+  userId: p.text('user_id'),
+}, (table) => [
+  p.index('logs_user_id_idx').on(table.userId),
+]);

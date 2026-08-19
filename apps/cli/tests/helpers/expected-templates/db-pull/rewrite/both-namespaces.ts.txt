@@ -1,0 +1,5 @@
+import { p, q } from 'typebase-io/db';
+
+export const logs = p.pgTable("logs", {
+  message: p.text().default(q.sql`''`),
+});

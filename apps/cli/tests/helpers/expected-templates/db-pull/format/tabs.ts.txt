@@ -1,0 +1,4 @@
+export const logs = pgTable('logs', {
+  id: integer(),
+  message: text(),
+});

@@ -1,0 +1,3 @@
+export const users = p.pgTable('users', {
+  email: p.text().notNull().unique('users_email_key'),
+});

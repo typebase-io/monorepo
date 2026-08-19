@@ -1,0 +1,6 @@
+Some of your tables reference tables in another schema, so those came across too (look for `p.pgSchema`). Review them: a Supabase `auth.users` reference belongs on the `users` table `auth generate` creates instead.
+
+typebase/db/schema.ts and typebase/db/relations.ts now describe the database you just read. It was only read from: nothing there was created or changed.
+
+To get the same tables into the database your Typebase server uses, review those two files and then run:
+npx typebase-io-cli db dev push or npx typebase-io-cli db prod push for production.

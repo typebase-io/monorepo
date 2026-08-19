@@ -1,0 +1,7 @@
+const single = ['a', 'b'];
+
+const empty = [];
+
+const multi = [
+  'a',
+];

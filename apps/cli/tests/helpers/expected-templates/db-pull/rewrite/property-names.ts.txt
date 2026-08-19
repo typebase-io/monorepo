@@ -1,0 +1,5 @@
+import { p } from 'typebase-io/db';
+
+export const logs = p.pgTable("logs", {
+  text: p.text(),
+}, (table) => [p.index("logs_text_idx").on(table.text)]);

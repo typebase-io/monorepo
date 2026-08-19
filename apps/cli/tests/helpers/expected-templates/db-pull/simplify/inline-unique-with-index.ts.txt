@@ -1,0 +1,6 @@
+export const users = p.pgTable('users', {
+  email: p.text().notNull().unique('users_email_key'),
+  userId: p.text('user_id'),
+}, (table) => [
+  p.index('users_user_id_idx').on(table.userId),
+]);

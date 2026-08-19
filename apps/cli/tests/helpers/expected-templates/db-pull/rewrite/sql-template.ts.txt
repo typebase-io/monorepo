@@ -1,0 +1,3 @@
+import { p, q } from 'typebase-io/db';
+
+export const counts = p.pgView("counts", { total: p.integer() }).as(q.sql`SELECT integer(1) AS total`);

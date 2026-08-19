@@ -1,0 +1,50 @@
+import { pgEnum, pgTable, integer, uuid, text, varchar, smallint, boolean, numeric, jsonb, date, timestamp, index, foreignKey, primaryKey, unique, pgView } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+
+export const todoStatus = pgEnum("todo_status", ["open", "done", "archived"])
+
+export const logs = pgTable("logs", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity(),
+	message: text().notNull(),
+});
+
+export const todoLabels = pgTable("todo_labels", {
+	todoId: integer("todo_id").notNull().references(() => todos.id, { onDelete: "cascade" } ),
+	label: text().notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.todoId, table.label], name: "todo_labels_pkey"}),
+]);
+
+export const todos = pgTable("todos", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" } ),
+	title: text().notNull(),
+	status: todoStatus().default("open").notNull(),
+	priority: smallint().default(1),
+	amount: numeric({ precision: 10, scale: 2 }),
+	dueOn: date("due_on"),
+	createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+}, (table) => [
+	index("todos_user_id_idx").using("btree", table.userId.asc().nullsLast()),
+]);
+
+export const users = pgTable("users", {
+	id: uuid().defaultRandom().primaryKey(),
+	email: varchar({ length: 255 }).notNull(),
+	fullName: text("full_name"),
+	age: integer(),
+	isAdmin: boolean("is_admin").default(false).notNull(),
+	metadata: jsonb(),
+	tags: text().array(),
+	createdAt: timestamp("created_at", { withTimezone: true }).default(sql`now()`).notNull(),
+}, (table) => [
+	unique("users_email_key").on(table.email),]);
+export const openTodos = pgView("open_todos", {	id: integer(),
+	userId: uuid("user_id"),
+	title: text(),
+	status: todoStatus(),
+	priority: smallint(),
+	amount: numeric({ precision: 10, scale: 2 }),
+	dueOn: date("due_on"),
+	createdAt: timestamp("created_at"),
+}).as(sql`SELECT todos.id, todos.user_id, todos.title, todos.status, todos.priority, todos.amount, todos.due_on, todos.created_at FROM todos WHERE todos.status = 'open'::todo_status`);

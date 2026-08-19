@@ -1,0 +1,4 @@
+const extras = [
+  index('a'),
+  unique('b'),
+];

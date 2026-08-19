@@ -1,0 +1,50 @@
+import { p, q } from 'typebase-io/db';
+
+export const todoStatus = p.pgEnum('todo_status', ['open', 'done', 'archived']);
+
+export const logs = p.pgTable('logs', {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  message: p.text().notNull(),
+});
+
+export const todoLabels = p.pgTable('todo_labels', {
+  todoId: p.integer('todo_id').notNull().references(() => todos.id, { onDelete: 'cascade' }),
+  label: p.text().notNull(),
+}, (table) => [
+  p.primaryKey({ columns: [table.todoId, table.label], name: 'todo_labels_pkey' }),
+]);
+
+export const todos = p.pgTable('todos', {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  userId: p.uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: p.text().notNull(),
+  status: todoStatus().default('open').notNull(),
+  priority: p.smallint().default(1),
+  amount: p.numeric({ precision: 10, scale: 2 }),
+  dueOn: p.date('due_on'),
+  createdAt: p.timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  p.index('todos_user_id_idx').on(table.userId),
+]);
+
+export const users = p.pgTable('users', {
+  id: p.uuid().defaultRandom().primaryKey(),
+  email: p.varchar({ length: 255 }).notNull().unique('users_email_key'),
+  fullName: p.text('full_name'),
+  age: p.integer(),
+  isAdmin: p.boolean('is_admin').default(false).notNull(),
+  metadata: p.jsonb(),
+  tags: p.text().array(),
+  createdAt: p.timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const openTodos = p.pgView('open_todos', {
+  id: p.integer(),
+  userId: p.uuid('user_id'),
+  title: p.text(),
+  status: todoStatus(),
+  priority: p.smallint(),
+  amount: p.numeric({ precision: 10, scale: 2 }),
+  dueOn: p.date('due_on'),
+  createdAt: p.timestamp('created_at'),
+}).as(q.sql`SELECT todos.id, todos.user_id, todos.title, todos.status, todos.priority, todos.amount, todos.due_on, todos.created_at FROM todos WHERE todos.status = 'open'::todo_status`);

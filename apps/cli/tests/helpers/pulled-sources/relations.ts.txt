@@ -1,0 +1,21 @@
+import { defineRelations } from "drizzle-orm";
+import * as schema from "./schema";
+
+export const relations = defineRelations(schema, (r) => ({
+	todoLabels: {
+		todo: r.one.todos({
+			from: r.todoLabels.todoId,
+			to: r.todos.id
+		}),
+	},
+	todos: {
+		todoLabels: r.many.todoLabels(),
+		user: r.one.users({
+			from: r.todos.userId,
+			to: r.users.id
+		}),
+	},
+	users: {
+		todos: r.many.todos(),
+	},
+}))

@@ -1,0 +1,15 @@
+import { q } from 'typebase-io/db';
+
+import * as schema from './schema.ts';
+
+export const relations = q.defineRelations(schema, (r) => ({
+  todos: {
+    usersInAuth: r.one.usersInAuth({
+      from: r.todos.userId,
+      to: r.usersInAuth.id
+    }),
+  },
+  usersInAuth: {
+    todos: r.many.todos(),
+  },
+}));

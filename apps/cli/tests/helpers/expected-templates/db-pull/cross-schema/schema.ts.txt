@@ -1,0 +1,14 @@
+import { p } from 'typebase-io/db';
+
+export const auth = p.pgSchema('auth');
+
+export const usersInAuth = auth.table('users', {
+  id: p.uuid().defaultRandom().primaryKey(),
+  email: p.text(),
+});
+
+export const todos = p.pgTable('todos', {
+  id: p.uuid().defaultRandom().primaryKey(),
+  userId: p.uuid('user_id').notNull().references(() => usersInAuth.id, { onDelete: 'cascade' }),
+  value: p.text().notNull(),
+});

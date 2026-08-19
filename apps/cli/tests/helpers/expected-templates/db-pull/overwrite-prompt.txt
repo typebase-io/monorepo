@@ -1,0 +1,1 @@
+`typebase/db/schema.ts` and `typebase/db/relations.ts` already exist and will be replaced by whatever the database contains.

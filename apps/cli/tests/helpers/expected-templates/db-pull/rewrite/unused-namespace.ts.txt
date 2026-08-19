@@ -1,0 +1,3 @@
+import { p } from 'typebase-io/db';
+
+export const logs = p.pgTable("logs", {});
