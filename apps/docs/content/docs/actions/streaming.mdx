@@ -1,0 +1,289 @@
+---
+title: Streaming
+description: Push a sequence of events to clients over SSE with .stream(), instead of answering once and closing.
+---
+
+A handler answers once. A stream keeps answering: it yields events for as long as the client is listening, over [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events). Live lists, notifications, progress on a long job, and anything driven by a [publisher](/docs/publisher) are all the same shape.
+
+Swap `.handler()` for `.stream()` and write an async generator:
+
+```ts title="typebase/actions/queries/jobs.ts"
+import { ServerError } from 'typebase-io/server';
+import { z } from 'zod';
+
+import { action } from '../../_generated/server.ts';
+
+export const progress = action
+  .input(z.object({ id: z.number() }))
+  .output(z.object({ done: z.number(), total: z.number() }))
+  .stream(async function* ({ db, input, signal }) {
+    while (signal?.aborted !== true) {
+      const job = await db.query.jobs.findFirst({ where: { id: input.id } });
+
+      if (!job) {
+        throw new ServerError('NOT_FOUND');
+      }
+
+      yield { done: job.done, total: job.total };
+
+      if (job.done === job.total) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  });
+```
+
+Everything you know from `.handler()` carries over: `.input()` validates what comes in, errors are thrown the same way, and you get the whole [handler context](/docs/actions#handler-context): `db`, `env`, `auth`, `publisher`, `input`, `reqHeaders`. A stream adds two values a handler has no use for:
+
+| Value         | Description                                                                                                               |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `signal`      | `AbortSignal \| undefined`. When present, it fires on disconnect. See [Ending a stream](#ending-a-stream).                |
+| `lastEventId` | `string \| undefined`. The last event id received by a reconnecting client. See [Resuming](#resuming-after-a-disconnect). |
+
+`lastEventId` is `undefined` on a first connection. `signal` may be `undefined` when the client or runtime cannot provide a cancellation signal. A stream that ignores both still works, but it cannot stop work promptly on disconnect or resume missed events.
+
+## What `.output()` means on a stream
+
+On a handler, `.output()` describes the response. On a stream, it describes **one event**, and every event is validated against it as you yield:
+
+```ts
+.output(z.object({ done: z.number(), total: z.number() }))
+```
+
+The client receives an async iterable of that shape. You don't wrap it in anything yourself; `.stream()` handles that. `.output()` stays optional, leave it off and the event type is inferred from what you yield, exactly as a handler's return type is inferred:
+
+```ts
+export const ticks = action.stream(async function* () {
+  yield { at: Date.now() };
+});
+```
+
+## Rules the compiler enforces
+
+Three, all reported at compile time:
+
+**A stream must yield.** A generator that never yields sends the client nothing, so it's rejected rather than silently connecting to a stream that produces no events:
+
+```ts
+// Error: a stream must yield at least one event
+export const nothing = action.output(shape).stream(async function* () {});
+```
+
+**Events are yielded, never returned.** A returned value ends the stream without sending anything, which is almost always a mistake:
+
+```ts
+export const wrong = action.output(shape).stream(async function* () {
+  return { done: 1, total: 1 }; // Error
+});
+
+export const right = action.output(shape).stream(async function* () {
+  yield { done: 1, total: 1 };
+
+  return; // fine: a bare return just ends the stream
+});
+```
+
+**Every event matches `.output()`.** Yield something else and it's a type error, the same as returning the wrong shape from a handler.
+
+## Ending a stream
+
+A stream ends when the generator returns, or when the client goes away. Every stream receives `signal: AbortSignal | undefined`; when the runtime provides it, the signal fires on disconnect:
+
+```ts
+export const live = action.stream(async function* ({ publisher, signal }) {
+  const created = await publisher.subscribe('todo.created', { signal });
+
+  for await (const todo of created) {
+    yield todo;
+  }
+});
+```
+
+Pass `signal` to anything that would otherwise keep running: a `publisher.subscribe`, a `fetch`, a database call that takes a while. Without it, a client closing the tab leaves your loop running until the platform kills the function.
+
+Cleanup belongs in `finally`, which runs whether the client disconnected or the generator returned on its own:
+
+```ts
+export const watched = action.stream(async function* ({ signal }) {
+  const watcher = openWatcher();
+
+  try {
+    while (signal?.aborted !== true) {
+      yield await watcher.next();
+    }
+  } finally {
+    watcher.close();
+  }
+});
+```
+
+## Event metadata
+
+Every event can carry an `id` and a `retry`, the two fields SSE defines. Attach them with `withEventMeta`:
+
+```ts
+import { withEventMeta } from 'typebase-io/server';
+
+export const live = action.stream(async function* ({ db }) {
+  for await (const row of rows(db)) {
+    yield withEventMeta({ id: row.id, value: row.value }, { id: String(row.id), retry: 5_000 });
+  }
+});
+```
+
+| Field   | Meaning                                                                                         |
+| ------- | ----------------------------------------------------------------------------------------------- |
+| `id`    | Identifies the event. The client sends the last one it saw back on reconnect. Must be a string. |
+| `retry` | How long the client should wait before reconnecting, in milliseconds.                           |
+
+`withEventMeta` returns the same value with the metadata attached, so what the client receives is unchanged. Reading it back is `getEventMeta`, which returns `{ id?, retry? }` or `undefined` for an event that was never tagged:
+
+```ts
+import { getEventMeta, withEventMeta } from 'typebase-io/server';
+
+for await (const todo of created) {
+  const meta = getEventMeta(todo);
+
+  yield withEventMeta(todo, { id: meta?.id });
+}
+```
+
+A [publisher](/docs/publisher) already tags what it delivers with the event's row id, so streams built on `publisher.subscribe` get ids without doing anything.
+
+## Resuming after a disconnect
+
+When a client reconnects, it sends the id of the last event it received. That arrives as `lastEventId` on the stream's context:
+
+```ts
+export const live = action.stream(async function* ({ publisher, signal, lastEventId }) {
+  const created = await publisher.subscribe('todo.created', { signal, lastEventId });
+
+  for await (const todo of created) {
+    yield todo;
+  }
+});
+```
+
+It's `undefined` on a first connection and a string on a resume. Handing it to `publisher.subscribe` replays what was published while the client was away; ignoring it means the client silently misses those events. What you can replay depends on what you kept, which for the `db` publisher is however much of the [events table](/docs/publisher#housekeeping) you haven't pruned.
+
+<Callout type="warn">
+  Clients do not reconnect on their own by default, so a dropped connection stays dropped and `lastEventId` never arrives. See
+  [Reconnecting](#reconnecting) below.
+</Callout>
+
+## Consuming a stream
+
+First create or import a client with [`createRouterClient` or `createTanstackQueryClient`](/docs/client). On the client, a stream resolves to an async iterable. With the router client, call the action directly; with the TanStack client, use `.call()`:
+
+| Client                      | Stream call                           |
+| --------------------------- | ------------------------------------- |
+| `createRouterClient`        | `client.queries.todos.getMany()`      |
+| `createTanstackQueryClient` | `client.queries.todos.getMany.call()` |
+
+You can `for await` the resulting async iterable directly. For UI code, `consumeStream` inverts it into callbacks and hands you back an unsubscribe function. Consumption starts immediately, and every call opens a separate stream.
+
+<Callout type="warn">
+  Do not call `consumeStream` while a UI component is rendering. Start it from the framework's mount lifecycle and call the returned unsubscribe
+  function during cleanup. In React, use `useEffect`.
+</Callout>
+
+### With `createRouterClient`
+
+```ts
+import { consumeStream, createRouterClient } from 'typebase-io/client';
+import type { Router } from '../../typebase/_generated/server';
+
+const client = createRouterClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+});
+
+const unsubscribe = consumeStream(client.queries.todos.getMany(), {
+  onEvent: (todos) => render(todos),
+  onError: (error) => console.error(error),
+  onSuccess: () => console.log('stream ended'),
+});
+
+// When the code that owns this subscription stops
+void unsubscribe();
+```
+
+### With `createTanstackQueryClient`
+
+```ts
+import { consumeStream, createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../../typebase/_generated/server';
+
+const client = createTanstackQueryClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+});
+
+const unsubscribe = consumeStream(client.queries.todos.getMany.call(), {
+  onEvent: (todos) => render(todos),
+  onError: (error) => console.error(error),
+  onSuccess: () => console.log('stream ended'),
+});
+
+// When the code that owns this subscription stops
+void unsubscribe();
+```
+
+<details>
+<summary><strong>React Example</strong></summary>
+
+For example, using React with a TanStack client:
+
+```tsx
+useEffect(() => {
+  const unsubscribe = consumeStream(client.queries.todos.getMany.call(), {
+    onEvent: (todos) => setTodos(todos),
+    onError: (error) => console.error(error),
+  });
+
+  return () => {
+    void unsubscribe();
+  };
+}, []);
+```
+
+This creates one subscription while the component is mounted. With `createRouterClient`, remove `.call()` and pass `client.queries.todos.getMany()`. See the [complete React component example](/docs/client#react-lifecycle).
+
+</details>
+
+| Callback    | When                                                    |
+| ----------- | ------------------------------------------------------- |
+| `onEvent`   | Each event.                                             |
+| `onError`   | The stream failed.                                      |
+| `onSuccess` | The stream ended normally, including after unsubscribe. |
+| `onFinish`  | After `onError` or `onSuccess`, whichever happened.     |
+
+<Callout type="info">Provide `onError` or `onFinish`. Without either, a failing stream throws an unhandled rejection.</Callout>
+
+### Reconnecting
+
+Add the retry plugin to your client to make dropped streams reconnect, and to make `lastEventId` reach the server:
+
+```ts title="lib/typebase.ts"
+import { createRouterClient } from 'typebase-io/client';
+import { ClientRetryPlugin } from 'typebase-io/client/plugins';
+
+import type { Router } from '../typebase/_generated/server.ts';
+
+export const client = createRouterClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_URL,
+  plugins: [new ClientRetryPlugin({ default: { retry: Number.POSITIVE_INFINITY } })],
+});
+```
+
+`retry` is `0` by default, which is why a stream that drops simply stops. The delay between attempts comes from the last event's `retry` metadata, falling back to two seconds.
+
+## Regenerating types
+
+Converting an action in an existing file from `.handler()` to `.stream()` does not require codegen; its type flows through the imports already in `_generated/server.ts`. Run codegen only if you created, removed, or renamed the action file itself:
+
+```npm
+npx typebase-io-cli codegen
+```
+
+[`npx typebase-io-cli deploy`](/docs/cli/deploy) and [`generate-server`](/docs/cli/generate-server) rerun codegen before every build.

@@ -25,14 +25,33 @@ the values already in it.
 
 ## Options
 
-| Flag             | Description                                                           |
-| ---------------- | --------------------------------------------------------------------- |
-| `-f, --force`    | Overwrite `tsconfig.json` and regenerate the scaffolded example files |
-| `--with-auth`    | Include an example `auth.ts` with email/password authentication       |
-| `--skip-example` | Skip generating the example schema, actions, and `env.ts`             |
+| Flag                  | Description                                                                     |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `-f, --force`         | Overwrite `tsconfig.json` and regenerate the scaffolded example files.          |
+| `--with-auth`         | Include an example `auth.ts` with email/password authentication.                |
+| `--with-db-publisher` | Include a `publisher.ts`, the `events` table it needs, and actions that use it. |
+| `--skip-example`      | Skip generating the example schema, actions, and `env.ts`.                      |
 
-<Callout type="warn">
-  `init --force` does more than recreate `tsconfig.json`. It reruns the scaffold step and overwrites the generated example files too, including
-  `db/schema.ts`, `db/relations.ts`, `actions/queries/todos.ts`, `actions/mutations/todos.ts`, `env.ts`, and the example `auth.ts` when `--with-auth`
-  is used.
-</Callout>
+### `--with-auth`
+
+Sets up [authentication](/docs/auth) with better-auth, using email and password. On top of the usual scaffold it writes:
+
+- `auth.ts`: a `defineAuth` config with `emailAndPassword` enabled and `http://localhost:3000` trusted
+- `db/schema.ts`: the `users`, `sessions`, `accounts`, and `verifications` tables better-auth needs
+- `db/relations.ts`: those tables registered, plus the relations between them and `todos`
+- `actions/custom-actions.ts`: an `authedAction` that rejects requests without a valid session
+- `actions/queries/todos.ts` and `actions/mutations/todos.ts`: built on `authedAction`, and scoped to the signed-in user
+
+<Callout type="info">It cannot be combined with `--skip-example`, which skips the example this flag adds to.</Callout>
+
+### `--with-db-publisher`
+
+Sets up a [publisher](/docs/publisher), so actions can publish events and stream them to clients. On top of the usual scaffold it writes:
+
+- `publisher.ts`: a `db` publisher declaring one example event, `todo.created`
+- `db/schema.ts`: the `events` table the publisher keeps events in
+- `db/relations.ts`: an `events: {}` entry registering that table
+- `actions/mutations/todos.ts`: `create` publishes `todo.created` after inserting
+- `actions/queries/todos.ts`: `getMany` becomes a [streaming action](/docs/actions/streaming) that re-sends the list on every new todo
+
+<Callout type="info">It cannot be combined with `--skip-example`, which skips the example this flag adds to.</Callout>

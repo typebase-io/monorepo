@@ -5,7 +5,7 @@ description: Define your server-side logic with type-safe actions.
 
 Actions are the server-side functions that power your API. They are how your client communicates with your backend, reading data, creating records, sending emails, or anything else your app needs to do.
 
-Under the hood, actions are built on top of [oRPC](https://orpc.dev), a type-safe RPC framework. Typebase provides a simplified API so you can define actions without worrying about the underlying RPC details, but the full power of oRPC is available if you need it.
+Under the hood, actions are built on top of [oRPC](https://orpc.dev), a type-safe RPC framework. Typebase provides a focused API for defining actions and re-exports [oRPC client plugins](/docs/client#plugins) when you need retries, deduplication, or batching. Custom server plugins are not supported yet.
 
 ## Folder structure
 
@@ -91,12 +91,17 @@ export const getUser = action
 
 Let's break that down:
 
-- **`.input()`**: optional. Validates the data coming in from the client before your handler runs. If the data doesn't match the schema, the request is rejected automatically.
-- **`.output()`**: optional. Validates the data your handler returns before sending it back to the client, ensuring you never accidentally leak extra fields. If omitted, the return type is inferred directly from your handler's return type. You still get full type safety on the client, just without runtime validation on the output.
-- **`.handler()`**: the function that runs on the server. It receives a context object with:
-  - `input`: the validated input data
-  - `db`: your Drizzle database client, ready to query
-  - `env`: your validated [environment variables](/docs/env)
+- **`.input()`** validates the `{ id }` sent by the client. The validated value becomes `input`, which is why the handler can read `input.id`.
+- **`.output()`** validates the object returned by this action. Only an object with the declared `id`, `name`, `age`, and `email` fields reaches the client.
+- **`.handler()`** runs the action and returns one response. This handler uses `db`, the typed Drizzle client, and `input`, the validated value from `.input()`.
+- **`ServerError`** stops the handler and sends a structured error to the client. Here, `NOT_FOUND` is returned when no user matches the requested id.
+
+This example only needs `db` and `input`. Depending on the action and your project setup, a handler can receive other values too. See [Handler context](#handler-context) for the complete list and the exact conditions for each value.
+
+<Callout type="info">
+  This example uses `.handler()`, which returns once. To send multiple events over SSE, use `.stream()` instead. Streaming actions receive the
+  applicable action context plus stream-specific values for cancellation and resuming. See [Streaming](/docs/actions/streaming) for the full API.
+</Callout>
 
 ## Input and output validation
 
@@ -238,22 +243,26 @@ throw new ServerError('INTERNAL_SERVER_ERROR');
 
 ## Handler context
 
-The object your handler receives is built automatically based on your project setup. You only get what you've configured:
+The parameter object passed to `.handler()` is inferred from the action chain and your project structure. Typebase only exposes values that apply to the current action and project:
 
-**`input`**: present when you define `.input()` on the action. Contains the validated data sent by the client.
+| Value                 | Available when                                                         | What it contains                                                                                                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `input`               | The action uses `.input()`.                                            | The input after validation and parsing. Its type is the output type of the input schema.                                                                                                                                                 |
+| `db`                  | `db/schema.ts` exists.                                                 | A fully typed Drizzle client. Its relational query API comes from `db/relations.ts`.                                                                                                                                                     |
+| `auth`                | `auth.ts` exists.                                                      | The better-auth server instance. It does not authenticate the request automatically; use it with `reqHeaders`, usually from [middleware](/docs/actions/middleware), to read the session.                                                   |
+| `env`                 | `env.ts`, `db/schema.ts`, or `auth.ts` exists.                         | The parsed values declared in [`env.ts`](/docs/env), plus `DATABASE_URL` for database projects and `BETTER_AUTH_SECRET` for auth projects. The automatic keys are required strings unless you override their schemas in `env.ts`.            |
+| `publisher`           | `publisher.ts` exists.                                                 | A typed [publisher](/docs/publisher). Its event names and payload types come from the `events` object declared in that file.                                                                                                             |
+| `reqHeaders`          | Every action. The value itself can be `undefined`.                     | The incoming request headers as a `Headers` object. Guard against `undefined` before passing them to APIs that require headers.                                                                                                          |
+| Middleware values     | An earlier [`.use()` middleware](/docs/actions/middleware) returns them. | Any properties returned by middleware, fully typed and available to later middleware and the final handler. For example, authentication middleware can add a `user` value. `input` is added only for the final handler, not for middleware. |
 
-**`db`**: present when your project has a `db/schema.ts` file. A fully typed Drizzle client ready to query your database.
-
-**`auth`**: present when your project has an `auth.ts` file. The better-auth instance, useful for reading the current session inside middleware.
-
-**`env`**: present when your project has an `env.ts` file, a `db/schema.ts`, or an `auth.ts`. Your validated [environment variables](/docs/env): every key you declared in `env.ts`, plus `DATABASE_URL` when you have a database and `BETTER_AUTH_SECRET` when you have auth. Each one is a plain `string`, never `undefined`, because the server refuses to boot without them.
-
-**`reqHeaders`**: always passed to the handler but may be `undefined`. The raw request headers, needed when calling `auth.api.getSession()` to verify a session in middleware.
-
-So an action that uses all of them might look like:
+A handler can combine whichever values it needs:
 
 ```ts
 export const getProfile = action.input(z.object({ id: z.number() })).handler(async ({ db, input, auth, env, reqHeaders }) => {
+  if (!reqHeaders) {
+    throw new ServerError('UNAUTHORIZED');
+  }
+
   const session = await auth.api.getSession({ headers: reqHeaders });
 
   if (!session) throw new ServerError('UNAUTHORIZED');
@@ -264,7 +273,7 @@ export const getProfile = action.input(z.object({ id: z.number() })).handler(asy
 });
 ```
 
-And one that uses none of them is equally valid:
+An action that needs no context is equally valid:
 
 ```ts
 export const ping = action.handler(async () => {
@@ -274,7 +283,7 @@ export const ping = action.handler(async () => {
 
 ## Environment variables
 
-Declare what your server needs in `typebase/env.ts`, and read it from the handler context as `env`:
+Declare what your server needs in `typebase/env.ts`, and read it from the action context as `env`:
 
 ```ts title="typebase/env.ts"
 import { defineEnv } from 'typebase-io/server';
@@ -327,7 +336,7 @@ This same structure is what your client uses to call actions from the frontend. 
 
 ## Regenerating types
 
-Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `db/schema.ts`, or `db/relations.ts`:
+Run `codegen` whenever you create, delete, or rename a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `publisher.ts`, `db/schema.ts`, or `db/relations.ts`:
 
 ```npm
 npx typebase-io-cli codegen
@@ -338,4 +347,5 @@ This updates `_generated/server.ts` with the new router structure so your client
 ## Next steps
 
 - Learn how to add [middleware](/docs/actions/middleware) to your actions for authentication and shared logic.
+- Push more than one response with [streaming actions](/docs/actions/streaming), and connect mutations to streams with a [publisher](/docs/publisher).
 - Read the [Client](/docs/client) overview to see how to call your actions from the frontend.

@@ -113,9 +113,12 @@ _server/
     db/               # Your schema and relations (if applicable)
     auth.ts           # Your auth config (if applicable)
     env.ts            # Validated environment variables (if applicable)
+    publisher.ts      # Publisher runtime config (if applicable)
   package.json        # Dependencies for the server
   tsconfig.json       # TypeScript config
 ```
+
+`src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
 
 `src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. `dotenv` is added to `package.json`, and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither.
 

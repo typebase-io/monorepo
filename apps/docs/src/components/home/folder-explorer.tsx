@@ -12,7 +12,7 @@ import { S } from '#components/home/code-card/s.tsx';
 import { T } from '#components/home/code-card/t.tsx';
 import { V } from '#components/home/code-card/v.tsx';
 
-type FileId = 'mutations' | 'queries' | 'relations' | 'schema' | 'auth' | 'env';
+type FileId = 'mutations' | 'queries' | 'relations' | 'schema' | 'auth' | 'env' | 'publisher';
 
 const rows: { id?: FileId; label: string; depth: number }[] = [
   { label: 'typebase/', depth: 0 },
@@ -26,6 +26,7 @@ const rows: { id?: FileId; label: string; depth: number }[] = [
   { id: 'schema', label: 'schema.ts', depth: 2 },
   { id: 'auth', label: 'auth.ts', depth: 1 },
   { id: 'env', label: 'env.ts', depth: 1 },
+  { id: 'publisher', label: 'publisher.ts', depth: 1 },
 ];
 
 const files: Record<FileId, { path: string; chip: string; content: React.ReactNode }> = {
@@ -277,6 +278,50 @@ const files: Record<FileId, { path: string; chip: string; content: React.ReactNo
         <Line />
         <Line>
           <C>{'// then in any action: ({ env }) => env.RESEND_API_KEY'}</C>
+        </Line>
+      </>
+    ),
+  },
+  publisher: {
+    path: 'typebase/publisher.ts',
+    chip: 'you write this',
+    content: (
+      <>
+        <Line>
+          <C>{'// events your actions publish and stream.'}</C>
+        </Line>
+        <Line />
+        <Line>
+          <K>import</K> {`{ `}
+          <V>definePublisher</V>
+          {` } `}
+          <K>from</K> <S>{"'typebase-io/server'"}</S>;
+        </Line>
+        <Line>
+          <K>import</K> {`{ `}
+          <V>z</V>
+          {` } `}
+          <K>from</K> <S>{"'zod'"}</S>;
+        </Line>
+        <Line />
+        <Line>
+          <K>export const</K> <F>publisher</F> = <F>definePublisher</F>({`{`}
+        </Line>
+        <Line indent={1}>
+          <V>provider</V>: <S>{"'db'"}</S>,
+        </Line>
+        <Line indent={1}>
+          <V>events</V>: {`{`}
+        </Line>
+        <Line indent={2}>
+          <S>{"'todo.created'"}</S>: <V>z</V>.<F>object</F>({`{ `}
+          <V>id</V>: <V>z</V>.<F>number</F>(){` }`}),
+        </Line>
+        <Line indent={1}>{`},`}</Line>
+        <Line>{`});`}</Line>
+        <Line />
+        <Line>
+          <C>{'// then: .stream(async function* ({ publisher }) { ... })'}</C>
         </Line>
       </>
     ),

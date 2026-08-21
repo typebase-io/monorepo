@@ -10,6 +10,7 @@
     "database",
     "auth",
     "env",
+    "publisher",
     "client",
     "generated",
     "[Deploy](/docs/cli/deploy)",

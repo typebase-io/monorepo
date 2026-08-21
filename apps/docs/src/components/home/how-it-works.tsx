@@ -7,7 +7,7 @@ const steps = [
     body: (
       <>
         One command creates a <code className="font-mono text-fd-foreground/90">typebase/</code> folder in your existing app, with a database schema,
-        example actions, and optional auth. No separate repo, no dashboard.
+        example actions, and optional auth or realtime publishing. No separate repo, no dashboard.
       </>
     ),
     command: 'npx typebase-io-cli init',
@@ -18,8 +18,9 @@ const steps = [
     body: (
       <>
         Define tables in <code className="font-mono text-fd-foreground/90">db/schema.ts</code>, export actions from{' '}
-        <code className="font-mono text-fd-foreground/90">actions/</code>, drop in <code className="font-mono text-fd-foreground/90">auth.ts</code>{' '}
-        and <code className="font-mono text-fd-foreground/90">env.ts</code>. Every export is typechecked end to end.
+        <code className="font-mono text-fd-foreground/90">actions/</code>, drop in <code className="font-mono text-fd-foreground/90">auth.ts</code>,{' '}
+        <code className="font-mono text-fd-foreground/90">env.ts</code>, and <code className="font-mono text-fd-foreground/90">publisher.ts</code> for
+        realtime. Every export is typechecked end to end.
       </>
     ),
   },

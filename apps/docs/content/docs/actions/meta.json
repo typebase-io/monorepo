@@ -1,4 +1,4 @@
 {
   "title": "Actions",
-  "pages": ["index", "middleware"]
+  "pages": ["index", "streaming", "middleware"]
 }

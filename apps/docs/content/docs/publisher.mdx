@@ -1,0 +1,213 @@
+---
+title: Publisher
+description: Publish events from your actions and stream them to clients with typebase/publisher.ts.
+---
+
+A publisher is how one action tells another that something happened. A mutation publishes an event, and a [streaming action](/docs/actions/streaming) subscribed to that event forwards it to every client watching.
+
+You declare it in `typebase/publisher.ts`:
+
+```ts title="typebase/publisher.ts"
+import { definePublisher } from 'typebase-io/server';
+import { z } from 'zod';
+
+export const publisher = definePublisher({
+  provider: 'db',
+  events: {
+    'todo.created': z.object({
+      id: z.number(),
+      value: z.string(),
+    }),
+  },
+});
+```
+
+Three things go in the object:
+
+| Key        | Description                                                  |
+| ---------- | ------------------------------------------------------------ |
+| `provider` | Where events are kept. `db` is the only provider today.      |
+| `events`   | The events you publish, and the shape of each payload.       |
+| `options`  | Optional settings for the provider. See [Options](#options). |
+
+Every event name you publish or subscribe to has to be a key of `events`, and its payload has to match the schema. Both are checked at compile time, so a typo in an event name is a type error rather than a message nobody receives.
+
+<Callout type="info">
+  `events` accepts any [Standard Schema](https://standardschema.dev/) library, the same as `.input()` and `.output()` on actions. Zod, Valibot, and
+  ArkType all work. Use object-shaped payloads: the `db` provider attaches SSE resume metadata to every delivered value, and that metadata needs an
+  object to wrap.
+</Callout>
+
+Scaffold the whole thing, including the table below, with:
+
+```npm
+npx typebase-io-cli init --with-db-publisher
+```
+
+## The events table
+
+The `db` provider keeps events in a table in your own database, so `db/schema.ts` has to declare it:
+
+```ts title="typebase/db/schema.ts"
+export const events = p.pgTable(
+  'events',
+  {
+    id: p.bigint({ mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+    name: p.text().notNull(),
+    value: p.jsonb().notNull(),
+    createdAt: p.timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [p.index('events_name_id_idx').on(table.name, table.id)]
+);
+```
+
+```ts title="typebase/db/relations.ts"
+export const relations = q.defineRelations(schema, (r) => ({
+  todos: {},
+  events: {},
+}));
+```
+
+Typebase could keep this table to itself and have [`db push`](/docs/database/push) create it for you. It doesn't, because `db/schema.ts` is meant to be the whole truth about your database: what you read there is what exists, and a push applies exactly that. A table you can't see in your own schema is one you won't think to index, query, or prune.
+
+Typebase refuses to build a project whose publisher has nowhere to write:
+
+```
+Found `publisher.ts` but `db/schema.ts` does not export the `events` table it keeps events in.
+```
+
+Add the table, then push it to each target you deploy to:
+
+```npm
+npx typebase-io-cli db dev push
+```
+
+```npm
+npx typebase-io-cli db prod push
+```
+
+[`npx typebase-io-cli deploy`](/docs/cli/deploy) pushes as part of deploying, so if you're deploying anyway there's nothing extra to run.
+
+## Publishing
+
+Every action gets `publisher` on its context once `publisher.ts` exists:
+
+```ts title="typebase/actions/mutations/todos.ts"
+export const create = action.input(z.object({ value: z.string() })).handler(async ({ db, input, publisher }) => {
+  const [todo] = await db.insert(todos).values({ value: input.value, completed: false }).returning();
+
+  await publisher.publish('todo.created', {
+    id: todo.id,
+    value: todo.value,
+  });
+
+  return todo;
+});
+```
+
+The payload is validated against the event's schema before it's written, and what the schema parses is what gets stored. A payload the schema rejects throws an `INTERNAL_SERVER_ERROR` rather than reaching subscribers in a shape they aren't expecting.
+
+### Publishing inside a transaction
+
+`publish` writes a row, so it can join a transaction you're already in. Pass the transaction as `tx` and the event lands only if the transaction commits:
+
+```ts
+await db.transaction(async (tx) => {
+  const [todo] = await tx.insert(todos).values({ value: input.value, completed: false }).returning();
+
+  await publisher.publish('todo.created', { id: todo.id, value: todo.value }, { tx });
+});
+```
+
+Without `tx` the event is written on its own connection, so a rollback afterwards would leave subscribers told about a todo that no longer exists. Use `tx` whenever the event describes work that might still be rolled back.
+
+## Subscribing
+
+`publisher.subscribe` returns an async generator of payloads for one event name. You call it from a [streaming action](/docs/actions/streaming), which is where `signal` and `lastEventId` come from:
+
+```ts title="typebase/actions/queries/todos.ts"
+const todo = z.object({ id: z.number(), value: z.string(), completed: z.boolean() });
+
+export const getMany = action.output(todo.array()).stream(async function* ({ db, publisher, signal, lastEventId }) {
+  const read = async () => {
+    const todos = await db.query.todos.findMany({ orderBy: { createdAt: 'desc' } });
+
+    return todos.map((todo) => ({ id: todo.id, value: todo.value, completed: todo.completed }));
+  };
+
+  const created = await publisher.subscribe('todo.created', { signal, lastEventId });
+
+  yield await read();
+
+  for await (const _todo of created) {
+    yield await read();
+  }
+});
+```
+
+Subscribe before the initial read. A new subscription starts at the latest event, so reading first would leave a gap where a newly created todo is neither in the initial list nor delivered by the subscription. With this ordering, the client gets the current list straight away, then a fresh list for every `todo.created` event. An event that lands during the initial read can cause the same current list to be sent twice, but no update is skipped.
+
+The loop binding is typed `{ id: number; value: string }` from the event's schema, so a stream whose event carries everything the client needs can yield the payload directly instead of reading the table again.
+
+[`init --with-db-publisher`](/docs/cli/init) scaffolds the publisher, table, mutation, and streaming query used by this pattern.
+
+| Option        | Description                                                                     |
+| ------------- | ------------------------------------------------------------------------------- |
+| `signal`      | Pass the stream's signal so the subscription stops when the client disconnects. |
+| `lastEventId` | Resumes after the last event the client saw, instead of starting from now.      |
+
+Without `lastEventId`, a subscription starts at the newest event and never replays history.
+
+## Options
+
+The `db` provider takes these, all optional:
+
+```ts title="typebase/publisher.ts"
+export const publisher = definePublisher({
+  provider: 'db',
+  options: { pollIntervalMs: 500 },
+  events: {
+    /* ... */
+  },
+});
+```
+
+| Option              | Description                                                                                               | Default |
+| ------------------- | --------------------------------------------------------------------------------------------------------- | ------- |
+| `pollIntervalMs`    | How long to wait between reads of the events table.                                                       | `1000`  |
+| `maxBufferedEvents` | Maximum events held in memory per subscriber; later rows wait for a future poll instead of being dropped. | `100`   |
+| `batchSize`         | Rows read per poll.                                                                                       | `100`   |
+
+`pollIntervalMs` is the delay before an event reaches a client, and the rate at which an instance with at least one subscriber queries the database. Lowering it costs one query per interval per active server instance, whether or not anything was published.
+
+## How the db provider works
+
+Subscribers share one poll loop per server instance. Each poll reads the rows after the lowest cursor any subscriber holds, hands each row to the subscribers watching that event name, and sleeps. No subscribers means no loop and no queries.
+
+Events carry their row `id` as the SSE event id, which is what makes resuming work: the client sends the last id it saw back on reconnect, and the subscription continues from that row instead of from the present.
+
+<Callout type="info">
+  Polling looks primitive next to `LISTEN`/`NOTIFY`, and it is deliberate. Serverless platforms run many short-lived instances, and pooled Postgres
+  endpoints (Neon's `-pooler` host, PgBouncer in transaction mode) don't carry `LISTEN` across a pooled connection. A table both survives restarts and
+  works through a pooler, and it gives you resume for free, which `NOTIFY` cannot.
+</Callout>
+
+### Housekeeping
+
+Nothing prunes the events table. It grows with every published event, and rows are only useful for as long as a disconnected client might still resume from them. Delete old rows on whatever schedule suits you:
+
+```sql
+DELETE FROM events WHERE created_at < now() - interval '7 days';
+```
+
+Anything you delete is no longer replayable, so keep a window comfortably longer than the time your clients take to reconnect.
+
+## Regenerating types
+
+Adding or removing `publisher.ts` changes the action context, so run codegen afterwards:
+
+```npm
+npx typebase-io-cli codegen
+```
+
+Editing an existing publisher (adding an event, changing a payload) does not need a codegen run. [`npx typebase-io-cli deploy`](/docs/cli/deploy) reruns codegen on every deploy.

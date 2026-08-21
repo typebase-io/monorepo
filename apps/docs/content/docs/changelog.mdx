@@ -18,6 +18,37 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.14 [#v0-1-14]
+
+_2026-08-24._
+
+**Added**
+
+- [Streaming actions](/docs/actions/streaming): swap `.handler()` for `.stream()` and an action becomes an async generator that pushes events to the
+  client over SSE for as long as it's listening. `.output()` describes one event rather than the whole response, and the generator gets `signal` and
+  `lastEventId` on top of the usual handler context. The compiler enforces that a stream yields at least once, that events are yielded rather than
+  returned, and that each one matches `.output()`.
+- [`definePublisher`](/docs/publisher): declare the events your actions publish in `typebase/publisher.ts`, and every action gets a typed `publisher`
+  on its context. A mutation publishes an event, a stream subscribed to it forwards the event to every client watching. Event names and payloads are
+  checked at compile time, and `publish(name, payload, { tx })` joins a transaction so a rollback publishes nothing.
+- The `db` publisher provider keeps events in an `events` table in your own database, polls it on a loop shared by every subscriber on the instance,
+  and tags each event with its row id, so a client that reconnects resumes from the last event it saw instead of missing whatever was published while
+  it was away. The table is declared in your own `db/schema.ts` like any other.
+- `withEventMeta` and `getEventMeta` from `typebase-io/server`, for attaching an `id` or `retry` to an event and reading it back.
+- [`init --with-db-publisher`](/docs/cli/init#--with-db-publisher): scaffolds `publisher.ts`, the `events` table, its relation, and example actions
+  that publish and stream. Like `--with-auth`, it can't be combined with `--skip-example`.
+- [`consumeStream`](/docs/client#consumestream) from `typebase-io/client`, for reading a stream with callbacks instead of `for await`. Create a client
+  first, then pass the stream call: `client.path.to.stream()` for `createRouterClient`, or `client.path.to.stream.call()` for
+  `createTanstackQueryClient`. It starts immediately and returns an unsubscribe function, so UI code must start it from the component's mount
+  lifecycle and unsubscribe during cleanup rather than calling it during render.
+- [`typebase-io/client/plugins`](/docs/client#plugins) re-exports every oRPC client plugin, so `ClientRetryPlugin` and the rest work without adding a
+  dependency. Streams don't reconnect on their own, so this is what you reach for to make a dropped connection resume.
+
+**Changed**
+
+- `codegen` now also has to be rerun when `publisher.ts` is added or removed, the same as `auth.ts` and `env.ts`. Editing an existing one doesn't
+  need it.
+
 ## 0.1.13 [#v0-1-13]
 
 _2026-08-19._

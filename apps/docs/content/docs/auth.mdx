@@ -191,7 +191,7 @@ Typebase uses these auth-related environment variables:
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `BETTER_AUTH_SECRET` | A secret key used to sign session tokens. If it's missing, Typebase generates it locally the first time auth setup needs it. |
 
-A project with an `auth.ts` gets `BETTER_AUTH_SECRET` added to its [env schema](/docs/env) automatically, so it's validated at boot and typed as `env.BETTER_AUTH_SECRET` on the handler context. You don't declare it in `env.ts` yourself.
+A project with an `auth.ts` gets `BETTER_AUTH_SECRET` added to its [env schema](/docs/env) automatically, so it's validated at boot and typed as `env.BETTER_AUTH_SECRET` on the action context. You don't declare it in `env.ts` yourself.
 
 <Callout type="info">
   `npx typebase-io-cli auth generate` may create `BETTER_AUTH_SECRET` in your project root `.env` before your first deploy. Later, `npx

@@ -73,7 +73,7 @@ If your project still uses CommonJS (either you don't set `"type"` in `package.j
 }
 ```
 
-You only need to make this choice once. Everything inside your `typebase/` directory (actions, schema, auth) is always written in TypeScript and is compiled to whatever your deployment target needs. Your project's module system doesn't change anything there.
+You only need to make this choice once. Everything inside your `typebase/` directory (actions, schema, auth, env, and publisher config) is always written in TypeScript and is compiled to whatever your deployment target needs. Your project's module system doesn't change anything there.
 
   </details>
 </Callout>
@@ -86,7 +86,7 @@ Scaffold the `typebase/` directory:
 npx typebase-io-cli init
 ```
 
-This creates your backend directory with example files. If you want the examples to include authentication setup, pass `--with-auth`. If you'd rather start from scratch without any examples, pass `--skip-example`.
+This creates your backend directory with example files. Pass `--with-auth` to include authentication, `--with-db-publisher` to include typed realtime events and a streaming query, or both to scaffold them together. If you'd rather start from scratch without any examples, pass `--skip-example`.
 
 <Files>
   <Folder name="typebase" defaultOpen>
@@ -157,7 +157,7 @@ export const getOne = action
   });
 ```
 
-Each exported action with a `.handler()` becomes a callable endpoint on your client. Feel free to edit these files or add new ones. Run `codegen` whenever you create or delete a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `db/schema.ts`, or `db/relations.ts`:
+Each exported action finished with [`.handler()`](/docs/actions) or [`.stream()`](/docs/actions/streaming) becomes a callable endpoint on your client. Feel free to edit these files or add new ones. Run `codegen` whenever you create, delete, or rename a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `publisher.ts`, `db/schema.ts`, or `db/relations.ts`:
 
 ```npm
 npx typebase-io-cli codegen

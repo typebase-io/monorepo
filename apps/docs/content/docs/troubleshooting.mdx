@@ -109,6 +109,7 @@ The `_generated/` folder is a snapshot taken the last time you ran `npx typebase
 - A file inside `actions/`
 - `auth.ts`
 - `env.ts`
+- `publisher.ts`
 - `db/schema.ts` or `db/relations.ts`
 
 ```npm
@@ -132,21 +133,33 @@ This most often shows up after deleting `db/schema.ts` from a project that alrea
 
 This usually means `projectPath` in `typebase.json` doesn't match where your `typebase/` directory actually lives. Check the [Configuration](/docs/configuration) page and confirm `projectPath` is correct relative to your project root.
 
-### `db` is missing from the handler context
+### `db` is missing from the action context
 
 Two things to check:
 
 1. You have a `typebase/db/schema.ts` file. The `db` client is only injected when one exists.
 2. You ran `npx typebase-io-cli codegen` after creating it. The action builder is regenerated based on what files exist.
 
-The same applies to `auth`. It requires a `typebase/auth.ts` file plus a fresh codegen run.
+The same applies to `auth` and `publisher`. Each requires its matching top-level config file plus a fresh codegen run after that file is created.
+
+### "Found `publisher.ts` but no database schema" or no `events` table
+
+The `db` publisher stores its events in your own Postgres database, so `typebase/db/schema.ts` must export the [required `events` table](/docs/publisher#the-events-table). The CLI refuses to build without it.
+
+Also add an `events: {}` entry to `typebase/db/relations.ts`, following the general rule that every table should be registered for Typebase's relational query API.
+
+[`init --with-db-publisher`](/docs/cli/init#--with-db-publisher) scaffolds both definitions. If you added the publisher by hand, copy them from the [Publisher](/docs/publisher) page, run `npx typebase-io-cli codegen`, and push the table with `npx typebase-io-cli db dev push` before starting the server.
+
+### `publisher` is missing from the action context
+
+Confirm `typebase/publisher.ts` exists and exports a `publisher` created with `definePublisher`, then run `npx typebase-io-cli codegen`. Adding or removing the file changes the generated action context; editing event definitions inside an existing file does not require codegen.
 
 ### A key I declared in `env.ts` isn't on `env`
 
 `env` itself appears whenever you have an `env.ts`, a `db/schema.ts`, or an `auth.ts`, but the keys on it come from your `defineEnv` call. If a key you just added isn't showing up:
 
 1. Confirm it's inside the object passed to `defineEnv`, not somewhere else in the file.
-2. If you created `env.ts` in this session, run `npx typebase-io-cli codegen`. Adding or removing the file changes the handler context; editing the keys inside an existing one doesn't.
+2. If you created `env.ts` in this session, run `npx typebase-io-cli codegen`. Adding or removing the file changes the action context; editing the keys inside an existing one doesn't.
 
 See [Environment Variables](/docs/env).
 
@@ -207,6 +220,10 @@ npx typebase-io-cli env prod add RESEND_API_KEY <value>
 Your `typebase/env.ts` exists but the CLI can't find a `defineEnv(...)` call to read the schema from. It reads the file statically, so the call has to be visible in the source: `defineEnv({ ... })` with an inline object, or with a local variable that holds one. A schema built by a function call (`defineEnv(getSchema())`) can't be resolved, and reports "`defineEnv` must be called with an inline object literal" instead.
 
 If you don't need any variables of your own, keep the empty call that `init` scaffolds (`defineEnv({})`) or delete `env.ts` entirely and rerun codegen.
+
+### `generate-server` or `deploy` cannot read `publisher.ts`
+
+The CLI reads the publisher config statically so it can generate the server around the selected provider. Keep a visible `definePublisher(...)` call in `publisher.ts`, pass it an object the CLI can resolve, write `provider` as a plain string such as `'db'`, and include an `events` property. The simplest supported shape is the one on the [Publisher](/docs/publisher) page.
 
 ### Deploy fails partway through
 
@@ -356,7 +373,7 @@ Add the exact origin to `trustedOrigins` in your `auth.ts`:
 trustedOrigins: ['http://localhost:3000', 'https://my-app.vercel.app'];
 ```
 
-For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://**`. See the [Expo guide](/docs/integrations/expo#auth-ts) for the full list.
+For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://**`. See the [Expo guide](/docs/integrations/expo#authts) for the full list.
 
 ## Local development
 

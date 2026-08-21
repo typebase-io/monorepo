@@ -11,7 +11,7 @@ Typebase is best understood as the best of both worlds: the developer experience
 | **Database**       | Postgres (Drizzle)                   | Postgres                         | Proprietary                     |
 | **Type safety**    | End-to-end, always in sync           | Generated from schema, can drift | End-to-end                      |
 | **Auth**           | better-auth                          | Built-in                         | Third-party providers           |
-| **Realtime**       | Coming soon                          | Yes                              | Yes (core model)                |
+| **Realtime**       | Streaming actions over SSE           | Postgres changes, broadcast      | Reactive queries (core model)   |
 | **Storage**        | Coming soon (BYO via any TS library) | Built-in                         | Built-in                        |
 | **Mailers**        | Coming soon (BYO via any TS library) | No                               | No                              |
 | **Infrastructure** | Your own or Vercel, Cloudflare, Deno | Supabase-hosted                  | Convex-hosted                   |
@@ -42,7 +42,29 @@ Supabase ships its own auth system. Convex relies on third-party providers like 
 
 ## Realtime
 
-Realtime is not yet supported in Typebase and is planned for the next release. Supabase supports realtime subscriptions, and Convex's entire model is built around reactive queries. If realtime is a hard requirement today, Convex or Supabase may be a better fit for now.
+All three do realtime, and the difference is how much you say out loud.
+
+Typebase gives you [streaming actions](/docs/actions/streaming). Swap `.handler()` for `.stream()` and the action becomes an async generator that pushes events over SSE for as long as the client is listening. A [publisher](/docs/publisher) connects the two ends: a mutation publishes a typed event, a stream subscribed to it forwards the event to every client watching.
+
+```ts
+export const getMany = action.output(todo.array()).stream(async function* ({ db, publisher, signal, lastEventId }) {
+  const created = await publisher.subscribe('todo.created', { signal, lastEventId });
+
+  yield await read(db);
+
+  for await (const _todo of created) {
+    yield await read(db);
+  }
+});
+```
+
+Event names and payloads are checked at compile time, and events carry ids, so a client that reconnects resumes from the last one it saw instead of silently missing whatever happened while it was away.
+
+**Convex** is the opposite trade. Every query is reactive by default; you don't write streams or decide what to publish, and the price is a proprietary database and runtime. If you want reactivity everywhere with no wiring at all, that model is hard to beat.
+
+**Supabase** broadcasts Postgres changes over WebSockets, so a client can subscribe to a table without your backend publishing anything. It also ships broadcast channels and presence, which Typebase has no equivalent for. The flip side is that a table-change subscription bypasses your backend logic entirely: what a client sees is a row, not whatever your action decided to send.
+
+Typebase sits in between on purpose. You say which events exist and what they carry, so the event is part of your API and typed like the rest of it. That's more to write than Convex, and less automatic than subscribing to a table, in exchange for realtime that goes through your own code.
 
 ## AI-friendly
 

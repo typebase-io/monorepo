@@ -126,8 +126,9 @@ The base context available in every `.use()` function is built from your project
 | `db`         | `db/schema.ts` exists                         | Typed Drizzle database client                |
 | `auth`       | `auth.ts` exists                              | The better-auth instance                     |
 | `env`        | `env.ts`, `db/schema.ts`, or `auth.ts` exists | Validated [environment variables](/docs/env) |
+| `publisher`  | `publisher.ts` exists                         | Typed [event publisher](/docs/publisher)     |
 | `reqHeaders` | Always (may be `undefined`)                   | Incoming request headers                     |
 
-Note that `input` is not available in middleware. It is only injected into `.handler()` when `.input()` has been defined on the action.
+Note that `input` is not available in middleware. It is only injected into the final `.handler()` or `.stream()` when `.input()` has been defined on the action.
 
-Any properties you return from a `.use()` function are merged into the context and become available in all subsequent `.use()` calls and the final `.handler()`.
+Any properties you return from a `.use()` function are merged into the context and become available in all subsequent `.use()` calls and the final `.handler()` or [`.stream()`](/docs/actions/streaming).

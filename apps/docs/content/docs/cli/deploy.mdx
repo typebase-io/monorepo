@@ -38,7 +38,7 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 
 1. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand before deploying.
 2. **Validates your TypeScript**: Checks your `typebase/` directory against those freshly generated types, so what gets checked is what gets built.
-3. **Generates server files**: Builds the server code from your actions, schema, and auth config.
+3. **Generates server files**: Builds the server code from your actions, schema, auth, env, and publisher config.
 4. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
 5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
 6. **Deploys the server**: Uploads the built server to your chosen provider.
@@ -133,7 +133,7 @@ The deployment URL looks like: `https://your-worker.your-subdomain.workers.dev`
 
 <Callout type="info">
   Cloudflare Workers use the Fetch API natively, so environment variables are handled through Cloudflare's secrets system rather than `process.env`.
-  The generated `src/env.ts` reads them from the Worker bindings, so `env` on the handler context works the same as on every other provider.
+  The generated `src/env.ts` reads them from the Worker bindings, so `env` on the action context works the same as on every other provider.
 </Callout>
 
 ### Deno Deploy

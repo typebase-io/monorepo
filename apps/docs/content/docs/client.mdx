@@ -5,28 +5,29 @@ description: Call your Typebase server from any JavaScript or TypeScript app.
 
 The client is what your frontend uses to call the actions defined in your `typebase/` directory. It's a plain TypeScript library that works in any JS/TS environment: Node, the browser, edge runtimes, and React Native.
 
-Every call is just a function call. The types come straight from your action's `.input()` and `.output()`, so the editor knows what you can pass in and what you'll get back without any code generation step on the client side.
+Every call is just a function call. The types come straight from your action's `.input()` and `.output()`, so the editor knows what you can pass in and what you'll get back without any code generation step on the client side. For example:
 
 ```ts
 const todo = await client.queries.todos.getOne({ id: 1 });
 //      ^? { id: number; value: string; completed: boolean }
 ```
 
-## The three client utilities
+## The client utilities
 
-Typebase ships three client helpers, all from the `typebase-io/client` namespace. Pick the ones you need:
+Typebase ships these helpers, all from the `typebase-io/client` namespace. Pick the ones you need:
 
-| Utility                     | Import                                | Use for                                                            |
-| --------------------------- | ------------------------------------- | ------------------------------------------------------------------ |
-| `createRouterClient`        | `typebase-io/client`                  | Simple promise-based calls (server code, scripts, anywhere async). |
-| `createTanstackQueryClient` | `typebase-io/client`                  | Reactive UI with caching, loading states, and refetching.          |
-| `createAuthClient`          | `typebase-io/client/auth/<framework>` | Sign-in, sign-up, sign-out, and session reads on the frontend.     |
+| Utility                     | Import                                | Use for                                                               |
+| --------------------------- | ------------------------------------- | --------------------------------------------------------------------- |
+| `createRouterClient`        | `typebase-io/client`                  | Simple promise-based calls (server code, scripts, anywhere async).    |
+| `createTanstackQueryClient` | `typebase-io/client`                  | Reactive UI with caching, loading states, and refetching.             |
+| `createAuthClient`          | `typebase-io/client/auth/<framework>` | Sign-in, sign-up, sign-out, and session reads on the frontend.        |
+| `consumeStream`             | `typebase-io/client`                  | Reading a [streaming action](/docs/actions/streaming) with callbacks. |
 
 You can use them together. A common setup is `createRouterClient` for server-rendered pages and `createTanstackQueryClient` for interactive client components, both pointing at the same Typebase server.
 
 ## `createRouterClient`
 
-A thin wrapper around an [oRPC](https://orpc.dev) client. Every action becomes a typed async function.
+Every action becomes a typed async function.
 
 ```ts title="lib/typebase/client.ts"
 import { createRouterClient } from 'typebase-io/client';
@@ -45,22 +46,6 @@ await client.mutations.todos.create({ value: 'Buy milk' });
 ```
 
 The `Router` type is generated from your `actions/` folder by [`npx typebase-io-cli codegen`](/docs/cli/codegen). The shape of the client always mirrors the folder structure (`client.queries.todos.getMany`, `client.mutations.todos.create`, and so on).
-
-## Typing action inputs and outputs
-
-Sometimes you need an action's return type or input type outside of a call. Instead of re-declaring the shape by hand, use the generated `RouterInputs` and `RouterOutputs` maps:
-
-```ts
-import type { RouterInputs, RouterOutputs } from '../../typebase/_generated/server';
-
-type Todos = RouterOutputs['queries']['todos']['getMany'];
-
-function TodoList({ todos }: { todos: Todos }) {
-  /* ... */
-}
-```
-
-Both maps mirror the router structure, so the path is the same one you use to call the action. See [Generated Code](/docs/generated) for details.
 
 ## `createTanstackQueryClient`
 
@@ -101,6 +86,169 @@ The framework suffix changes depending on what you're using:
 | Vue, Nuxt      | `typebase-io/client/auth/vue`    |
 
 The returned `authClient` is the same object documented in the [better-auth client docs](https://www.better-auth.com/docs/concepts/client). Typebase just configures it for you.
+
+## `consumeStream`
+
+Before calling `consumeStream`, create or import a client with either `createRouterClient` or `createTanstackQueryClient`. An action written with [`.stream()`](/docs/actions/streaming) resolves to an async iterable instead of a value, but the syntax for starting that stream depends on which client you chose:
+
+| Client                      | Stream call                           |
+| --------------------------- | ------------------------------------- |
+| `createRouterClient`        | `client.queries.todos.getMany()`      |
+| `createTanstackQueryClient` | `client.queries.todos.getMany.call()` |
+
+You can read the result directly with `for await`, or use `consumeStream` for callbacks and an unsubscribe function. Calling `consumeStream` starts consuming immediately. Each call creates a separate subscription; it does not memoize or deduplicate streams for you.
+
+<Callout type="warn">
+  In UI components, start the stream from the framework's mount lifecycle and call `unsubscribe` during cleanup. Never call `consumeStream` while a
+  component is rendering—not even as `useRef(consumeStream(...))`, because that argument is evaluated again on every render. Otherwise every event
+  that updates state can rerender the component, open another long-lived stream, and eventually prevent other requests from completing.
+</Callout>
+
+### With `createRouterClient`
+
+```ts
+import { consumeStream, createRouterClient } from 'typebase-io/client';
+import type { Router } from '../../typebase/_generated/server';
+
+const client = createRouterClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+});
+
+const unsubscribe = consumeStream(client.queries.todos.getMany(), {
+  onEvent: (todos) => render(todos),
+  onError: (error) => console.error(error),
+  onSuccess: () => console.log('stream ended'),
+});
+
+// When the code that owns this subscription stops
+void unsubscribe();
+```
+
+### With `createTanstackQueryClient`
+
+The TanStack client wraps each action in query helpers. Use its `.call()` method to start a stream before passing it to `consumeStream`:
+
+```ts
+import { consumeStream, createTanstackQueryClient } from 'typebase-io/client';
+import type { Router } from '../../typebase/_generated/server';
+
+const client = createTanstackQueryClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+});
+
+const unsubscribe = consumeStream(client.queries.todos.getMany.call(), {
+  onEvent: (todos) => render(todos),
+  onError: (error) => console.error(error),
+  onSuccess: () => console.log('stream ended'),
+});
+
+// When the code that owns this subscription stops
+void unsubscribe();
+```
+
+### React lifecycle
+
+In React, create the subscription inside `useEffect` and return a synchronous cleanup function that starts the async unsubscribe:
+
+```tsx
+import { consumeStream } from 'typebase-io/client';
+import { useEffect, useState } from 'react';
+
+import { client } from '../lib/typebase/client';
+import type { RouterOutputs } from '../typebase/_generated/server';
+
+type StreamEvent<T> = T extends AsyncIterable<infer Event> ? Event : never;
+type Todos = StreamEvent<RouterOutputs['queries']['todos']['getMany']>;
+
+export function TodoList() {
+  const [todos, setTodos] = useState<Todos>([]);
+
+  useEffect(() => {
+    const unsubscribe = consumeStream(client.queries.todos.getMany.call(), {
+      onEvent: (nextTodos) => setTodos(nextTodos),
+      onError: (error) => console.error(error),
+    });
+
+    return () => {
+      void unsubscribe();
+    };
+  }, []);
+
+  return todos.map((todo) => <div key={todo.id}>{todo.value}</div>);
+}
+```
+
+This example uses a client created with `createTanstackQueryClient`, so the stream call ends in `.call()`. With `createRouterClient`, use `client.queries.todos.getMany()` instead. The same rule applies in other frameworks: subscribe when the component mounts and unsubscribe when it unmounts.
+
+| Callback    | When                                                    |
+| ----------- | ------------------------------------------------------- |
+| `onEvent`   | Each event.                                             |
+| `onError`   | The stream failed.                                      |
+| `onSuccess` | The stream ended normally, including after unsubscribe. |
+| `onFinish`  | After `onError` or `onSuccess`, whichever happened.     |
+
+<Callout type="info">Provide `onError` or `onFinish`. Without either, a failing stream throws an unhandled rejection.</Callout>
+
+## The server URL
+
+`createRouterClient` and `createTanstackQueryClient` both take the same `url`, and both treat it the same way. Pass your server's base URL: when `url` is a string, the client appends `/rpc` for you and tidies up any trailing slashes, so all three of these end up at `https://api.example.com/rpc`:
+
+```ts
+createRouterClient<Router>({ url: 'https://api.example.com' });
+createRouterClient<Router>({ url: 'https://api.example.com/' });
+createRouterClient<Router>({ url: 'https://api.example.com///' });
+```
+
+A path is kept: `https://api.example.com/base` becomes `https://api.example.com/base/rpc`.
+
+<Callout type="warn">
+  `/rpc` is appended unconditionally, not only when it's missing. Passing `https://api.example.com/rpc` yourself gives you
+  `https://api.example.com/rpc/rpc` and every call 404s. Pass the base URL and let the client add it.
+</Callout>
+
+Anything that isn't a string, a `URL` or a function, is passed straight through untouched, so you keep full control when you need it.
+
+## Plugins
+
+Both `createRouterClient` and `createTanstackQueryClient` take a `plugins` array. Plugins wrap every request the client makes, and are how you add behaviour like retries, request deduplication, or batching.
+
+The most common one is retrying, because a dropped [stream](/docs/actions/streaming) stays dropped without it:
+
+```ts title="lib/typebase/client.ts"
+import { createRouterClient } from 'typebase-io/client';
+import { ClientRetryPlugin } from 'typebase-io/client/plugins';
+import type { Router } from '../../typebase/_generated/server';
+
+export const client = createRouterClient<Router>({
+  url: process.env.NEXT_PUBLIC_TYPEBASE_APP_URL || '',
+  plugins: [new ClientRetryPlugin({ default: { retry: Number.POSITIVE_INFINITY } })],
+});
+```
+
+That also makes resuming work: with retries on, a reconnecting client sends the last event it received, and the server picks up from there instead of from the present. See [Streaming](/docs/actions/streaming#reconnecting) for the server side of it.
+
+Every [oRPC client plugin](https://orpc.dev/docs/plugins/client-retry) is re-exported from `typebase-io/client/plugins`, so there's no extra dependency to install and no second copy of the library to keep in sync.
+
+<Callout type="warn">
+  Only Client plugins are supported for now. Adding your own plugins to the generated **server** isn't supported yet — it's on the
+  [roadmap](/docs/roadmap).
+</Callout>
+
+## Typing action inputs and outputs
+
+Sometimes you need an action's return type or input type outside of a call. Instead of re-declaring the shape by hand, use the generated `RouterInputs` and `RouterOutputs` maps:
+
+```ts
+import type { RouterInputs, RouterOutputs } from '../../typebase/_generated/server';
+
+type Todo = RouterOutputs['queries']['todos']['getOne'];
+
+function TodoDetails({ todo }: { todo: Todo }) {
+  /* ... */
+}
+```
+
+Both maps mirror the router structure, so the path is the same one you use to call the action. See [Generated Code](/docs/generated) for details.
 
 ## Auth helpers per framework
 

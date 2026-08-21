@@ -21,6 +21,12 @@ const rows = [
     convex: 'End-to-end',
   },
   {
+    label: 'Realtime',
+    typebase: 'Streaming actions over SSE',
+    supabase: 'Realtime subscriptions',
+    convex: 'Reactive queries',
+  },
+  {
     label: 'Auth',
     typebase: 'better-auth, in one file',
     supabase: 'Built-in, dashboard config',
@@ -82,7 +88,7 @@ export function Comparison() {
         </div>
 
         <p className="mt-6 text-center text-sm text-fd-muted-foreground">
-          Realtime and storage aren&rsquo;t there yet; they&rsquo;re next on the{' '}
+          Storage isn&rsquo;t there yet; it&rsquo;s next on the{' '}
           <Link href="/docs/roadmap" className="text-fd-primary underline-offset-4 hover:underline">
             roadmap
           </Link>
