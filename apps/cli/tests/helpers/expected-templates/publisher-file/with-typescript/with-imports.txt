@@ -1,0 +1,11 @@
+import { createPublisher } from "typebase-io/server";
+import { db } from "./db/index.ts";
+import { z } from "zod";
+
+export const publisher = createPublisher({
+  provider: "db",
+  options: { pollIntervalMs: 500 },
+  events: {
+    "post.created": z.object({ id: z.number() }),
+  },
+}, { db });

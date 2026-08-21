@@ -1,0 +1,12 @@
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
+import type { publisher as publisherConfig } from "../publisher.ts";
+
+const router = {};
+
+export type Router = typeof router;
+export type RouterInputs = InferRouterInputs<typeof router>;
+export type RouterOutputs = InferRouterOutputs<typeof router>;
+
+export declare const action: ActionBuilder<never, never, never, typeof publisherConfig>;

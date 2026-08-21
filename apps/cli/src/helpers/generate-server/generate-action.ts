@@ -8,12 +8,14 @@ export const generateAction = async ({
   hasDB,
   hasAuth,
   hasEnv,
+  hasPublisher,
 }: {
   serverOutputDirPath: string;
   hasDB: boolean;
   hasAuth: boolean;
   hasEnv: boolean;
+  hasPublisher: boolean;
 }) => {
   await fs.mkdir(serverOutputDirPath, { recursive: true });
-  await fs.writeFile(path.join(serverOutputDirPath, 'server.ts'), `${serverTemplate(hasDB, hasAuth, hasEnv)}\n`);
+  await fs.writeFile(path.join(serverOutputDirPath, 'server.ts'), `${serverTemplate(hasDB, hasAuth, hasEnv, hasPublisher)}\n`);
 };

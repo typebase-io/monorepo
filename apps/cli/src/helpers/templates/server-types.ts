@@ -1,10 +1,18 @@
-export const serverTypesTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean, routerImports: string, router: string) => {
+export const serverTypesTemplate = (
+  hasDB: boolean,
+  hasAuth: boolean,
+  hasEnv: boolean,
+  hasPublisher: boolean,
+  routerImports: string,
+  router: string
+) => {
   const imports = [
     hasDB
       ? `import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`
       : `import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`,
     hasAuth ? 'import type { auth as authConfig } from "../auth.ts";' : '',
     hasEnv ? 'import type { env as envSchema } from "../env.ts";' : '',
+    hasPublisher ? 'import type { publisher as publisherConfig } from "../publisher.ts";' : '',
     hasDB ? 'import type { relations } from "../db/relations.ts";' : '',
   ]
     .filter(Boolean)
@@ -14,8 +22,9 @@ export const serverTypesTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: bo
     const dBPart = hasDB ? 'typeof relations' : 'never';
     const authPart = hasAuth ? 'typeof authConfig' : 'never';
     const envPart = hasEnv ? 'typeof envSchema' : 'never';
+    const publisherPart = hasPublisher ? 'typeof publisherConfig' : 'never';
 
-    return `ActionBuilder<${dBPart}, ${authPart}, ${envPart}>`;
+    return `ActionBuilder<${dBPart}, ${authPart}, ${envPart}, ${publisherPart}>`;
   })();
 
   const typeDeclarations = [

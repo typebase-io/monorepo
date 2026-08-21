@@ -1,0 +1,20 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+import { db } from "../db/index.js";
+import { env } from "../env.js";
+import { publisher } from "../publisher.js";
+const base = os.$context();
+const providerMiddleware = base
+    .$context()
+    .middleware(async ({ context, next }) => {
+    return next({
+        context: {
+            db: context.db ?? db,
+            env: context.env ?? env,
+            publisher: context.publisher ?? publisher,
+        },
+    });
+});
+const withProviders = base.use(providerMiddleware);
+export const action = new Action(withProviders);
+export const getDB = () => db;

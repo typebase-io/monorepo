@@ -70,6 +70,7 @@ const JS_AUTH_DB = [
 ];
 
 const JS_DB_ONLY = JS_AUTH_DB.filter((f) => f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js');
+const JS_PUBLISHER = [...JS_DB_ONLY, 'src/publisher.js'];
 const JS_BARE = JS_AUTH_DB.filter(
   (f) => !f.startsWith('src/db/') && f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js' && f !== 'src/env.js'
 );
@@ -123,8 +124,8 @@ describe('deploy command', () => {
     vi.restoreAllMocks();
   });
 
-  const setupProject = async ({ withAuth, withDb }: { withAuth: boolean; withDb: boolean }) => {
-    await generateTypebaseProject(tmp, { withAuth });
+  const setupProject = async ({ withAuth, withDb, withPublisher = false }: { withAuth: boolean; withDb: boolean; withPublisher?: boolean }) => {
+    await generateTypebaseProject(tmp, { withAuth, withPublisher });
 
     if (!withDb) {
       fs.rmSync(path.join(tmp.path, 'typebase/db'), { recursive: true, force: true });
@@ -147,19 +148,20 @@ describe('deploy command', () => {
     const deployFns = { vercel, deno, cloudflare } as const;
 
     const cases = [
-      { name: 'vercel-auth-db', provider: 'vercel', withAuth: true, withDb: true, files: JS_AUTH_DB },
-      { name: 'vercel-db-only', provider: 'vercel', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'vercel-bare', provider: 'vercel', withAuth: false, withDb: false, files: JS_BARE },
-      { name: 'deno-auth-db', provider: 'deno', withAuth: true, withDb: true, files: JS_AUTH_DB },
-      { name: 'deno-db-only', provider: 'deno', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'deno-bare', provider: 'deno', withAuth: false, withDb: false, files: JS_BARE },
-      { name: 'cloudflare-auth-db', provider: 'cloudflare', withAuth: true, withDb: true, files: JS_AUTH_DB },
-      { name: 'cloudflare-db-only', provider: 'cloudflare', withAuth: false, withDb: true, files: JS_DB_ONLY },
-      { name: 'cloudflare-bare', provider: 'cloudflare', withAuth: false, withDb: false, files: JS_BARE },
+      { name: 'vercel-auth-db', provider: 'vercel', withAuth: true, withDb: true, withPublisher: false, files: JS_AUTH_DB },
+      { name: 'vercel-db-only', provider: 'vercel', withAuth: false, withDb: true, withPublisher: false, files: JS_DB_ONLY },
+      { name: 'vercel-bare', provider: 'vercel', withAuth: false, withDb: false, withPublisher: false, files: JS_BARE },
+      { name: 'deno-auth-db', provider: 'deno', withAuth: true, withDb: true, withPublisher: false, files: JS_AUTH_DB },
+      { name: 'deno-db-only', provider: 'deno', withAuth: false, withDb: true, withPublisher: false, files: JS_DB_ONLY },
+      { name: 'deno-bare', provider: 'deno', withAuth: false, withDb: false, withPublisher: false, files: JS_BARE },
+      { name: 'cloudflare-auth-db', provider: 'cloudflare', withAuth: true, withDb: true, withPublisher: false, files: JS_AUTH_DB },
+      { name: 'cloudflare-db-only', provider: 'cloudflare', withAuth: false, withDb: true, withPublisher: false, files: JS_DB_ONLY },
+      { name: 'cloudflare-bare', provider: 'cloudflare', withAuth: false, withDb: false, withPublisher: false, files: JS_BARE },
+      { name: 'vercel-publisher', provider: 'vercel', withAuth: false, withDb: true, withPublisher: true, files: JS_PUBLISHER },
     ] as const;
 
-    it.each(cases)('builds and deploys $name', async ({ name, provider, withAuth, withDb, files }) => {
-      await setupProject({ withAuth, withDb });
+    it.each(cases)('builds and deploys $name', async ({ name, provider, withAuth, withDb, withPublisher, files }) => {
+      await setupProject({ withAuth, withDb, withPublisher });
 
       await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', provider], { from: 'user' }));
 

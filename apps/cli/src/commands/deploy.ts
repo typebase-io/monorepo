@@ -26,6 +26,7 @@ import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
 import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
+import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { streamLogs } from '#helpers/logs/stream-logs.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -88,6 +89,7 @@ export const deploy = new Command('deploy')
     const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
+    const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
 
     const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
@@ -104,8 +106,9 @@ export const deploy = new Command('deploy')
     const {
       hasDB: includeDBFiles,
       hasAuth: includeAuthFile,
+      hasPublisher: includePublisherFile,
       needsEnvModule: includeEnvFile,
-    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
 
     const env: { key: string; value: string; secret: boolean }[] = [];
     let hadDatabaseUrl = false;
@@ -115,7 +118,7 @@ export const deploy = new Command('deploy')
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
     ]);
 
     codegenSpinner.succeed('Types generated!');
@@ -157,7 +160,23 @@ export const deploy = new Command('deploy')
         });
       }
 
-      await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile, hasEnv: includeEnvFile });
+      if (includePublisherFile) {
+        await generatePublisherFile({
+          publisherFilePath,
+          publisherOutputDirPath: path.join(tempServerDirPath, 'src'),
+          provider: includePublisherFile,
+          useTs: false,
+        });
+      }
+
+      await generateAction({
+        serverOutputDirPath,
+        hasDB: includeDBFiles,
+        hasAuth: includeAuthFile,
+        hasEnv: includeEnvFile,
+        hasPublisher: includePublisherFile !== false,
+      });
+
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: false });
 
       if (includeDBFiles) {

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { codegen } from '#commands/codegen.ts';
 
+import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
@@ -78,6 +79,23 @@ describe('codegen command', () => {
     expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'nested-server.ts.txt');
   });
 
+  it('declares the publisher in the types when the project has one', async () => {
+    await generateTypebaseProject(tmp, { withPublisher: true });
+
+    await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+    expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-publisher-server.ts.txt');
+  });
+
+  it('refuses a publisher whose schema has no events table, and writes nothing', async () => {
+    await generateExamplePublisher(path.join(tmp.path, 'typebase', 'publisher.ts'));
+
+    await expect(withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }))).rejects.toThrow('does not export the `events` table');
+
+    expect(tmp.exists('typebase/_generated/server.ts')).toBe(false);
+    expect(tmp.exists('typebase/_generated/db.d.ts')).toBe(false);
+  });
+
   describe('regenerates over existing output when the project changes', () => {
     it('reflects action files being added and then removed', async () => {
       await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
@@ -123,6 +141,24 @@ describe('codegen command', () => {
       await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
 
       expect(tmp.read('typebase/_generated/db.d.ts')).toEqualTemplate('codegen', 'db.d.ts.txt');
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
+    });
+
+    it('reflects the publisher being added and then removed', async () => {
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
+
+      await generateTypebaseProject(tmp, { withPublisher: true });
+
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-publisher-server.ts.txt');
+
+      fs.rmSync(path.join(tmp.path, 'typebase/publisher.ts'));
+
+      await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
       expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'server.ts.txt');
     });
 

@@ -25,6 +25,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
       const tsConfigFilePath = path.join(typebaseDirPath, 'tsconfig.json');
       const authFilePath = path.join(typebaseDirPath, 'auth.ts');
       const envFilePath = path.join(typebaseDirPath, 'env.ts');
+      const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
       const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
       const relationsFilePath = path.join(typebaseDirPath, 'db', 'relations.ts');
       const actionsDirPath = path.join(typebaseDirPath, 'actions');
@@ -36,7 +37,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
         throw new Error('No auth config found. Create an auth file at auth.ts first.');
       }
 
-      resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
+      resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
 
       const authSpinner = ora('Generating auth tables...').start();
 
@@ -49,7 +50,7 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
 
       await Promise.all([
         generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-        generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
+        generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
       ]);
 
       typesSpinner.succeed('Types generated!');

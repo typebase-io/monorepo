@@ -1,0 +1,4 @@
+import { createPublisher } from "typebase-io/server";
+import { db } from "./db/index.ts";
+
+export const publisher = createPublisher({ provider: "db", events: {} }, { db });

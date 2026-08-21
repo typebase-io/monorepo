@@ -21,11 +21,12 @@ export const codegen = new Command('codegen')
     const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
+    const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
 
-    resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
+    resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
 
     validateTypes({
       dirPath: typebaseDirPath,
@@ -39,7 +40,7 @@ export const codegen = new Command('codegen')
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
     ]);
 
     spinner.succeed('Types generated!');

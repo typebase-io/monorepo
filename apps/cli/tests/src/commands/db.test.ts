@@ -19,10 +19,13 @@ vi.mock('#helpers/db/neon/index.ts', () => ({ neon: vi.fn() }));
 vi.mock('#helpers/db/push-schema.ts', () => ({ pushSchema: vi.fn() }));
 vi.mock('#helpers/db/pull-schema.ts', () => ({ pullSchema: vi.fn() }));
 
+// eslint-disable-next-line no-control-regex
+const stripColours = (line: string) => line.replaceAll(/\u001B\[\d+(?:;\d+)*m/g, '');
+
 const readLog = () =>
   `${vi
     .mocked(console.log)
-    .mock.calls.map(([line]) => String(line))
+    .mock.calls.map(([line]) => stripColours(String(line)))
     .join('\n')
     .trim()}\n`;
 
@@ -215,6 +218,28 @@ describe('db command', () => {
       await withCwd(tmp.path, () => db.parseAsync(['pull', '--url', 'postgres://source/db', '--force'], { from: 'user' }));
 
       expect(readLog()).toEqualTemplate('db-pull', 'output.txt');
+    });
+
+    it('keeps a publisher project working when the database it reads already holds the events table', async () => {
+      await generateTypebaseProject(tmp, { withPublisher: true });
+
+      vi.mocked(pullSchema).mockResolvedValue({
+        schema: readPulledSource('events-schema.ts.txt'),
+        relations: readPulledSource('events-relations.ts.txt'),
+      });
+
+      await withCwd(tmp.path, () => db.parseAsync(['pull', '--url', 'postgres://source/db', '--force'], { from: 'user' }));
+
+      expect(tmp.read('typebase/db/schema.ts')).toEqualTemplate('db-pull', 'events-schema.ts.txt');
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('db-pull', 'events-server.ts.txt');
+    });
+
+    it('refuses to leave a publisher project without the events table it needs', async () => {
+      await generateTypebaseProject(tmp, { withPublisher: true });
+
+      await expect(withCwd(tmp.path, () => db.parseAsync(['pull', '--url', 'postgres://source/db', '--force'], { from: 'user' }))).rejects.toThrow(
+        'does not export the `events` table'
+      );
     });
 
     it('prompts for the connection string when --url is omitted', async () => {

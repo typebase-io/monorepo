@@ -12,6 +12,9 @@ export type ServerAdapter = (typeof serverAdapters)[number];
 export const serverProviders = ['vercel', 'cloudflare', 'deno'] as const;
 export type ServerProvider = (typeof serverProviders)[number];
 
+export const publisherProviders = ['db'] as const;
+export type PublisherProvider = (typeof publisherProviders)[number];
+
 export const envTargets = ['dev', 'prod'] as const;
 export type EnvTarget = (typeof envTargets)[number];
 

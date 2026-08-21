@@ -1,0 +1,10 @@
+import { p } from 'typebase-io/db';
+
+export const events = p.pgTable('events', {
+  id: p.bigint({ mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  name: p.text().notNull(),
+  value: p.jsonb().notNull(),
+  createdAt: p.timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+  p.index('events_name_id_idx').using('btree', table.name.asc().nullsLast().op('text_ops'), table.id.asc().nullsLast().op('int8_ops')),
+]);

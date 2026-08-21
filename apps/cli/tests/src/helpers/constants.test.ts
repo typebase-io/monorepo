@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { DEPS, serverAdapters, serverProviders, typebaseConfigSchema } from '#helpers/constants.ts';
+import { DEPS, envTargets, publisherProviders, serverAdapters, serverProviders, typebaseConfigSchema } from '#helpers/constants.ts';
 
 describe('constants', () => {
-  it('exposes the supported server adapters and providers', () => {
+  it('exposes the supported server adapters, server providers, publisher providers and env targets', () => {
     expect(serverAdapters).toEqual(['node', 'bun', 'cloudflare', 'deno', 'fastify', 'hono']);
     expect(serverProviders).toEqual(['vercel', 'cloudflare', 'deno']);
+    expect(publisherProviders).toEqual(['db']);
+    expect(envTargets).toEqual(['dev', 'prod']);
   });
 });
 

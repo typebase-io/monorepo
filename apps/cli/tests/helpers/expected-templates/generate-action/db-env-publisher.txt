@@ -1,0 +1,26 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
+import { db } from "../db/index.ts";
+import { env } from "../env.ts";
+import { publisher } from "../publisher.ts";
+
+const base = os.$context<RequestHeadersPluginContext>();
+
+const providerMiddleware = base
+  .$context<{ db?: typeof db; env?: typeof env; publisher?: typeof publisher }>()
+  .middleware(async ({ context, next }) => {
+    return next({
+      context: {
+        db: context.db ?? db,
+        env: context.env ?? env,
+        publisher: context.publisher ?? publisher,
+      },
+    });
+  });
+
+const withProviders = base.use(providerMiddleware);
+
+export const action = new Action(withProviders);
+
+export const getDB = () => db;

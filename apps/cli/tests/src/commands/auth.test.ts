@@ -100,6 +100,15 @@ describe('auth generate command', () => {
     expect(warnings).toContain('Base URL could not be determined');
   });
 
+  it('keeps the events table and its relation when it appends the auth tables', async () => {
+    await generateTypebaseProject(tmp, { withPublisher: true });
+
+    await withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
+
+    expect(tmp.read('typebase/db/schema.ts')).toEqualTemplate('auth', 'with-publisher', 'schema.ts.txt');
+    expect(tmp.read('typebase/db/relations.ts')).toEqualTemplate('auth', 'with-publisher', 'relations.ts.txt');
+  });
+
   it('stays idempotent when the auth tables already exist in the schema', async () => {
     await withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
 

@@ -1,0 +1,11 @@
+import { pgTable, bigint, text, jsonb, timestamp, index } from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
+
+export const events = pgTable("events", {
+	id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+	name: text().notNull(),
+	value: jsonb().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("events_name_id_idx").using("btree", table.name.asc().nullsLast().op("text_ops"), table.id.asc().nullsLast().op("int8_ops")),
+]);

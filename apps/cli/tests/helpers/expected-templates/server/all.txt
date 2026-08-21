@@ -4,17 +4,19 @@ import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
 import { db } from "../db/index.ts";
 import { auth } from "../auth.ts";
 import { env } from "../env.ts";
+import { publisher } from "../publisher.ts";
 
 const base = os.$context<RequestHeadersPluginContext>();
 
 const providerMiddleware = base
-  .$context<{ db?: typeof db; auth?: typeof auth; env?: typeof env }>()
+  .$context<{ db?: typeof db; auth?: typeof auth; env?: typeof env; publisher?: typeof publisher }>()
   .middleware(async ({ context, next }) => {
     return next({
       context: {
         db: context.db ?? db,
         auth: context.auth ?? auth,
         env: context.env ?? env,
+        publisher: context.publisher ?? publisher,
       },
     });
   });

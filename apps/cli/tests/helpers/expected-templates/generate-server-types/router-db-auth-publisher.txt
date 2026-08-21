@@ -1,0 +1,21 @@
+// ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
+
+import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
+import type { auth as authConfig } from "../auth.ts";
+import type { publisher as publisherConfig } from "../publisher.ts";
+import type { relations } from "../db/relations.ts";
+
+import { filterActions } from "typebase-io/server";
+
+import * as ActionModule0 from "../actions/hello.ts";
+
+export const router = {
+  hello: filterActions(ActionModule0),
+};
+
+export type Router = typeof router;
+export type RouterInputs = InferRouterInputs<typeof router>;
+export type RouterOutputs = InferRouterOutputs<typeof router>;
+
+export declare const action: ActionBuilder<typeof relations, typeof authConfig, never, typeof publisherConfig>;
+export declare const getDB: GetDBBuilder<typeof relations>;

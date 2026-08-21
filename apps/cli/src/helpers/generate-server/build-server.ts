@@ -15,6 +15,7 @@ import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
 import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
+import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { canonicalizePath } from '#helpers/shared/canonicalize-path.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -50,6 +51,7 @@ export const buildServer = async ({
   const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
   const authFilePath = path.join(typebaseDirPath, 'auth.ts');
   const envFilePath = path.join(typebaseDirPath, 'env.ts');
+  const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
   const dbDirPath = path.join(typebaseDirPath, 'db');
   const generatedDirPath = path.join(typebaseDirPath, '_generated');
   const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
@@ -96,14 +98,15 @@ export const buildServer = async ({
     const {
       hasDB: includeDBFiles,
       hasAuth: includeAuthFile,
+      hasPublisher: includePublisherFile,
       needsEnvModule: includeEnvFile,
-    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
 
     spinner = quiet ? undefined : ora('Generating types...').start();
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
     ]);
 
     spinner?.succeed('Types generated!');
@@ -152,7 +155,22 @@ export const buildServer = async ({
 
     signal?.throwIfAborted();
 
-    await generateAction({ serverOutputDirPath, hasDB: includeDBFiles, hasAuth: includeAuthFile, hasEnv: includeEnvFile });
+    if (includePublisherFile) {
+      await generatePublisherFile({
+        publisherFilePath,
+        publisherOutputDirPath: path.join(tempServerDirPath, 'src'),
+        provider: includePublisherFile,
+        useTs: output === 'ts',
+      });
+    }
+
+    await generateAction({
+      serverOutputDirPath,
+      hasDB: includeDBFiles,
+      hasAuth: includeAuthFile,
+      hasEnv: includeEnvFile,
+      hasPublisher: includePublisherFile !== false,
+    });
 
     if (existsSync(actionsDirPath)) {
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: output === 'ts' });

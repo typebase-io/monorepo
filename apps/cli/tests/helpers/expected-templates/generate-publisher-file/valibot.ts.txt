@@ -1,0 +1,8 @@
+import { createPublisher } from "typebase-io/server";
+import { db } from "./db/index.ts";
+import * as v from "valibot";
+
+export const publisher = createPublisher({
+  provider: "db",
+  events: { "post.created": v.object({ id: v.number() }) },
+}, { db });

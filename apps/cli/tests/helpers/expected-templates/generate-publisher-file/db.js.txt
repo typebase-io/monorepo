@@ -1,0 +1,8 @@
+import { createPublisher } from "typebase-io/server";
+import { db } from "./db/index.js";
+import { postCreated } from "./schemas.js";
+
+export const publisher = createPublisher({
+  provider: "db",
+  events: { "post.created": postCreated },
+}, { db });

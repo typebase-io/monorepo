@@ -134,6 +134,14 @@ describe('buildServer', () => {
     expect(excluded).not.toContain(path.join(tmp.path, 'typebase'));
   });
 
+  it('generates the publisher for a project that declares one', async () => {
+    await generateTypebaseProject(tmp, { withAuth: false, withPublisher: true });
+
+    const { serverDistDirPath } = await build();
+
+    expect(fs.readFileSync(path.join(serverDistDirPath, 'src', 'publisher.ts'), 'utf8')).toContain('createPublisher(');
+  });
+
   it('generates a server for a project with no actions directory', async () => {
     fs.rmSync(path.join(tmp.path, 'typebase', 'actions'), { recursive: true, force: true });
 

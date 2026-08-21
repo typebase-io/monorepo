@@ -1,4 +1,4 @@
-export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean) => {
+export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean, hasPublisher: boolean) => {
   const imports = [
     'import { os } from "@orpc/server";',
     'import { Action } from "typebase-io/server";',
@@ -6,15 +6,22 @@ export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean
     hasDB ? 'import { db } from "../db/index.ts";' : '',
     hasAuth ? 'import { auth } from "../auth.ts";' : '',
     hasEnv ? 'import { env } from "../env.ts";' : '',
+    hasPublisher ? 'import { publisher } from "../publisher.ts";' : '',
   ].filter(Boolean);
 
   const contextEntries = [
     hasDB ? 'db: context.db ?? db,' : '',
     hasAuth ? 'auth: context.auth ?? auth,' : '',
     hasEnv ? 'env: context.env ?? env,' : '',
+    hasPublisher ? 'publisher: context.publisher ?? publisher,' : '',
   ].filter(Boolean);
 
-  const contextType = [hasDB ? 'db?: typeof db' : '', hasAuth ? 'auth?: typeof auth' : '', hasEnv ? 'env?: typeof env' : '']
+  const contextType = [
+    hasDB ? 'db?: typeof db' : '',
+    hasAuth ? 'auth?: typeof auth' : '',
+    hasEnv ? 'env?: typeof env' : '',
+    hasPublisher ? 'publisher?: typeof publisher' : '',
+  ]
     .filter(Boolean)
     .join('; ');
 

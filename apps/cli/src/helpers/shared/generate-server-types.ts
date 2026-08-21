@@ -10,6 +10,7 @@ export const generateServerTypes = async ({
   schemaFilePath,
   authFilePath,
   envFilePath,
+  publisherFilePath,
   actionsDirPath,
   generatedDirPath,
 }: {
@@ -17,13 +18,20 @@ export const generateServerTypes = async ({
   schemaFilePath: string;
   authFilePath: string;
   envFilePath: string;
+  publisherFilePath: string;
   actionsDirPath: string;
   generatedDirPath: string;
 }) => {
   const serverTypesOutputPath = path.join(generatedDirPath, 'server.ts');
-  const { hasDB: includeDB, hasAuth: includeAuth, hasEnv: includeEnv } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath });
 
-  const skeleton = serverTypesTemplate(includeDB, includeAuth, includeEnv, '', 'export const router = {\n};');
+  const {
+    hasDB: includeDB,
+    hasAuth: includeAuth,
+    hasEnv: includeEnv,
+    hasPublisher: includePublisher,
+  } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
+
+  const skeleton = serverTypesTemplate(includeDB, includeAuth, includeEnv, Boolean(includePublisher), '', 'export const router = {\n};');
 
   await fs.mkdir(path.dirname(serverTypesOutputPath), { recursive: true });
   await fs.writeFile(serverTypesOutputPath, skeleton);
@@ -37,5 +45,5 @@ export const generateServerTypes = async ({
     exportable: true,
   });
 
-  await fs.writeFile(serverTypesOutputPath, serverTypesTemplate(includeDB, includeAuth, includeEnv, imports, router));
+  await fs.writeFile(serverTypesOutputPath, serverTypesTemplate(includeDB, includeAuth, includeEnv, Boolean(includePublisher), imports, router));
 };
