@@ -8,6 +8,7 @@ import { type ActionBuilder } from '#server/actions/index.ts';
 import { type DB } from '#server/actions/types.ts';
 import { defineAuth } from '#server/auth/index.ts';
 import { defineEnv } from '#server/env/index.ts';
+import { type PublisherInstance, definePublisher } from '#server/publisher/define-publisher.ts';
 
 const todos = p.pgTable('todos', { id: p.integer().primaryKey(), userId: p.text().notNull() });
 const users = p.pgTable('users', { id: p.text().primaryKey() });
@@ -20,9 +21,15 @@ const _auth = defineAuth({ emailAndPassword: { enabled: true } });
 
 const _env = defineEnv({ STRIPE_KEY: z.string() });
 
+const _publisher = definePublisher({
+  provider: 'db',
+  events: { 'post.created': z.object({ id: z.number() }) },
+});
+
 type Relations = typeof _relations;
 type Auth = typeof _auth;
 type Env = typeof _env;
+type Publisher = typeof _publisher;
 
 type Context<TBuilder> = TBuilder extends { handler: (fn: (context: infer TContext) => never) => unknown } ? TContext : never;
 
@@ -152,6 +159,63 @@ describe('ActionBuilder', () => {
 
     it('still provides the request headers', () => {
       expectTypeOf<Ctx>().toExtend<RequestHeadersPluginContext>();
+    });
+  });
+
+  describe('with a publisher', () => {
+    type Ctx = Context<ActionBuilder<never, never, never, Publisher>>;
+
+    it('provides the publisher the project declared', () => {
+      expectTypeOf<Ctx['publisher']>().toEqualTypeOf<PublisherInstance<Publisher>>();
+    });
+
+    it('types the events it can publish', () => {
+      expectTypeOf<Ctx['publisher']['publish']>().toBeCallableWith('post.created', { id: 1 });
+    });
+
+    it('types what a subscription yields', () => {
+      expectTypeOf<Ctx['publisher']['subscribe']>().returns.resolves.toExtend<AsyncGenerator<{ id: number }, void, void>>();
+    });
+
+    it('provides no db or auth, and no env either since nothing needs one', () => {
+      expectTypeOf<Ctx>().not.toHaveProperty('db');
+      expectTypeOf<Ctx>().not.toHaveProperty('auth');
+      expectTypeOf<Ctx>().not.toHaveProperty('env');
+    });
+
+    it('still provides the request headers', () => {
+      expectTypeOf<Ctx>().toExtend<RequestHeadersPluginContext>();
+    });
+  });
+
+  describe('with a db and a publisher', () => {
+    type Ctx = Context<ActionBuilder<Relations, never, never, Publisher>>;
+
+    it('provides both, plus the database url the db needs', () => {
+      expectTypeOf<Ctx['db']>().toEqualTypeOf<DB<Relations>>();
+      expectTypeOf<Ctx['publisher']>().toEqualTypeOf<PublisherInstance<Publisher>>();
+      expectTypeOf<Ctx['env']['DATABASE_URL']>().toEqualTypeOf<string>();
+    });
+  });
+
+  describe('with a db, auth, env and a publisher', () => {
+    type Ctx = Context<ActionBuilder<Relations, Auth, Env, Publisher>>;
+
+    it('provides everything at once', () => {
+      expectTypeOf<Ctx['db']>().toEqualTypeOf<DB<Relations>>();
+      expectTypeOf<Ctx['auth']>().toEqualTypeOf<Auth>();
+      expectTypeOf<Ctx['publisher']>().toEqualTypeOf<PublisherInstance<Publisher>>();
+      expectTypeOf<Ctx['env']>().toEqualTypeOf<{ STRIPE_KEY: string; DATABASE_URL: string; BETTER_AUTH_SECRET: string }>();
+    });
+  });
+
+  describe('without a publisher', () => {
+    it('keeps it off the context of a project that has everything else', () => {
+      expectTypeOf<Context<ActionBuilder<Relations, Auth, Env>>>().not.toHaveProperty('publisher');
+    });
+
+    it('behaves the same when the absent publisher is spelled out', () => {
+      expectTypeOf<Context<ActionBuilder<Relations, Auth, Env, never>>>().toEqualTypeOf<Context<ActionBuilder<Relations, Auth, Env>>>();
     });
   });
 });

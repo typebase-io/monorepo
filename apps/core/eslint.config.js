@@ -37,6 +37,11 @@ export default defineConfig(
               group: 'external',
               position: 'after',
             },
+            {
+              pattern: '#tests/**',
+              group: 'external',
+              position: 'after',
+            },
           ],
           'newlines-between': 'always',
           alphabetize: {

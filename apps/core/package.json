@@ -45,6 +45,9 @@
     ],
     "#server/*": [
       "./src/server/*"
+    ],
+    "#tests/*": [
+      "./tests/*"
     ]
   },
   "exports": {
