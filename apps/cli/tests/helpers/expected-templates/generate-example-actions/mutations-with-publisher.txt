@@ -3,9 +3,9 @@ import { ServerError } from "typebase-io/server";
 import { z } from "zod";
 
 import { todos } from "../../db/schema.ts";
-import { authedAction } from "../custom-actions.ts";
+import { action } from "../../_generated/server.ts";
 
-export const create = authedAction
+export const create = action
   .input(
     z.object({
       value: z.string(),
@@ -18,12 +18,11 @@ export const create = authedAction
       completed: z.boolean(),
     }),
   )
-  .handler(async ({ db, input, user, publisher }) => {
+  .handler(async ({ db, input, publisher }) => {
     const result = await db
       .insert(todos)
       .values({
-        userId: user.id,
-				value: input.value,
+        value: input.value,
         completed: false,
       })
       .returning();
@@ -46,7 +45,7 @@ export const create = authedAction
     };
   });
 
-export const toggle = authedAction
+export const toggle = action
   .input(
     z.object({
       id: z.number(),
@@ -59,9 +58,9 @@ export const toggle = authedAction
       completed: z.boolean(),
     }),
   )
-  .handler(async ({ db, input, user }) => {
+  .handler(async ({ db, input }) => {
     const todo = await db.query.todos.findFirst({
-      where: { id: input.id, userId: user.id },
+      where: { id: input.id },
     });
 
     if (!todo) {
@@ -80,16 +79,16 @@ export const toggle = authedAction
     };
   });
 
-export const deleteTodo = authedAction
+export const deleteTodo = action
   .input(
     z.object({
       id: z.number(),
     }),
   )
   .output(z.void())
-  .handler(async ({ db, input, user }) => {
+  .handler(async ({ db, input }) => {
     const todo = await db.query.todos.findFirst({
-      where: { id: input.id, userId: user.id },
+      where: { id: input.id },
     });
 
     if (!todo) {

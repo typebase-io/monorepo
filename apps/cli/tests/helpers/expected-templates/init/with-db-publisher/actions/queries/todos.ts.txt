@@ -1,9 +1,9 @@
 import { ServerError } from "typebase-io/server";
 import { z } from "zod";
 
-import { authedAction } from "../custom-actions.ts";
+import { action } from "../../_generated/server.ts";
 
-export const getOne = authedAction
+export const getOne = action
   .input(
     z.object({
       id: z.number(),
@@ -16,9 +16,9 @@ export const getOne = authedAction
       completed: z.boolean(),
     }),
   )
-  .handler(async ({ db, input, user }) => {
+  .handler(async ({ db, input }) => {
     const todo = await db.query.todos.findFirst({
-      where: { id: input.id, userId: user.id },
+      where: { id: input.id },
     });
 
     if (!todo) {
@@ -32,7 +32,7 @@ export const getOne = authedAction
     };
   });
 
-export const getMany = authedAction
+export const getMany = action
   .output(
     z
       .object({
@@ -42,10 +42,9 @@ export const getMany = authedAction
       })
       .array(),
   )
-  .stream(async function* ({ db, publisher, signal, lastEventId, user }) {
+  .stream(async function* ({ db, publisher, signal, lastEventId }) {
     const read = async () => {
       const todos = await db.query.todos.findMany({
-        where: { userId: user.id },
         orderBy: { createdAt: "desc" },
       });
 

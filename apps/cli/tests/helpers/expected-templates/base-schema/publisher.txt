@@ -1,6 +1,4 @@
-export const baseSchemaTemplate = (withPublisher: boolean) => {
-  if (withPublisher) {
-    return `import { p } from "typebase-io/db";
+import { p } from "typebase-io/db";
 
 export const events = p.pgTable(
   "events",
@@ -11,10 +9,4 @@ export const events = p.pgTable(
     createdAt: p.timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [p.index("events_name_id_idx").on(table.name, table.id)]
-);`;
-  }
-
-  return `// This export exists so schema.ts can be imported from relations.ts.
-// Replace it with your real tables.
-export const noop = {};`;
-};
+);

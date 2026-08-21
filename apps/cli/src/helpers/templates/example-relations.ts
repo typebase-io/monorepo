@@ -1,4 +1,4 @@
-export const exampleRelationsTemplate = (withAuth: boolean) => `import { q } from "typebase-io/db";
+export const exampleRelationsTemplate = (withAuth: boolean, withPublisher: boolean) => `import { q } from "typebase-io/db";
 
 import * as schema from "./schema.ts";
 
@@ -12,5 +12,5 @@ export const relations = q.defineRelations(schema, (r) => ({
     }),
   `
       : ''
-  }},
+  }},${withPublisher ? '\n  events: {},' : ''}
 }));`;

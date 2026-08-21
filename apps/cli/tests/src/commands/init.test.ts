@@ -8,6 +8,7 @@ import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { TYPEBASE_CONFIG_SCHEMA_URL } from '#helpers/constants.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
+import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
 import { generateExampleSchema } from '#helpers/init/generate-example-schema.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -36,6 +37,7 @@ const { passThrough } = vi.hoisted(() => ({
 vi.mock('#helpers/auth/generate-auth-schema.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-actions.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-auth.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
+vi.mock('#helpers/init/generate-example-publisher.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-relations.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-schema.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/shared/generate-db-types.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
@@ -128,6 +130,50 @@ describe('init command', () => {
     expect(warnings).toContain('Base URL could not be determined');
   });
 
+  it('scaffolds the example project with a db publisher', async () => {
+    await withCwd(tmp.path, () => init.parseAsync(['--with-db-publisher'], { from: 'user' }));
+
+    expectProject(
+      tmp,
+      'with-db-publisher',
+      [
+        '_generated/db.d.ts',
+        '_generated/server.ts',
+        'actions/mutations/todos.ts',
+        'actions/queries/todos.ts',
+        'db/relations.ts',
+        'db/schema.ts',
+        'env.ts',
+        'publisher.ts',
+        'tsconfig.json',
+      ],
+      { namespace: 'init' }
+    );
+  });
+
+  it('scaffolds a db publisher alongside auth, keeping the relations auth registered', async () => {
+    await withCwd(tmp.path, () => init.parseAsync(['--with-auth', '--with-db-publisher'], { from: 'user' }));
+
+    expectProject(
+      tmp,
+      'with-auth-and-db-publisher',
+      [
+        '_generated/db.d.ts',
+        '_generated/server.ts',
+        'actions/custom-actions.ts',
+        'actions/mutations/todos.ts',
+        'actions/queries/todos.ts',
+        'auth.ts',
+        'db/relations.ts',
+        'db/schema.ts',
+        'env.ts',
+        'publisher.ts',
+        'tsconfig.json',
+      ],
+      { namespace: 'init' }
+    );
+  });
+
   it('scaffolds a bare project without examples when --skip-example is passed', async () => {
     await withCwd(tmp.path, () => init.parseAsync(['--skip-example'], { from: 'user' }));
 
@@ -183,16 +229,14 @@ describe('init command', () => {
     expect(JSON.parse(tmp.read('typebase.json'))).toEqual({ $schema: TYPEBASE_CONFIG_SCHEMA_URL, projectPath: '.' });
   });
 
-  it('rejects conflicting --with-auth and --skip-example options', async () => {
+  it.each([['--with-auth'], ['--with-db-publisher']])('rejects %s together with --skip-example, since it has no example to add to', async (flag) => {
     const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
       throw new Error('process.exit called');
     }) as never);
 
     vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
-    await expect(withCwd(tmp.path, () => init.parseAsync(['--with-auth', '--skip-example'], { from: 'user' }))).rejects.toThrow(
-      'process.exit called'
-    );
+    await expect(withCwd(tmp.path, () => init.parseAsync([flag, '--skip-example'], { from: 'user' }))).rejects.toThrow('process.exit called');
 
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(listFiles(path.join(tmp.path, 'typebase'))).toEqual([]);
@@ -210,6 +254,7 @@ describe('init command', () => {
       { name: 'generateServerTypes', mock: () => vi.mocked(generateServerTypes), args: [] },
       { name: 'generateExampleAuth', mock: () => vi.mocked(generateExampleAuth), args: ['--with-auth'] },
       { name: 'generateAuthSchema', mock: () => vi.mocked(generateAuthSchema), args: ['--with-auth'] },
+      { name: 'generateExamplePublisher', mock: () => vi.mocked(generateExamplePublisher), args: ['--with-db-publisher'] },
     ];
 
     it.each(cases)('rejects when $name throws', async ({ mock, args }) => {

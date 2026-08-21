@@ -1,4 +1,4 @@
-export const exampleMutationActionTemplate = (withAuth: boolean) => {
+export const exampleMutationActionTemplate = (withAuth: boolean, withPublisher: boolean) => {
   return `import { q } from "typebase-io/db";
 import { ServerError } from "typebase-io/server";
 import { z } from "zod";
@@ -19,7 +19,7 @@ export const create = ${withAuth ? 'authedAction' : 'action'}
       completed: z.boolean(),
     }),
   )
-  .handler(async ({ db, input${withAuth ? ', user' : ''} }) => {
+  .handler(async ({ db, input${withAuth ? ', user' : ''}${withPublisher ? ', publisher' : ''} }) => {
     const result = await db
       .insert(todos)
       .values({
@@ -33,7 +33,7 @@ export const create = ${withAuth ? 'authedAction' : 'action'}
     if (!todo) {
       throw new ServerError("INTERNAL_SERVER_ERROR");
     }
-
+${withPublisher ? '\n    await publisher.publish("todo.created", {\n      id: todo.id,\n      value: todo.value,\n    });\n' : ''}
     return {
       id: todo.id,
       value: todo.value,

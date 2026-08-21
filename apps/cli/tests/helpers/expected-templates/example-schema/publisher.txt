@@ -1,18 +1,13 @@
-export const exampleSchemaTemplate = (withAuth: boolean, withPublisher: boolean) => {
-  return `import { p } from "typebase-io/db";
+import { p } from "typebase-io/db";
 
 export const todos = p.pgTable("todos", {
   id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
   value: p.varchar({ length: 255 }).notNull(),
   completed: p.boolean().notNull(),
-  ${
-    withAuth
-      ? 'userId: p.text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),\n  createdAt: p.timestamp().notNull().defaultNow(),'
-      : 'createdAt: p.timestamp().notNull().defaultNow(),'
-  }
-});${
-    withPublisher
-      ? `\n\nexport const events = p.pgTable(
+  createdAt: p.timestamp().notNull().defaultNow(),
+});
+
+export const events = p.pgTable(
   "events",
   {
     id: p.bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
@@ -21,7 +16,4 @@ export const todos = p.pgTable("todos", {
     createdAt: p.timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [p.index("events_name_id_idx").on(table.name, table.id)]
-);`
-      : ''
-  }`;
-};
+);

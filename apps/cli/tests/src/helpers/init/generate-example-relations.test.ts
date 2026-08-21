@@ -18,14 +18,20 @@ describe('generateExampleRelations', () => {
   });
 
   it('writes the relations template with auth relations when withAuth is true', async () => {
-    await generateExampleRelations({ path: path.join(tmp.path, 'relations.ts'), withAuth: true });
+    await generateExampleRelations({ path: path.join(tmp.path, 'relations.ts'), withAuth: true, withPublisher: false });
 
     expect(tmp.read('relations.ts')).toEqualTemplate('generate-example-relations', 'with-auth.txt');
   });
 
   it('writes the relations template without auth relations when withAuth is false', async () => {
-    await generateExampleRelations({ path: path.join(tmp.path, 'relations.ts'), withAuth: false });
+    await generateExampleRelations({ path: path.join(tmp.path, 'relations.ts'), withAuth: false, withPublisher: false });
 
     expect(tmp.read('relations.ts')).toEqualTemplate('generate-example-relations', 'without-auth.txt');
+  });
+
+  it('writes the relations template with the events table when withPublisher is true', async () => {
+    await generateExampleRelations({ path: path.join(tmp.path, 'relations.ts'), withAuth: false, withPublisher: true });
+
+    expect(tmp.read('relations.ts')).toEqualTemplate('generate-example-relations', 'with-publisher.txt');
   });
 });

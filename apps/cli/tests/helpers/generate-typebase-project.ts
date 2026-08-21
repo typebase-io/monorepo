@@ -21,7 +21,7 @@ export const generateTypebaseProject = async (
   await generateTsConfig({ path: path.join(projectDir, 'tsconfig.json'), addWarning: false });
   await generateExampleSchema({ path: path.join(projectDir, 'db', 'schema.ts'), withAuth, withPublisher });
   await generateExampleRelations({ path: path.join(projectDir, 'db', 'relations.ts'), withAuth, withPublisher });
-  await generateExampleActions({ typebaseDirPath: projectDir, withAuth });
+  await generateExampleActions({ typebaseDirPath: projectDir, withAuth, withPublisher });
 
   if (withAuth) {
     await generateExampleAuth(path.join(projectDir, 'auth.ts'));

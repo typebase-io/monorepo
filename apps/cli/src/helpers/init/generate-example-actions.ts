@@ -5,7 +5,15 @@ import { exampleCustomActionsTemplate } from '#helpers/templates/example-custom-
 import { exampleMutationActionTemplate } from '#helpers/templates/example-mutation-action.ts';
 import { exampleQueryActionTemplate } from '#helpers/templates/example-query-action.ts';
 
-export const generateExampleActions = async ({ typebaseDirPath, withAuth }: { typebaseDirPath: string; withAuth: boolean }) => {
+export const generateExampleActions = async ({
+  typebaseDirPath,
+  withAuth,
+  withPublisher,
+}: {
+  typebaseDirPath: string;
+  withAuth: boolean;
+  withPublisher: boolean;
+}) => {
   const queriesDirPath = path.join(typebaseDirPath, 'actions', 'queries');
   const mutationsDirPath = path.join(typebaseDirPath, 'actions', 'mutations');
 
@@ -16,8 +24,8 @@ export const generateExampleActions = async ({ typebaseDirPath, withAuth }: { ty
   await fs.mkdir(queriesDirPath, { recursive: true });
   await fs.mkdir(mutationsDirPath, { recursive: true });
 
-  await fs.writeFile(todosQueriesPath, `${exampleQueryActionTemplate(withAuth)}\n`);
-  await fs.writeFile(todosMutationsPath, `${exampleMutationActionTemplate(withAuth)}\n`);
+  await fs.writeFile(todosQueriesPath, `${exampleQueryActionTemplate(withAuth, withPublisher)}\n`);
+  await fs.writeFile(todosMutationsPath, `${exampleMutationActionTemplate(withAuth, withPublisher)}\n`);
 
   if (withAuth) {
     await fs.writeFile(customActionsPath, `${exampleCustomActionsTemplate}\n`);

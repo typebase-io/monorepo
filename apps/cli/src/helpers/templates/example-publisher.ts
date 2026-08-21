@@ -1,0 +1,12 @@
+export const examplePublisherTemplate = `import { definePublisher } from "typebase-io/server";
+import { z } from "zod";
+
+export const publisher = definePublisher({
+  provider: "db",
+  events: {
+    "todo.created": z.object({
+      id: z.number(),
+      value: z.string(),
+    }),
+  },
+});`;

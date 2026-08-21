@@ -31,13 +31,20 @@ export const getMany = action
     completed: z.boolean(),
 })
     .array())
-    .handler(async ({ db }) => {
-    const todos = await db.query.todos.findMany({
-        orderBy: { createdAt: "desc" },
-    });
-    return todos.map((todo) => ({
-        id: todo.id,
-        value: todo.value,
-        completed: todo.completed,
-    }));
+    .stream(async function* ({ db, publisher, signal, lastEventId }) {
+    const read = async () => {
+        const todos = await db.query.todos.findMany({
+            orderBy: { createdAt: "desc" },
+        });
+        return todos.map((todo) => ({
+            id: todo.id,
+            value: todo.value,
+            completed: todo.completed,
+        }));
+    };
+    yield await read();
+    const created = await publisher.subscribe("todo.created", { signal, lastEventId });
+    for await (const _todo of created) {
+        yield await read();
+    }
 });

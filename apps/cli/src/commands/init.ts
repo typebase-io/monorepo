@@ -12,6 +12,7 @@ import { addExampleTodosRelation } from '#helpers/init/add-example-todos-relatio
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
 import { generateExampleEnv } from '#helpers/init/generate-example-env.ts';
+import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
 import { generateExampleSchema } from '#helpers/init/generate-example-schema.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -28,8 +29,11 @@ export const init = new Command('init')
   .allowExcessArguments(false)
   .option('-f, --force', 'Regenerates the scaffolded example files if they already exist')
   .addOption(new Option('--with-auth', 'Creates the example with auth').default(false).conflicts('skipExample'))
+  .addOption(
+    new Option('--with-db-publisher', 'Creates a `db` publisher and the `events` table it keeps events in').default(false).conflicts('skipExample')
+  )
   .option('--skip-example', 'Skips the example schema and actions')
-  .action(async ({ force, withAuth, skipExample }) => {
+  .action(async ({ force, withAuth, withDbPublisher, skipExample }) => {
     const config = await getTypebaseConfig();
     const typebaseDirPath = path.resolve(config.projectPath);
 
@@ -42,6 +46,7 @@ export const init = new Command('init')
     const actionsDirPath = path.join(typebaseDirPath, 'actions');
     const exampleAuthFilePath = path.join(typebaseDirPath, 'auth.ts');
     const exampleEnvFilePath = path.join(typebaseDirPath, 'env.ts');
+    const examplePublisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
 
@@ -64,12 +69,15 @@ export const init = new Command('init')
       writeTypebaseConfig({}),
       generateTsConfig({ path: tsConfigFilePath, addWarning: true }),
       withAuth ? generateExampleAuth(exampleAuthPath) : Promise.resolve(),
-      skipExample ? fs.writeFile(exampleSchemaPath, `${baseSchemaTemplate}\n`) : generateExampleSchema({ path: exampleSchemaPath, withAuth }),
       skipExample
-        ? fs.writeFile(exampleRelationsPath, `${baseRelationsTemplate}\n`)
-        : generateExampleRelations({ path: exampleRelationsPath, withAuth }),
-      skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth }),
+        ? fs.writeFile(exampleSchemaPath, `${baseSchemaTemplate(false)}\n`)
+        : generateExampleSchema({ path: exampleSchemaPath, withAuth, withPublisher: withDbPublisher }),
+      skipExample
+        ? fs.writeFile(exampleRelationsPath, `${baseRelationsTemplate(false)}\n`)
+        : generateExampleRelations({ path: exampleRelationsPath, withAuth, withPublisher: withDbPublisher }),
+      skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth, withPublisher: withDbPublisher }),
       skipExample ? Promise.resolve() : generateExampleEnv(exampleEnvFilePath),
+      withDbPublisher ? generateExamplePublisher(examplePublisherFilePath) : Promise.resolve(),
     ]);
 
     if (withAuth) {
@@ -96,6 +104,7 @@ export const init = new Command('init')
         schemaFilePath: exampleSchemaPath,
         authFilePath: exampleAuthFilePath,
         envFilePath: exampleEnvFilePath,
+        publisherFilePath: examplePublisherFilePath,
         actionsDirPath,
         generatedDirPath,
       }),
