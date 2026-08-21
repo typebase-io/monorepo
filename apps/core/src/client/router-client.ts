@@ -1,4 +1,4 @@
-import { type ClientContext, createORPCClient } from '@orpc/client';
+import { type ClientContext, consumeEventIterator, createORPCClient } from '@orpc/client';
 import { RPCLink, type RPCLinkOptions } from '@orpc/client/fetch';
 import { type AnyRouter, type RouterClient } from '@orpc/server';
 import { type CreateRouterUtilsOptions, type RouterUtils, createTanstackQueryUtils } from '@orpc/tanstack-query';
@@ -26,3 +26,5 @@ export const createTanstackQueryClient = <TRouter extends AnyRouter = never>(
 
   return createTanstackQueryUtils(buildClient<TRouter>(linkOptions), utilsOptions);
 };
+
+export const consumeStream = consumeEventIterator;

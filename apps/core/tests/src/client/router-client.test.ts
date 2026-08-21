@@ -4,12 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const createORPCClient = vi.hoisted(() => vi.fn((link: unknown) => ({ link })));
 const createTanstackQueryUtils = vi.hoisted(() => vi.fn((client: unknown, options: unknown) => ({ client, options })));
 const RPCLink = vi.hoisted(() => vi.fn());
+const consumeEventIterator = vi.hoisted(() => vi.fn());
 
-vi.mock('@orpc/client', () => ({ createORPCClient }));
+vi.mock('@orpc/client', () => ({ createORPCClient, consumeEventIterator }));
 vi.mock('@orpc/client/fetch', () => ({ RPCLink }));
 vi.mock('@orpc/tanstack-query', () => ({ createTanstackQueryUtils }));
 
-const { createRouterClient, createTanstackQueryClient } = await import('#client/router-client.ts');
+const { consumeStream, createRouterClient, createTanstackQueryClient } = await import('#client/router-client.ts');
 
 const linkOptionsAt = (index: number) => vi.mocked(RPCLink).mock.calls[index]?.[0] as { url?: unknown; headers?: unknown };
 
@@ -117,5 +118,11 @@ describe('createTanstackQueryClient', () => {
     expect(linkOptionsAt(0).url).toBe('https://api.example.com/rpc');
     expect(linkOptionsAt(1).url).toBe('https://api.example.com/rpc');
     expect(options.url).toBe('https://api.example.com');
+  });
+});
+
+describe('consumeStream', () => {
+  it('is the event iterator consumer oRPC ships, under the name streams are declared with', () => {
+    expect(consumeStream).toBe(consumeEventIterator);
   });
 });

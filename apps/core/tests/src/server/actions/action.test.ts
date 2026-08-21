@@ -1,4 +1,4 @@
-import { ORPCError, ValidationError, call, os } from '@orpc/server';
+import { ORPCError, ValidationError, call, getEventMeta, os, withEventMeta } from '@orpc/server';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -147,6 +147,119 @@ describe('Action', () => {
         .handler(async ({ input, multiplier }) => ({ result: input.value * multiplier }));
 
       await expect(call(procedure, { value: 21 })).resolves.toEqual({ result: 42 });
+    });
+  });
+
+  describe('event iterators', () => {
+    const collect = async <T>(iterator: AsyncIterable<T>) => {
+      const events: T[] = [];
+
+      for await (const event of iterator) {
+        events.push(event);
+      }
+
+      return events;
+    };
+
+    it('streams what a generator handler yields', async () => {
+      const action = new Action(os);
+
+      const procedure = action.input(z.object({ room: z.string() })).stream(async function* ({ input }) {
+        yield { message: `${input.room}:1` };
+        yield { message: `${input.room}:2` };
+      });
+
+      await expect(collect(await call(procedure, { room: 'lobby' }))).resolves.toEqual([{ message: 'lobby:1' }, { message: 'lobby:2' }]);
+    });
+
+    it('gives the handler the id the client reconnected with', async () => {
+      const action = new Action(os);
+
+      const procedure = action.stream(async function* ({ lastEventId }) {
+        yield { resumedFrom: lastEventId };
+      });
+
+      await expect(collect(await call(procedure, undefined, { lastEventId: '42' }))).resolves.toEqual([{ resumedFrom: '42' }]);
+      await expect(collect(await call(procedure, undefined))).resolves.toEqual([{ resumedFrom: undefined }]);
+    });
+
+    it('gives the handler the signal that aborts when the client goes away', async () => {
+      const controller = new AbortController();
+      const action = new Action(os);
+
+      const procedure = action.stream(async function* ({ signal }) {
+        yield { aborted: signal?.aborted };
+      });
+
+      await expect(collect(await call(procedure, undefined, { signal: controller.signal }))).resolves.toEqual([{ aborted: false }]);
+    });
+
+    it('keeps the context and the middlewares a generator handler was built with', async () => {
+      const action = new Action(os.$context<{ token: string }>());
+
+      const procedure = action
+        .use(({ token }) => ({ user: { id: token } }))
+        .stream(async function* ({ user }) {
+          yield { id: user.id };
+        });
+
+      await expect(collect(await call(procedure, undefined, { context: { token: 'abc' } }))).resolves.toEqual([{ id: 'abc' }]);
+    });
+
+    it('validates each event against the output schema', async () => {
+      const action = new Action(os);
+
+      const procedure = action.output(z.object({ message: z.string() })).stream(async function* () {
+        yield { message: 'ok' };
+      });
+
+      await expect(collect(await call(procedure, undefined))).resolves.toEqual([{ message: 'ok' }]);
+    });
+
+    it('rejects an event that does not match the output schema', async () => {
+      const action = new Action(os);
+
+      const procedure = action.output(z.object({ message: z.string() })).stream(async function* () {
+        yield { message: 1 } as unknown as { message: string };
+      });
+
+      const error = await collect(await call(procedure, undefined)).catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ORPCError);
+      expect((error as ORPCError<string, unknown>).code).toBe('EVENT_ITERATOR_VALIDATION_FAILED');
+      expect((error as ORPCError<string, unknown>).cause).toBeInstanceOf(ValidationError);
+    });
+
+    it('carries the event metadata a handler attaches', async () => {
+      const action = new Action(os);
+
+      const procedure = action.stream(async function* () {
+        yield withEventMeta({ message: 'hello' }, { id: 'event-1', retry: 5_000 });
+      });
+
+      const [event] = await collect(await call(procedure, undefined));
+
+      expect(getEventMeta(event)).toEqual({ id: 'event-1', retry: 5_000 });
+    });
+
+    it('runs the cleanup a handler registers when the consumer stops early', async () => {
+      const action = new Action(os);
+      let cleanedUp = false;
+
+      const procedure = action.stream(async function* () {
+        try {
+          yield { message: 'first' };
+          yield { message: 'second' };
+        } finally {
+          cleanedUp = true;
+        }
+      });
+
+      for await (const _event of await call(procedure, undefined)) {
+        break;
+      }
+
+      expect(cleanedUp).toBe(true);
     });
   });
 

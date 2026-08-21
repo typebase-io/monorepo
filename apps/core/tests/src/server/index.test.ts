@@ -12,6 +12,8 @@ describe('server entry point', () => {
       'defineAuth',
       'defineEnv',
       'filterActions',
+      'getEventMeta',
+      'withEventMeta',
     ]);
   });
 });

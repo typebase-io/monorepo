@@ -14,9 +14,22 @@ import {
   type MergedInitialContext,
   type Meta,
   type Schema,
+  eventIterator,
 } from '@orpc/server';
 
-import { type ActionWithInput, type ActionWithOutput, type AnySchema } from '#server/actions/types.ts';
+import {
+  type ActionWithInput,
+  type ActionWithOutput,
+  type AnyEventIterator,
+  type AnySchema,
+  type EventIteratorParams,
+  type MustYield,
+} from '#server/actions/types.ts';
+
+interface SchemaBuilder {
+  handler: (fn: (options: { context: any; input: any; lastEventId: string | undefined; signal: AbortSignal | undefined }) => unknown) => any;
+  output: (schema: AnySchema) => SchemaBuilder;
+}
 
 export class Action<
   TInitialContext extends Context,
@@ -30,20 +43,24 @@ export class Action<
     | Builder<TInitialContext, TCurrentContext, TInputSchema, TOutputSchema, TErrorMap, TMeta>
     | BuilderWithMiddlewares<TInitialContext, TCurrentContext, TInputSchema, TOutputSchema, TErrorMap, TMeta>;
 
+  #outputSchema: AnySchema | undefined;
+
   constructor(
     os:
       | Builder<TInitialContext, TCurrentContext, TInputSchema, TOutputSchema, TErrorMap, TMeta>
-      | BuilderWithMiddlewares<TInitialContext, TCurrentContext, TInputSchema, TOutputSchema, TErrorMap, TMeta>
+      | BuilderWithMiddlewares<TInitialContext, TCurrentContext, TInputSchema, TOutputSchema, TErrorMap, TMeta>,
+    outputSchema?: AnySchema
   ) {
     this.#os = os;
+    this.#outputSchema = outputSchema;
   }
 
   input<USchema extends AnySchema>(schema: USchema): ActionWithInput<TInitialContext, TCurrentContext, USchema, TOutputSchema, TErrorMap, TMeta> {
-    return new Action(this.#os.input(schema) as any) as any;
+    return new Action(this.#os.input(schema) as any, this.#outputSchema) as any;
   }
 
   output<USchema extends AnySchema>(schema: USchema): ActionWithOutput<TInitialContext, TCurrentContext, TInputSchema, USchema, TErrorMap, TMeta> {
-    return new Action(this.#os.output(schema) as any) as any;
+    return new Action(this.#os as any, schema) as any;
   }
 
   use<UOutContext extends IntersectPick<TCurrentContext, UOutContext>, UInContext extends Context = TCurrentContext>(
@@ -64,12 +81,24 @@ export class Action<
       });
     }) as any;
 
-    return new Action(updatedOS) as any;
+    return new Action(updatedOS, this.#outputSchema) as any;
   }
 
   handler<UFuncOutput>(
     fn: (context: TCurrentContext) => Promise<UFuncOutput>
   ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, Schema<UFuncOutput, UFuncOutput>, TErrorMap, TMeta> {
-    return this.#os.handler(({ context, input }) => fn({ ...context, input }));
+    const builder = this.#os as unknown as SchemaBuilder;
+    const os = this.#outputSchema ? builder.output(this.#outputSchema) : builder;
+
+    return os.handler(({ context, input }) => fn({ ...context, input }));
+  }
+
+  stream<UFuncOutput extends AnyEventIterator>(
+    fn: (context: TCurrentContext & EventIteratorParams) => UFuncOutput & MustYield<UFuncOutput>
+  ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, Schema<UFuncOutput, UFuncOutput>, TErrorMap, TMeta> {
+    const builder = this.#os as unknown as SchemaBuilder;
+    const os = this.#outputSchema ? builder.output(eventIterator(this.#outputSchema)) : builder;
+
+    return os.handler(({ context, input, lastEventId, signal }) => fn({ ...context, input, lastEventId, signal }));
   }
 }

@@ -8,7 +8,9 @@ import { type DB } from '#server/actions/types.ts';
 export { Action } from '#server/actions/action.ts';
 export { filterActions } from '#server/actions/filter-actions.ts';
 
-export type { InferRouterInputs, InferRouterOutputs } from '@orpc/server';
+export { getEventMeta, withEventMeta } from '@orpc/server';
+
+export type { EventMeta, InferRouterInputs, InferRouterOutputs } from '@orpc/server';
 
 type Simplify<T> = { -readonly [K in keyof T]: T[K] } & {};
 

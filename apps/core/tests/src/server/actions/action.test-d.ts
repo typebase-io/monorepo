@@ -105,5 +105,136 @@ describe('Action', () => {
     expectTypeOf(withInput).not.toHaveProperty('input');
     expectTypeOf(withInput).toHaveProperty('output');
     expectTypeOf(withInput).toHaveProperty('handler');
+    expectTypeOf(withInput).toHaveProperty('stream');
+  });
+
+  describe('event iterators', () => {
+    it('gives a generator handler the context, the input and the event params', () => {
+      new Action(base).input(z.object({ room: z.string() })).stream(async function* ({ input, db, lastEventId, signal }) {
+        expectTypeOf(input).toEqualTypeOf<{ room: string }>();
+        expectTypeOf(db).toEqualTypeOf<string>();
+        expectTypeOf(lastEventId).toEqualTypeOf<string | undefined>();
+        expectTypeOf(signal).toEqualTypeOf<AbortSignal | undefined>();
+
+        yield { message: 'hello' };
+      });
+    });
+
+    it('keeps the event params off a handler that does not stream', () => {
+      new Action(base).handler(async (context) => {
+        expectTypeOf(context).not.toHaveProperty('lastEventId');
+        expectTypeOf(context).not.toHaveProperty('signal');
+
+        return null;
+      });
+    });
+
+    it('gives the client an async iterable of what the handler yields', () => {
+      const _procedure = new Action(base).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      expectTypeOf<RouterClient<typeof _procedure>>().returns.resolves.toExtend<AsyncIteratorObject<{ message: string }, unknown, void>>();
+    });
+
+    it('types the events from the output schema', () => {
+      const _procedure = new Action(base).output(z.object({ message: z.string() })).stream(async function* ({ lastEventId }) {
+        expectTypeOf(lastEventId).toEqualTypeOf<string | undefined>();
+
+        yield { message: 'hello' };
+      });
+
+      expectTypeOf<RouterClient<typeof _procedure>>().returns.resolves.toExtend<AsyncIteratorObject<{ message: string }, unknown, void>>();
+    });
+
+    it('refuses a generator that yields nothing when an output schema says what it owes the client', () => {
+      const action = new Action(base).output(z.object({ message: z.string() }));
+
+      // @ts-expect-error -- a stream that never yields sends the client nothing.
+      action.stream(async function* () {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    });
+
+    it('refuses a generator that yields nothing when there is no output schema either', () => {
+      // @ts-expect-error -- a stream that never yields sends the client nothing.
+      new Action(base).stream(async function* () {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    });
+
+    it('refuses a generator that yields nothing on an action that takes an input', () => {
+      const action = new Action(base).input(z.object({ room: z.string() }));
+
+      // @ts-expect-error -- a stream that never yields sends the client nothing.
+      action.stream(async function* () {}); // eslint-disable-line @typescript-eslint/no-empty-function
+    });
+
+    it('infers the event type from what an output-less generator yields', () => {
+      const _procedure = new Action(base).stream(async function* () {
+        yield { message: 'hello', at: 1 };
+      });
+
+      expectTypeOf<RouterClient<typeof _procedure>>().returns.resolves.toExtend<
+        AsyncIteratorObject<{ message: string; at: number }, unknown, void>
+      >();
+    });
+
+    it('constrains what a generator handler may yield to the output schema', () => {
+      const action = new Action(base).output(z.object({ message: z.string() }));
+
+      // @ts-expect-error -- the handler may only yield the shape declared by `output`.
+      action.stream(async function* () {
+        yield { message: 1 };
+      });
+    });
+
+    it('lets a generator end with a bare return', () => {
+      const _withOutput = new Action(base).output(z.object({ message: z.string() })).stream(async function* ({ signal }) {
+        while (signal?.aborted !== true) {
+          yield { message: 'hello' };
+
+          return;
+        }
+      });
+
+      const _withoutOutput = new Action(base).stream(async function* ({ signal }) {
+        while (signal?.aborted !== true) {
+          yield { message: 'hello' };
+
+          return;
+        }
+      });
+
+      expectTypeOf<RouterClient<typeof _withOutput>>().returns.resolves.toExtend<AsyncIteratorObject<{ message: string }, unknown, void>>();
+      expectTypeOf<RouterClient<typeof _withoutOutput>>().returns.resolves.toExtend<AsyncIteratorObject<{ message: string }, unknown, void>>();
+    });
+
+    it('refuses a generator that returns an event instead of yielding it, since a return sends nothing', () => {
+      const action = new Action(base).output(z.object({ message: z.string() }));
+
+      // @ts-expect-error -- events reach the client by being yielded, so a returned value is a mistake.
+      action.stream(async function* () {
+        yield { message: 'hello' };
+
+        return { message: 'hello' };
+      });
+    });
+
+    it('refuses a returned event even when there is no output schema to check it against', () => {
+      // @ts-expect-error -- events reach the client by being yielded, so a returned value is a mistake.
+      new Action(base).stream(async function* () {
+        yield { message: 'hello' };
+
+        return { message: 'hello' };
+      });
+    });
+
+    it('refuses a returned event on an action that takes an input', () => {
+      const action = new Action(base).input(z.object({ room: z.string() }));
+
+      // @ts-expect-error -- events reach the client by being yielded, so a returned value is a mistake.
+      action.stream(async function* () {
+        yield { message: 'hello' };
+
+        return { message: 'hello' };
+      });
+    });
   });
 });
