@@ -8,6 +8,7 @@ export const env = createEnv({
         version: 1,
         vendor: "typebase",
         validate: (value) => (typeof value === "string" && value.length > 0 ? { value } : { issues: [{ message: "Required" }] }),
+        types: undefined as unknown as { input: string; output: string },
       },
     },
     BETTER_AUTH_SECRET: {
@@ -15,6 +16,7 @@ export const env = createEnv({
         version: 1,
         vendor: "typebase",
         validate: (value) => (typeof value === "string" && value.length > 0 ? { value } : { issues: [{ message: "Required" }] }),
+        types: undefined as unknown as { input: string; output: string },
       },
     },
     STRIPE_SECRET_KEY: v.pipe(v.string(), v.minLength(1)),

@@ -60,6 +60,7 @@ export const generateEnvFile = async ({
     version: 1,
     vendor: "typebase",
     validate: (value) => (typeof value === "string" && value.length > 0 ? { value } : { issues: [{ message: "Required" }] }),
+    types: undefined as unknown as { input: string; output: string },
   },
 }`,
       });
