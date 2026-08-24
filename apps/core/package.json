@@ -56,6 +56,11 @@
       "import": "./dist/esm/src/client/index.js",
       "require": "./dist/cjs/src/client/index.js"
     },
+    "./client/plugins": {
+      "types": "./dist/types/src/client/plugins/index.d.ts",
+      "import": "./dist/esm/src/client/plugins/index.js",
+      "require": "./dist/cjs/src/client/plugins/index.js"
+    },
     "./client/auth/nextjs": {
       "types": "./dist/types/src/client/auth/nextjs/index.d.ts",
       "import": "./dist/esm/src/client/auth/nextjs/index.js",
