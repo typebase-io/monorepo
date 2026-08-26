@@ -23,6 +23,7 @@ import {
   type AnyEventIterator,
   type AnySchema,
   type EventIteratorParams,
+  type InferredEventIteratorSchema,
   type MustYield,
 } from '#server/actions/types.ts';
 
@@ -95,7 +96,7 @@ export class Action<
 
   stream<UFuncOutput extends AnyEventIterator>(
     fn: (context: TCurrentContext & EventIteratorParams) => UFuncOutput & MustYield<UFuncOutput>
-  ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, Schema<UFuncOutput, UFuncOutput>, TErrorMap, TMeta> {
+  ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, InferredEventIteratorSchema<UFuncOutput>, TErrorMap, TMeta> {
     const builder = this.#os as unknown as SchemaBuilder;
     const os = this.#outputSchema ? builder.output(eventIterator(this.#outputSchema)) : builder;
 

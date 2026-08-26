@@ -1,10 +1,12 @@
-import { type RouterClient, os } from '@orpc/server';
+import { type AsyncIteratorClass, type RouterClient, os } from '@orpc/server';
 import { describe, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import { Action } from '#server/actions/action.ts';
 
 const base = os.$context<{ db: string }>();
+
+declare const customIterator: () => AsyncIteratorObject<{ message: string }, void, void>;
 
 describe('Action', () => {
   it('infers the handler output as the procedure output', () => {
@@ -235,6 +237,38 @@ describe('Action', () => {
 
         return { message: 'hello' };
       });
+    });
+
+    it('reports the same event iterator whether or not the action declares an output schema', () => {
+      const _withoutSchema = new Action(base).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      const _withSchema = new Action(base).output(z.object({ message: z.string() })).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      expectTypeOf<RouterClient<typeof _withoutSchema>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
+      expectTypeOf<RouterClient<typeof _withSchema>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
+    });
+
+    it('reports the same event iterator whether or not the handler is a generator function', () => {
+      const _fromGenerator = new Action(base).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      const _fromIterator = new Action(base).stream(customIterator);
+
+      expectTypeOf<RouterClient<typeof _fromGenerator>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
+      expectTypeOf<RouterClient<typeof _fromIterator>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
+    });
+
+    it('takes the same event iterator on an action that takes an input', () => {
+      const _procedure = new Action(base).input(z.object({ room: z.string() })).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      expectTypeOf<RouterClient<typeof _procedure>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
     });
   });
 });

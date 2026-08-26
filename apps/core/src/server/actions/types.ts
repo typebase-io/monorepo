@@ -32,6 +32,8 @@ export type EventIteratorSchema<TSchema extends AnySchema> = Schema<
   AsyncIteratorClass<InferSchemaOutput<TSchema>, unknown, void>
 >;
 
+export type InferredEventIteratorSchema<TIterator> = EventIteratorSchema<Schema<YieldedBy<TIterator>, YieldedBy<TIterator>>>;
+
 export type DB<TRelations extends AnyRelations = EmptyRelations> = NodePgDatabase<Record<string, never>, TRelations> & {
   $client: Pool;
 };
@@ -54,7 +56,7 @@ export interface ActionWithInput<
 
   'stream'<UFuncOutput extends AnyEventIterator>(
     fn: (params: { input: InferSchemaOutput<TInputSchema> } & TCurrentContext & EventIteratorParams) => UFuncOutput & MustYield<UFuncOutput>
-  ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, Schema<UFuncOutput, UFuncOutput>, TErrorMap, TMeta>;
+  ): DecoratedProcedure<TInitialContext, TCurrentContext, TInputSchema, InferredEventIteratorSchema<UFuncOutput>, TErrorMap, TMeta>;
 }
 
 export interface ActionWithOutput<
