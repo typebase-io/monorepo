@@ -13,6 +13,8 @@ export { getEventMeta, withEventMeta } from '@orpc/server';
 
 export type { EventMeta, InferRouterInputs, InferRouterOutputs } from '@orpc/server';
 
+export type { InferStreamEvent } from '#server/actions/types.ts';
+
 type Simplify<T> = { -readonly [K in keyof T]: T[K] } & {};
 
 interface DbContext<TRelations extends AnyRelations> {

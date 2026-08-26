@@ -34,6 +34,8 @@ export type EventIteratorSchema<TSchema extends AnySchema> = Schema<
 
 export type InferredEventIteratorSchema<TIterator> = EventIteratorSchema<Schema<YieldedBy<TIterator>, YieldedBy<TIterator>>>;
 
+export type InferStreamEvent<TStream> = TStream extends AsyncIterable<infer UEvent> ? UEvent : never;
+
 export type DB<TRelations extends AnyRelations = EmptyRelations> = NodePgDatabase<Record<string, never>, TRelations> & {
   $client: Pool;
 };

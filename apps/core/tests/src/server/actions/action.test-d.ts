@@ -1,8 +1,9 @@
-import { type AsyncIteratorClass, type RouterClient, os } from '@orpc/server';
+import { type AsyncIteratorClass, type InferRouterOutputs, type RouterClient, os } from '@orpc/server';
 import { describe, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
 import { Action } from '#server/actions/action.ts';
+import { type InferStreamEvent } from '#server/actions/types.ts';
 
 const base = os.$context<{ db: string }>();
 
@@ -269,6 +270,16 @@ describe('Action', () => {
       });
 
       expectTypeOf<RouterClient<typeof _procedure>>().returns.resolves.toEqualTypeOf<AsyncIteratorClass<{ message: string }, unknown, void>>();
+    });
+
+    it('exposes the yielded event through InferStreamEvent', () => {
+      const _procedure = new Action(base).stream(async function* () {
+        yield { message: 'hello' };
+      });
+
+      type Outputs = InferRouterOutputs<{ feed: typeof _procedure }>;
+
+      expectTypeOf<InferStreamEvent<Outputs['feed']>>().toEqualTypeOf<{ message: string }>();
     });
   });
 });
