@@ -30,3 +30,16 @@ typebase-io-cli <command> [options]
 | [`env`](/docs/cli/env)                         | Manage environment variables on your deployment provider  |
 | [`logs`](/docs/cli/logs)                       | Stream runtime logs from your deployed server             |
 | [`config`](/docs/cli/config)                   | Print the config schema annotated with the current values |
+
+## Versions
+
+`npx typebase-io-cli --version` prints the version of the CLI you are running.
+
+The CLI and `typebase-io` are [released together and share a version number](/docs/changelog). Before running a command that needs the package, the CLI compares its own version against the installed `typebase-io` and warns when they differ:
+
+```
+Warning: this CLI is 0.1.15, but the installed `typebase-io` is 0.1.14. They are released together, so generated code and
+deploys can break while they differ. Install `typebase-io@0.1.15`, or run the CLI as `npx typebase-io-cli@0.1.14`.
+```
+
+It's a warning, not an error, so the command still runs. `env`, `logs` and `config` don't need `typebase-io` at all and skip the check.

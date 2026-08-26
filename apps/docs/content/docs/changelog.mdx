@@ -18,6 +18,26 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.15 [#v0-1-15]
+
+_2026-08-26._
+
+**Added**
+
+- [`InferStreamEvent`](/docs/client#typing-action-inputs-and-outputs) from `typebase-io/server`: give it the `RouterOutputs` entry of a
+  [streaming action](/docs/actions/streaming) and it gives you the type of one event, so you no longer have to unwrap the async iterable by hand to
+  type the state a stream feeds.
+- The CLI checks itself against the installed `typebase-io` before running a command and warns when the two versions differ, since they are released
+  together and a mismatched pair can generate code your server doesn't understand. `npx typebase-io-cli --version` prints the CLI's own version.
+
+**Changed**
+
+- A stream declared without [`.output()`](/docs/actions/streaming#what-output-means-on-a-stream) now reports the same type as one declared with it.
+  Before, its `RouterOutputs` entry was the generator type of the handler that happened to implement it — `AsyncGenerator<Event, void, unknown>` —
+  so adding an output schema, or rewriting the handler as something other than a generator function, silently changed the action's public type. Both
+  now describe the same event iterator, matching the value an oRPC client actually hands back. Nothing changes at runtime, but code that named
+  `AsyncGenerator` explicitly to type a stream needs updating; `InferStreamEvent` is the replacement.
+
 ## 0.1.14 [#v0-1-14]
 
 _2026-08-24._

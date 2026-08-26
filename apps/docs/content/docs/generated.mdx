@@ -50,7 +50,14 @@ type Todo = RouterOutputs['queries']['todos']['getOne']; // what getOne returns
 type CreateTodoInput = RouterInputs['mutations']['todos']['create']; // what create accepts
 ```
 
-For a handler, the output type comes from the action's `.output()` schema or is inferred from the value it returns. For a [streaming action](/docs/actions/streaming), it is an async iterator whose event type comes from `.output()` or the values the generator yields.
+For a handler, the output type comes from the action's `.output()` schema or is inferred from the value it returns. For a [streaming action](/docs/actions/streaming), it is an async iterator whose event type comes from `.output()` or the values the generator yields — the same type either way. To pull one event out of it, pass the entry to `InferStreamEvent` from `typebase-io/server`:
+
+```ts
+import type { InferStreamEvent } from 'typebase-io/server';
+import type { RouterOutputs } from '../typebase/_generated/server';
+
+type Todos = InferStreamEvent<RouterOutputs['queries']['todos']['getMany']>; // one event of the stream
+```
 
 **`action`**: the builder you import in every action file to define a handler or stream. It's typed with your schema relations, auth config, [env schema](/docs/env), and [publisher config](/docs/publisher), so the context object in `.handler()` and `.stream()` is always accurate. `DATABASE_URL` and `BETTER_AUTH_SECRET` are added to `env` by the builder itself whenever your project has a database or auth, so they're typed without appearing in your `env.ts`.
 

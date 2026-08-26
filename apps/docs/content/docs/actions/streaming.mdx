@@ -260,6 +260,19 @@ This creates one subscription while the component is mounted. With `createRouter
 
 <Callout type="info">Provide `onError` or `onFinish`. Without either, a failing stream throws an unhandled rejection.</Callout>
 
+### Typing an event
+
+A stream's entry in `RouterOutputs` is the async iterable, not the event. `InferStreamEvent` unwraps it:
+
+```ts
+import type { InferStreamEvent } from 'typebase-io/server';
+import type { RouterOutputs } from '../typebase/_generated/server';
+
+type Todos = InferStreamEvent<RouterOutputs['queries']['todos']['getMany']>;
+```
+
+This works whether or not the action declares `.output()`; both report the same type. See [Typing action inputs and outputs](/docs/client#typing-action-inputs-and-outputs).
+
 ### Reconnecting
 
 Add the retry plugin to your client to make dropped streams reconnect, and to make `lastEventId` reach the server:

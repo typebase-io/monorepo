@@ -152,13 +152,13 @@ In React, create the subscription inside `useEffect` and return a synchronous cl
 
 ```tsx
 import { consumeStream } from 'typebase-io/client';
+import type { InferStreamEvent } from 'typebase-io/server';
 import { useEffect, useState } from 'react';
 
 import { client } from '../lib/typebase/client';
 import type { RouterOutputs } from '../typebase/_generated/server';
 
-type StreamEvent<T> = T extends AsyncIterable<infer Event> ? Event : never;
-type Todos = StreamEvent<RouterOutputs['queries']['todos']['getMany']>;
+type Todos = InferStreamEvent<RouterOutputs['queries']['todos']['getMany']>;
 
 export function TodoList() {
   const [todos, setTodos] = useState<Todos>([]);
@@ -177,6 +177,8 @@ export function TodoList() {
   return todos.map((todo) => <div key={todo.id}>{todo.value}</div>);
 }
 ```
+
+`InferStreamEvent` is a type-only import, so nothing from `typebase-io/server` reaches your client bundle. It's covered in [Typing action inputs and outputs](#typing-action-inputs-and-outputs).
 
 This example uses a client created with `createTanstackQueryClient`, so the stream call ends in `.call()`. With `createRouterClient`, use `client.queries.todos.getMany()` instead. The same rule applies in other frameworks: subscribe when the component mounts and unsubscribe when it unmounts.
 
@@ -249,6 +251,18 @@ function TodoDetails({ todo }: { todo: Todo }) {
 ```
 
 Both maps mirror the router structure, so the path is the same one you use to call the action. See [Generated Code](/docs/generated) for details.
+
+A [streaming action](/docs/actions/streaming) sends many events instead of one response, so its `RouterOutputs` entry is the async iterable you consume, not the shape of an event. `InferStreamEvent` takes that entry and gives you one event:
+
+```ts
+import type { InferStreamEvent } from 'typebase-io/server';
+import type { RouterOutputs } from '../../typebase/_generated/server';
+
+type Todo = RouterOutputs['queries']['todos']['getOne']; // a handler: what it returns
+type Todos = InferStreamEvent<RouterOutputs['queries']['todos']['getMany']>; // a stream: one event
+```
+
+It's the type you want for the state a stream feeds and for the parameter of an `onEvent` callback you declare yourself. Import it with `import type`; it's erased at compile time, so a client component pulls nothing from `typebase-io/server` at runtime.
 
 ## Auth helpers per framework
 
