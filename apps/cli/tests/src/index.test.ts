@@ -11,6 +11,8 @@ const spies = vi.hoisted(() => ({
   env: vi.fn(),
   config: vi.fn(),
   isTypebaseIoInstalled: vi.fn(),
+  warnOnVersionMismatch: vi.fn(),
+  getCliVersion: vi.fn<() => string | undefined>(),
 }));
 
 vi.mock('#commands/init.ts', async () => {
@@ -71,12 +73,22 @@ vi.mock('#helpers/shared/is-typebase-io-installed.ts', () => {
   return { isTypebaseIoInstalled: spies.isTypebaseIoInstalled };
 });
 
+vi.mock('#helpers/shared/warn-on-version-mismatch.ts', () => {
+  return { warnOnVersionMismatch: spies.warnOnVersionMismatch };
+});
+
+vi.mock('#helpers/shared/get-cli-version.ts', () => {
+  return { getCliVersion: spies.getCliVersion };
+});
+
 describe('cli entrypoint', () => {
   let originalArgv: string[];
   let exitSpy: ReturnType<typeof vi.spyOn>;
   let stderrSpy: MockInstance<typeof process.stderr.write>;
+  let stdoutSpy: MockInstance<typeof process.stdout.write>;
 
   const stderr = () => stderrSpy.mock.calls.flat().map(String).join('\n');
+  const stdout = () => stdoutSpy.mock.calls.flat().map(String).join('\n');
 
   const runCli = async (args: string[]) => {
     process.argv = ['node', 'typebase-io-cli', ...args];
@@ -96,9 +108,11 @@ describe('cli entrypoint', () => {
     vi.clearAllMocks();
 
     spies.isTypebaseIoInstalled.mockReturnValue(true);
+    spies.getCliVersion.mockReturnValue('0.1.14');
 
     exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
@@ -132,6 +146,41 @@ describe('cli entrypoint', () => {
     await runCli(['db']);
 
     expect(stderr()).toContain('`db` needs the `typebase-io` package, but it is not installed.');
+  });
+
+  it('checks the CLI and typebase-io versions before running a subcommand', async () => {
+    await runCli(['init']);
+
+    expect(spies.warnOnVersionMismatch).toHaveBeenCalledOnce();
+    expect(spies.init).toHaveBeenCalledOnce();
+  });
+
+  it.each(['env', 'logs', 'config'] as const)('skips the version check for the %s command', async (command) => {
+    await runCli([command]);
+
+    expect(spies.warnOnVersionMismatch).not.toHaveBeenCalled();
+  });
+
+  it('skips the version check when typebase-io is missing', async () => {
+    spies.isTypebaseIoInstalled.mockReturnValue(false);
+
+    await runCli(['db']);
+
+    expect(spies.warnOnVersionMismatch).not.toHaveBeenCalled();
+  });
+
+  it('prints the CLI version', async () => {
+    await runCli(['--version']);
+
+    expect(stdout()).toContain('0.1.14');
+  });
+
+  it('omits the version flag when the CLI version cannot be read', async () => {
+    spies.getCliVersion.mockReturnValue(undefined);
+
+    await runCli(['--version']);
+
+    expect(stderr()).toContain("unknown option '--version'");
   });
 
   it('reports an unexpected error and sets the exit code when a command throws', async () => {
