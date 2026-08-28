@@ -7,6 +7,7 @@ import ora from 'ora';
 
 import { type ServerAdapter } from '#helpers/constants.ts';
 import { canReplaceServerDir } from '#helpers/generate-server/can-replace-server-dir.ts';
+import { copyServerAssets } from '#helpers/generate-server/copy-server-assets.ts';
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
@@ -218,6 +219,8 @@ export const buildServer = async ({
         recursive: true,
         filter: (src) => !src.startsWith(path.join(tempServerDirPath, 'src')) && src !== path.join(tempServerDirPath, 'tsconfig.json'),
       });
+
+      await copyServerAssets({ tempServerDirPath, serverDistDirPath: tempDistDirPath });
 
       outputDirPath = tempDistDirPath;
     }

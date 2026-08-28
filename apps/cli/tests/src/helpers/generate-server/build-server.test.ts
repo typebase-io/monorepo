@@ -228,4 +228,70 @@ describe('buildServer', () => {
 
     expect(fs.readFileSync(indexFilePath, 'utf8')).toBe(generated);
   });
+
+  describe('assets the transpiler does not emit', () => {
+    const MIGRATION = '20260101000000_initial';
+
+    const buildAs = (output: 'ts' | 'esm' | 'cjs') =>
+      withCwd(tmp.path, () =>
+        buildServer({
+          projectPath: path.join(tmp.path, 'typebase'),
+          output,
+          adapter: 'node',
+          outDir: '_server',
+          configuredOutDir: '_server',
+          port: 8080,
+          signal: undefined,
+        })
+      );
+
+    const generated = (serverDistDirPath: string, file: string) => path.join(serverDistDirPath, 'src', file);
+
+    beforeEach(() => {
+      tmp.write(`typebase/db/migrations/${MIGRATION}/migration.sql`, 'CREATE TABLE "todos";\n');
+      tmp.write(`typebase/db/migrations/${MIGRATION}/snapshot.json`, '{\n  "id": "one"\n}\n');
+    });
+
+    it.each(['ts', 'esm', 'cjs'] as const)('carries the migration files into a %s server', async (output) => {
+      const { serverDistDirPath } = await buildAs(output);
+
+      expect(fs.readFileSync(generated(serverDistDirPath, `db/migrations/${MIGRATION}/migration.sql`), 'utf8')).toBe('CREATE TABLE "todos";\n');
+      expect(fs.readFileSync(generated(serverDistDirPath, `db/migrations/${MIGRATION}/snapshot.json`), 'utf8')).toBe('{\n  "id": "one"\n}\n');
+    });
+
+    it('carries any other non-typescript file in the db directory', async () => {
+      tmp.write('typebase/db/seed.sql', 'INSERT INTO "todos" VALUES (1);\n');
+
+      const { serverDistDirPath } = await buildAs('esm');
+
+      expect(fs.readFileSync(generated(serverDistDirPath, 'db/seed.sql'), 'utf8')).toBe('INSERT INTO "todos" VALUES (1);\n');
+    });
+
+    it('leaves the transpiled typescript alone', async () => {
+      const { serverDistDirPath } = await buildAs('esm');
+
+      expect(fs.existsSync(generated(serverDistDirPath, 'db/schema.js'))).toBe(true);
+      expect(fs.existsSync(generated(serverDistDirPath, 'db/schema.ts'))).toBe(false);
+    });
+
+    it('replaces an asset left behind by an earlier build', async () => {
+      await buildAs('esm');
+
+      tmp.write(`typebase/db/migrations/${MIGRATION}/migration.sql`, 'CREATE TABLE "notes";\n');
+
+      const { serverDistDirPath } = await buildAs('esm');
+
+      expect(fs.readFileSync(generated(serverDistDirPath, `db/migrations/${MIGRATION}/migration.sql`), 'utf8')).toBe('CREATE TABLE "notes";\n');
+    });
+
+    it('drops an asset that is no longer in the project', async () => {
+      await buildAs('esm');
+
+      fs.rmSync(path.join(tmp.path, 'typebase/db/migrations'), { recursive: true });
+
+      const { serverDistDirPath } = await buildAs('esm');
+
+      expect(fs.existsSync(generated(serverDistDirPath, 'db/migrations'))).toBe(false);
+    });
+  });
 });

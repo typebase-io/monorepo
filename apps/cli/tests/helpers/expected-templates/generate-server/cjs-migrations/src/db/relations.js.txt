@@ -1,0 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.relations = void 0;
+const db_1 = require("typebase-io/db");
+const schema = require("./schema.js");
+exports.relations = db_1.q.defineRelations(schema, (r) => ({
+    todos: {},
+}));

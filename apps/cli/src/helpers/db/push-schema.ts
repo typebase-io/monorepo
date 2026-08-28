@@ -8,7 +8,15 @@ import { pushSchema as drizzlePush } from 'drizzle-kit/api-postgres';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import ora from 'ora';
 
-export const pushSchema = async ({ serverDistDirPath, connectionUri }: { serverDistDirPath: string; connectionUri: string }) => {
+export const pushSchema = async ({
+  serverDistDirPath,
+  connectionUri,
+  dryRun,
+}: {
+  serverDistDirPath: string;
+  connectionUri: string;
+  dryRun?: boolean;
+}) => {
   const schemaPath = path.join(serverDistDirPath, 'src', 'db', 'schema.js');
   const symlinkPath = path.join(serverDistDirPath, 'node_modules');
 
@@ -33,10 +41,16 @@ export const pushSchema = async ({ serverDistDirPath, connectionUri }: { serverD
       const spinner = ora('Analyzing schema changes...').start();
       const { sqlStatements, hints, apply } = await drizzlePush(schema, db, 'snake_case');
 
+      if (dryRun) {
+        spinner.stop();
+
+        return { sqlStatements };
+      }
+
       if (sqlStatements.length === 0) {
         spinner.succeed('Schema is up to date.');
 
-        return;
+        return { sqlStatements };
       }
 
       spinner.stop();
@@ -62,6 +76,8 @@ export const pushSchema = async ({ serverDistDirPath, connectionUri }: { serverD
       await apply();
 
       applySpinner.succeed('Schema pushed to database.');
+
+      return { sqlStatements };
     } finally {
       await db.$client.end();
     }

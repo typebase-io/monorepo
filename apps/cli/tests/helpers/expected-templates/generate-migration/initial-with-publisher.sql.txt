@@ -1,0 +1,21 @@
+CREATE TABLE "todos" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "todos_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"value" varchar(255) NOT NULL,
+	"completed" boolean NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
+
+----------------------------
+
+CREATE TABLE "events" (
+	"id" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "events_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
+	"name" text NOT NULL,
+	"value" jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+----------------------------
+
+CREATE INDEX "events_name_id_idx" ON "events" ("name","id");

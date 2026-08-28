@@ -1,0 +1,45 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
+require("./env.js");
+const node_http_1 = require("node:http");
+const node_1 = require("@orpc/server/node");
+const plugins_1 = require("@orpc/server/plugins");
+const server_1 = require("@orpc/server");
+const server_2 = require("typebase-io/server");
+const ActionModule0 = require("./actions/mutations/todos.js");
+const ActionModule1 = require("./actions/queries/todos.js");
+const router = {
+    mutations: {
+        todos: (0, server_2.filterActions)(ActionModule0),
+    },
+    queries: {
+        todos: (0, server_2.filterActions)(ActionModule1),
+    },
+};
+const handler = new node_1.RPCHandler(router, {
+    plugins: [
+        new plugins_1.CORSPlugin({
+            origin: (origin, options) => origin,
+            allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+        }),
+        new plugins_1.RequestHeadersPlugin(),
+    ],
+    interceptors: [
+        (0, server_1.onError)((error) => {
+            console.error(error);
+        }),
+    ],
+});
+const server = (0, node_http_1.createServer)(async (req, res) => {
+    const { matched } = await handler.handle(req, res, {
+        prefix: "/rpc",
+        context: {},
+    });
+    if (matched) {
+        return;
+    }
+    res.statusCode = 404;
+    res.end("Not found");
+});
+server.listen(8080, "127.0.0.1", () => console.log("Listening on 127.0.0.1:8080"));

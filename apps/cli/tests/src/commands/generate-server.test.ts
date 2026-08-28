@@ -4,6 +4,7 @@ import path from 'node:path';
 import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { db } from '#commands/db.ts';
 import { generateServer } from '#commands/generate-server.ts';
 
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
@@ -15,6 +16,7 @@ import { expectProject } from '#tests/helpers/expect-project.ts';
 import { generateTypebaseProject } from '#tests/helpers/generate-typebase-project.ts';
 import { linkBetterAuth } from '#tests/helpers/link-better-auth.ts';
 import { linkTypebaseIo } from '#tests/helpers/link-typebase-io.ts';
+import { listFiles } from '#tests/helpers/list-files.ts';
 import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts';
 
 const { passThrough } = vi.hoisted(() => ({
@@ -448,6 +450,66 @@ export const auth = defineAuth({
       await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--output', 'xml'], { from: 'user' }))).rejects.toThrow('process.exit called');
 
       expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('in migrations mode', () => {
+    const MIGRATION = '20260101000000_initial';
+
+    const withoutIds = (contents: string) =>
+      contents.replaceAll(/(?!00000000-0000-0000-0000-000000000000)[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/g, '<uuid>');
+
+    const TS_MIGRATIONS = [
+      'package.json',
+      'src/_generated/server.ts',
+      'src/actions/mutations/todos.ts',
+      'src/actions/queries/todos.ts',
+      'src/db/drizzle.config.ts',
+      'src/db/index.ts',
+      `src/db/migrations/${MIGRATION}/migration.sql`,
+      `src/db/migrations/${MIGRATION}/snapshot.json`,
+      'src/db/relations.ts',
+      'src/db/schema.ts',
+      'src/env.ts',
+      'src/index.ts',
+      'tsconfig.json',
+    ];
+
+    const JS_MIGRATIONS = TS_MIGRATIONS.filter((file) => file !== 'tsconfig.json').map((file) =>
+      file.endsWith('.ts') ? file.replace(/\.ts$/, '.js') : file
+    );
+
+    beforeEach(async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      tmp.mkdir('typebase/db/migrations');
+
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+      await withCwd(tmp.path, () => db.parseAsync(['migrations', 'generate', '--name', 'initial'], { from: 'user' }));
+
+      vi.useRealTimers();
+    });
+
+    it.each([
+      { outcome: 'ts-migrations', args: [] as string[], files: TS_MIGRATIONS },
+      { outcome: 'esm-migrations', args: ['--output', 'esm'], files: JS_MIGRATIONS },
+      { outcome: 'cjs-migrations', args: ['--output', 'cjs'], files: JS_MIGRATIONS },
+    ])('generates $outcome with the migrations alongside the schema', async ({ outcome, args, files }) => {
+      await withCwd(tmp.path, () => generateServer.parseAsync(args, { from: 'user' }));
+
+      expectProject(tmp, outcome, files, { namespace: 'generate-server', root: 'typebase/_server', normalise: withoutIds });
+    });
+  });
+
+  describe('in push mode', () => {
+    it('generates a server with no migrations folder', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--output', 'esm'], { from: 'user' }));
+
+      expect(listFiles(path.join(tmp.path, 'typebase/_server')).filter((file) => file.includes('migrations'))).toEqual([]);
     });
   });
 });

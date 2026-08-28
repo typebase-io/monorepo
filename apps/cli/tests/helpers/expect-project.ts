@@ -9,11 +9,19 @@ export const expectProject = (
   tmp: TempDir,
   outcome: string,
   files: string[],
-  { namespace, root = 'typebase' }: { namespace: string; root?: string }
+  {
+    namespace,
+    root = 'typebase',
+    normalise = (contents: string) => contents,
+  }: {
+    namespace: string;
+    root?: string;
+    normalise?: (contents: string) => string;
+  }
 ) => {
   expect(listFiles(path.join(tmp.path, root))).toEqual([...files].sort());
 
   for (const file of files) {
-    expect(tmp.read(`${root}/${file}`)).toEqualTemplate(namespace, outcome, ...`${file}.txt`.split('/'));
+    expect(normalise(tmp.read(`${root}/${file}`))).toEqualTemplate(namespace, outcome, ...`${file}.txt`.split('/'));
   }
 };

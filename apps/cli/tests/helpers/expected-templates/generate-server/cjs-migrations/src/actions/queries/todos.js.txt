@@ -1,0 +1,46 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMany = exports.getOne = void 0;
+const server_1 = require("typebase-io/server");
+const zod_1 = require("zod");
+const server_ts_1 = require("../../_generated/server.js");
+exports.getOne = server_ts_1.action
+    .input(zod_1.z.object({
+    id: zod_1.z.number(),
+}))
+    .output(zod_1.z.object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+}))
+    .handler(async ({ db, input }) => {
+    const todo = await db.query.todos.findFirst({
+        where: { id: input.id },
+    });
+    if (!todo) {
+        throw new server_1.ServerError("NOT_FOUND");
+    }
+    return {
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    };
+});
+exports.getMany = server_ts_1.action
+    .output(zod_1.z
+    .object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+})
+    .array())
+    .handler(async ({ db }) => {
+    const todos = await db.query.todos.findMany({
+        orderBy: { createdAt: "desc" },
+    });
+    return todos.map((todo) => ({
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    }));
+});

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { auth } from '#commands/auth.ts';
+import { db } from '#commands/db.ts';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
@@ -266,5 +267,82 @@ describe('auth generate command — configuration changes', () => {
 
     expect(tmp.read('typebase/db/schema.ts')).toEqualTemplate('auth', 'after-removing-plugin-schema.ts.txt');
     expect(tmp.read('typebase/db/relations.ts')).toEqualTemplate('auth', 'after-removing-plugin-relations.ts.txt');
+  });
+
+  describe('in migrations mode', () => {
+    const migrationsDirPath = () => path.join(tmp.path, 'typebase/db/migrations');
+
+    const migrationNames = () => (fs.existsSync(migrationsDirPath()) ? fs.readdirSync(migrationsDirPath()).sort((a, b) => a.localeCompare(b)) : []);
+
+    const readMigration = (name: string, fileName: string) => fs.readFileSync(path.join(migrationsDirPath(), name, fileName), 'utf8');
+
+    const generateAuth = () => withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
+
+    const enterMigrationsMode = async () => {
+      await generateTypebaseProject(tmp, { withAuth: false });
+
+      tmp.write('typebase/auth.ts', baseAuth);
+      tmp.mkdir('typebase/db/migrations');
+
+      await withCwd(tmp.path, () => db.parseAsync(['migrations', 'generate', '--name', 'initial'], { from: 'user' }));
+    };
+
+    it('records a migration holding the auth tables it added', async () => {
+      await enterMigrationsMode();
+
+      await generateAuth();
+
+      const [, second = ''] = migrationNames();
+
+      expect(second).toMatch(/^\d{14}_auth_tables$/);
+      expect(readMigration(second, 'migration.sql')).toEqualTemplate('auth-migrations', 'auth-tables.sql.txt');
+    });
+
+    it('records only the auth tables, leaving what the history already had alone', async () => {
+      await enterMigrationsMode();
+
+      await generateAuth();
+
+      const [, second = ''] = migrationNames();
+
+      expect(readMigration(second, 'migration.sql')).not.toContain('CREATE TABLE "todos"');
+    });
+
+    it('chains the migration onto the existing history', async () => {
+      await enterMigrationsMode();
+
+      await generateAuth();
+
+      const [first = '', second = ''] = migrationNames();
+
+      const snapshotOf = (name: string) => JSON.parse(readMigration(name, 'snapshot.json')) as { id: string; prevIds: string[] };
+
+      expect(snapshotOf(second).prevIds).toEqual([snapshotOf(first).id]);
+    });
+
+    it('writes no empty migration when the auth tables are already recorded', async () => {
+      await enterMigrationsMode();
+
+      await generateAuth();
+
+      const before = migrationNames();
+
+      await generateAuth();
+
+      expect(migrationNames()).toEqual(before);
+    });
+  });
+
+  describe('in push mode', () => {
+    it('adds no migrations folder', async () => {
+      await generateTypebaseProject(tmp, { withAuth: false });
+
+      tmp.write('typebase/auth.ts', baseAuth);
+
+      await withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
+
+      expect(fs.existsSync(path.join(tmp.path, 'typebase/db/migrations'))).toBe(false);
+      expect(tmp.read('typebase/db/schema.ts')).toContain('export const users');
+    });
   });
 });

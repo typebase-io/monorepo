@@ -2,12 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { select } from '@inquirer/prompts';
+import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { auth } from '#commands/auth.ts';
 import { codegen } from '#commands/codegen.ts';
+import { db } from '#commands/db.ts';
 import { deploy } from '#commands/deploy.ts';
 
+import { applyMigrations } from '#helpers/db/apply-migrations.ts';
 import { neon } from '#helpers/db/neon/index.ts';
 import { pushSchema } from '#helpers/db/push-schema.ts';
 import { cloudflare } from '#helpers/deploy/cloudflare/index.ts';
@@ -40,6 +43,7 @@ const { passThrough } = vi.hoisted(() => ({
 }));
 
 vi.mock('#helpers/shared/validate-types.ts', () => ({ validateTypes: vi.fn() }));
+vi.mock('#helpers/db/apply-migrations.ts', () => ({ applyMigrations: vi.fn() }));
 vi.mock('#helpers/db/neon/index.ts', () => ({ neon: vi.fn() }));
 vi.mock('#helpers/db/push-schema.ts', () => ({ pushSchema: vi.fn() }));
 vi.mock('#helpers/env/vercel.ts', () => ({ getVercelEnvVar: vi.fn() }));
@@ -93,7 +97,8 @@ describe('deploy command', () => {
 
     vi.mocked(ValidateTypes.validateTypes).mockReset();
     vi.mocked(neon).mockResolvedValue({ projectId: 'proj-1', branchId: 'br-1', connectionUri: CONNECTION_URI });
-    vi.mocked(pushSchema).mockResolvedValue(undefined);
+    vi.mocked(pushSchema).mockResolvedValue({ sqlStatements: [] });
+    vi.mocked(applyMigrations).mockResolvedValue({ applied: [] });
     vi.mocked(getVercelEnvVar).mockResolvedValue(undefined);
     vi.mocked(getDenoEnvVar).mockResolvedValue(undefined);
     vi.mocked(getCloudflareEnvVar).mockResolvedValue(undefined);
@@ -532,6 +537,180 @@ describe('deploy command', () => {
 
       await setupProject({ withAuth: true, withDb: true });
       await expect(withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }))).rejects.toThrow('deploy failed');
+    });
+  });
+
+  describe('in migrations mode', () => {
+    const generateMigration = (name: string) => withCwd(tmp.path, () => db.parseAsync(['migrations', 'generate', '--name', name], { from: 'user' }));
+
+    const enterMigrationsMode = async () => {
+      tmp.mkdir('typebase/db/migrations');
+
+      await generateMigration('initial');
+    };
+
+    const addUnrecordedColumn = () => {
+      tmp.write(
+        'typebase/db/schema.ts',
+        `import { p } from "typebase-io/db";
+
+export const todos = p.pgTable("todos", {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  value: p.varchar({ length: 255 }).notNull(),
+  completed: p.boolean().notNull(),
+  createdAt: p.timestamp().notNull().defaultNow(),
+  priority: p.integer(),
+});
+`
+      );
+    };
+
+    const runDeploy = () => withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+    beforeEach(async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+      await enterMigrationsMode();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('applies pending migrations and never pushes', async () => {
+      await runDeploy();
+
+      expect(applyMigrations).toHaveBeenCalledWith({
+        migrationsDirPath: path.join(tmp.path, 'typebase/db/migrations'),
+        connectionUri: CONNECTION_URI,
+      });
+
+      expect(pushSchema).not.toHaveBeenCalled();
+    });
+
+    it('applies migrations before the server is deployed', async () => {
+      await runDeploy();
+
+      expect(applyMigrations).toHaveBeenCalledBefore(vi.mocked(vercel));
+    });
+
+    it('aborts the deploy when a migration fails', async () => {
+      vi.mocked(applyMigrations).mockRejectedValue(new Error('syntax error at or near "CREAT"'));
+
+      await expect(runDeploy()).rejects.toThrow('syntax error at or near "CREAT"');
+
+      expect(vercel).not.toHaveBeenCalled();
+    });
+
+    it('refuses to deploy when the schema has unrecorded changes', async () => {
+      addUnrecordedColumn();
+
+      await expect(runDeploy()).rejects.toThrow('Your schema files have changes that no migration records, affecting todos.');
+    });
+
+    it('refuses before applying or deploying anything', async () => {
+      addUnrecordedColumn();
+
+      await expect(runDeploy()).rejects.toThrow('no migration records');
+
+      expect(applyMigrations).not.toHaveBeenCalled();
+      expect(pushSchema).not.toHaveBeenCalled();
+      expect(vercel).not.toHaveBeenCalled();
+      expect(neon).not.toHaveBeenCalled();
+    });
+
+    it('deploys normally once the change is recorded', async () => {
+      addUnrecordedColumn();
+
+      await generateMigration('add priority');
+
+      await runDeploy();
+
+      expect(applyMigrations).toHaveBeenCalledOnce();
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+
+    it('ships the migrations inside the deployed bundle', async () => {
+      const MIGRATION = '20260101000000_initial';
+
+      const withoutIds = (contents: string) =>
+        contents.replaceAll(/(?!00000000-0000-0000-0000-000000000000)[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/g, '<uuid>');
+
+      await runDeploy();
+
+      expectProject(
+        tmp,
+        'vercel-migrations',
+        [
+          'package.json',
+          'src/_generated/server.js',
+          'src/actions/mutations/todos.js',
+          'src/actions/queries/todos.js',
+          'src/db/drizzle.config.js',
+          'src/db/index.js',
+          `src/db/migrations/${MIGRATION}/migration.sql`,
+          `src/db/migrations/${MIGRATION}/snapshot.json`,
+          'src/db/relations.js',
+          'src/db/schema.js',
+          'src/env.js',
+          'src/index.js',
+        ],
+        { namespace: 'deploy', root: 'captured', normalise: withoutIds }
+      );
+    });
+
+    it.each([
+      { applied: [], expected: 'Database is up to date. No migrations to apply.' },
+      { applied: ['20260101000000_initial'], expected: '1 migration applied.' },
+      { applied: ['20260101000000_initial', '20260201000000_add_priority'], expected: '2 migrations applied.' },
+    ])('reports "$expected"', async ({ applied, expected }) => {
+      vi.mocked(applyMigrations).mockResolvedValue({ applied });
+
+      await runDeploy();
+
+      const succeeded = vi
+        .mocked(ora())
+        .succeed.mock.calls.flat()
+        .map((line) => String(line))
+        .join('\n');
+
+      expect(succeeded).toContain(expected);
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('in push mode', () => {
+    it('still pushes the schema and never applies migrations', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledOnce();
+      expect(applyMigrations).not.toHaveBeenCalled();
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+
+    it('does not refuse when the schema has changes, because nothing records them', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      tmp.write(
+        'typebase/db/schema.ts',
+        `import { p } from "typebase-io/db";
+
+export const todos = p.pgTable("todos", {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  value: p.varchar({ length: 255 }).notNull(),
+});
+`
+      );
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledOnce();
+      expect(vercel).toHaveBeenCalledOnce();
     });
   });
 });

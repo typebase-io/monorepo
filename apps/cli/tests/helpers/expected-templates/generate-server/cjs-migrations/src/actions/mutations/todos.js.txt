@@ -1,0 +1,76 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteTodo = exports.toggle = exports.create = void 0;
+const db_1 = require("typebase-io/db");
+const server_1 = require("typebase-io/server");
+const zod_1 = require("zod");
+const schema_ts_1 = require("../../db/schema.js");
+const server_ts_1 = require("../../_generated/server.js");
+exports.create = server_ts_1.action
+    .input(zod_1.z.object({
+    value: zod_1.z.string(),
+}))
+    .output(zod_1.z.object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+}))
+    .handler(async ({ db, input }) => {
+    const result = await db
+        .insert(schema_ts_1.todos)
+        .values({
+        value: input.value,
+        completed: false,
+    })
+        .returning();
+    const todo = result.at(0);
+    if (!todo) {
+        throw new server_1.ServerError("INTERNAL_SERVER_ERROR");
+    }
+    return {
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    };
+});
+exports.toggle = server_ts_1.action
+    .input(zod_1.z.object({
+    id: zod_1.z.number(),
+}))
+    .output(zod_1.z.object({
+    id: zod_1.z.number(),
+    value: zod_1.z.string(),
+    completed: zod_1.z.boolean(),
+}))
+    .handler(async ({ db, input }) => {
+    const todo = await db.query.todos.findFirst({
+        where: { id: input.id },
+    });
+    if (!todo) {
+        throw new server_1.ServerError("NOT_FOUND");
+    }
+    await db
+        .update(schema_ts_1.todos)
+        .set({ completed: !todo.completed })
+        .where(db_1.q.eq(schema_ts_1.todos.id, todo.id));
+    return {
+        id: todo.id,
+        value: todo.value,
+        completed: !todo.completed,
+    };
+});
+exports.deleteTodo = server_ts_1.action
+    .input(zod_1.z.object({
+    id: zod_1.z.number(),
+}))
+    .output(zod_1.z.void())
+    .handler(async ({ db, input }) => {
+    const todo = await db.query.todos.findFirst({
+        where: { id: input.id },
+    });
+    if (!todo) {
+        throw new server_1.ServerError("NOT_FOUND");
+    }
+    await db.delete(schema_ts_1.todos).where(db_1.q.eq(schema_ts_1.todos.id, todo.id));
+    return;
+});

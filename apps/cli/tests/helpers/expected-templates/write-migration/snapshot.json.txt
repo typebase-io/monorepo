@@ -1,0 +1,10 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "abc",
+  "prevIds": [
+    "def"
+  ],
+  "ddl": [],
+  "renames": []
+}

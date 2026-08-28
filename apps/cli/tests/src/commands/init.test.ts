@@ -1,11 +1,14 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
+import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { init } from '#commands/init.ts';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { TYPEBASE_CONFIG_SCHEMA_URL } from '#helpers/constants.ts';
+import { readMigrationFiles } from '#helpers/db/read-migration-files.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
 import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
@@ -18,7 +21,9 @@ import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
 
 import { expectProject } from '#tests/helpers/expect-project.ts';
+import { linkBetterAuth } from '#tests/helpers/link-better-auth.ts';
 import { linkTypebaseIo } from '#tests/helpers/link-typebase-io.ts';
+import { linkZod } from '#tests/helpers/link-zod.ts';
 import { listFiles } from '#tests/helpers/list-files.ts';
 import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts';
 
@@ -54,6 +59,8 @@ describe('init command', () => {
     tmp = createTempDir();
 
     linkTypebaseIo(tmp);
+    linkBetterAuth(tmp);
+    linkZod(tmp);
 
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -261,6 +268,155 @@ describe('init command', () => {
       mock().mockRejectedValueOnce(new Error('boom'));
 
       await expect(withCwd(tmp.path, () => init.parseAsync(args, { from: 'user' }))).rejects.toThrow('boom');
+    });
+  });
+
+  describe('--with-migrations', () => {
+    const MIGRATION_FILES = ['db/migrations/20260101000000_initial/migration.sql', 'db/migrations/20260101000000_initial/snapshot.json'];
+
+    const withoutIds = (contents: string) =>
+      contents.replaceAll(/(?!00000000-0000-0000-0000-000000000000)[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/g, '<uuid>');
+
+    const migrationsDirPath = () => path.join(tmp.path, 'typebase/db/migrations');
+
+    const runInit = (...args: string[]) => withCwd(tmp.path, () => init.parseAsync(['--with-migrations', ...args], { from: 'user' }));
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      {
+        outcome: 'with-migrations',
+        args: [],
+        files: [
+          '_generated/db.d.ts',
+          '_generated/server.ts',
+          'actions/mutations/todos.ts',
+          'actions/queries/todos.ts',
+          ...MIGRATION_FILES,
+          'db/relations.ts',
+          'db/schema.ts',
+          'env.ts',
+          'tsconfig.json',
+        ],
+      },
+      {
+        outcome: 'with-migrations-and-auth',
+        args: ['--with-auth'],
+        files: [
+          '_generated/db.d.ts',
+          '_generated/server.ts',
+          'actions/custom-actions.ts',
+          'actions/mutations/todos.ts',
+          'actions/queries/todos.ts',
+          'auth.ts',
+          ...MIGRATION_FILES,
+          'db/relations.ts',
+          'db/schema.ts',
+          'env.ts',
+          'tsconfig.json',
+        ],
+      },
+      {
+        outcome: 'with-migrations-and-db-publisher',
+        args: ['--with-db-publisher'],
+        files: [
+          '_generated/db.d.ts',
+          '_generated/server.ts',
+          'actions/mutations/todos.ts',
+          'actions/queries/todos.ts',
+          ...MIGRATION_FILES,
+          'db/relations.ts',
+          'db/schema.ts',
+          'env.ts',
+          'publisher.ts',
+          'tsconfig.json',
+        ],
+      },
+      {
+        outcome: 'with-migrations-auth-and-db-publisher',
+        args: ['--with-auth', '--with-db-publisher'],
+        files: [
+          '_generated/db.d.ts',
+          '_generated/server.ts',
+          'actions/custom-actions.ts',
+          'actions/mutations/todos.ts',
+          'actions/queries/todos.ts',
+          'auth.ts',
+          ...MIGRATION_FILES,
+          'db/relations.ts',
+          'db/schema.ts',
+          'env.ts',
+          'publisher.ts',
+          'tsconfig.json',
+        ],
+      },
+      {
+        outcome: 'with-migrations-skip-example',
+        args: ['--skip-example'],
+        files: [
+          '_generated/db.d.ts',
+          '_generated/server.ts',
+          'db/migrations/20260101000000_initial/snapshot.json',
+          'db/relations.ts',
+          'db/schema.ts',
+          'tsconfig.json',
+        ],
+      },
+    ])('scaffolds $outcome', async ({ outcome, args, files }) => {
+      await runInit(...args);
+
+      expectProject(tmp, outcome, files, { namespace: 'init', normalise: withoutIds });
+    });
+
+    it('records exactly one migration, whatever the flags', async () => {
+      await runInit('--with-auth', '--with-db-publisher');
+
+      expect(fs.readdirSync(migrationsDirPath())).toEqual(['20260101000000_initial']);
+    });
+
+    it('creates every table before the foreign keys that reference it', async () => {
+      await runInit('--with-auth', '--with-db-publisher');
+
+      const sql = fs.readFileSync(path.join(migrationsDirPath(), '20260101000000_initial/migration.sql'), 'utf8');
+
+      for (const [, table] of sql.matchAll(/REFERENCES "([^"]+)"/g)) {
+        expect(sql.indexOf(`CREATE TABLE "${table}"`)).toBeGreaterThanOrEqual(0);
+        expect(sql.indexOf(`CREATE TABLE "${table}"`)).toBeLessThan(sql.indexOf(`REFERENCES "${table}"`));
+      }
+    });
+
+    it('records the migration in the form the migrator applies', async () => {
+      await runInit('--with-auth', '--with-db-publisher');
+
+      const [migration] = readMigrationFiles(migrationsDirPath());
+
+      expect(migration?.sql.length).toBeGreaterThan(1);
+      expect(migration?.sql.every((statement) => statement.trim().endsWith(';'))).toBe(true);
+    });
+
+    it('builds the schema without starting a second spinner over the one init owns', async () => {
+      await runInit();
+
+      const started = vi
+        .mocked(ora)
+        .mock.calls.flat()
+        .filter((message) => typeof message === 'string')
+        .join('\n');
+
+      expect(started).not.toContain('Building schema...');
+    });
+
+    it('leaves a project without the flag in push mode', async () => {
+      await withCwd(tmp.path, () => init.parseAsync([], { from: 'user' }));
+
+      expect(fs.existsSync(migrationsDirPath())).toBe(false);
     });
   });
 });

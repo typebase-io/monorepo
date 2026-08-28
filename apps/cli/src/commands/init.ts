@@ -8,6 +8,7 @@ import ora from 'ora';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { TYPEBASE_CONFIG_FILE_NAME } from '#helpers/constants.ts';
+import { generateMigration } from '#helpers/db/generate-migration.ts';
 import { addExampleTodosRelation } from '#helpers/init/add-example-todos-relation.ts';
 import { generateExampleActions } from '#helpers/init/generate-example-actions.ts';
 import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
@@ -32,8 +33,9 @@ export const init = new Command('init')
   .addOption(
     new Option('--with-db-publisher', 'Creates a `db` publisher and the `events` table it keeps events in').default(false).conflicts('skipExample')
   )
+  .option('--with-migrations', 'Records schema changes as migrations instead of pushing them, starting with the scaffolded schema')
   .option('--skip-example', 'Skips the example schema and actions')
-  .action(async ({ force, withAuth, withDbPublisher, skipExample }) => {
+  .action(async ({ force, withAuth, withDbPublisher, skipExample, withMigrations }) => {
     const config = await getTypebaseConfig();
     const typebaseDirPath = path.resolve(config.projectPath);
 
@@ -49,6 +51,7 @@ export const init = new Command('init')
     const examplePublisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
+    const migrationsDirPath = path.join(dbDirPath, 'migrations');
 
     await fs.mkdir(typebaseDirPath, { recursive: true });
     await fs.mkdir(dbDirPath, { recursive: true });
@@ -88,6 +91,19 @@ export const init = new Command('init')
       });
 
       addExampleTodosRelation({ relationsFilePath: exampleRelationsPath });
+    }
+
+    if (withMigrations) {
+      spinner.text = 'Creating initial migration...';
+
+      await generateMigration({
+        dbDirPath,
+        migrationsDirPath,
+        serverProvider: config.serverProvider,
+        name: 'initial',
+        allowEmpty: true,
+        quiet: true,
+      });
     }
 
     spinner.text = 'Generating types...';

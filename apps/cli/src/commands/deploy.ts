@@ -10,6 +10,8 @@ import { match } from 'ts-pattern';
 
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
 import { type ServerAdapter, serverProviders } from '#helpers/constants.ts';
+import { applyMigrations } from '#helpers/db/apply-migrations.ts';
+import { detectDrift } from '#helpers/db/detect-drift.ts';
 import { neon } from '#helpers/db/neon/index.ts';
 import { pushSchema } from '#helpers/db/push-schema.ts';
 import { cloudflare } from '#helpers/deploy/cloudflare/index.ts';
@@ -18,6 +20,7 @@ import { vercel } from '#helpers/deploy/vercel/index.ts';
 import { getCloudflareEnvVar } from '#helpers/env/cloudflare.ts';
 import { getDenoEnvVar } from '#helpers/env/deno.ts';
 import { getVercelEnvVar } from '#helpers/env/vercel.ts';
+import { copyServerAssets } from '#helpers/generate-server/copy-server-assets.ts';
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
@@ -34,6 +37,7 @@ import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { hasMigrations } from '#helpers/shared/has-migrations.ts';
 import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 import { writeEnvFile } from '#helpers/shared/write-env-file.ts';
@@ -91,6 +95,7 @@ export const deploy = new Command('deploy')
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
+    const migrationsDirPath = path.join(dbDirPath, 'migrations');
 
     const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
     const serverDistDirPath = path.resolve(tempServerDirPath, outDir);
@@ -110,7 +115,9 @@ export const deploy = new Command('deploy')
       needsEnvModule: includeEnvFile,
     } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
 
+    const useMigrations = includeDBFiles && hasMigrations(migrationsDirPath);
     const env: { key: string; value: string; secret: boolean }[] = [];
+
     let hadDatabaseUrl = false;
     let hadAuthSecret = false;
 
@@ -130,6 +137,16 @@ export const deploy = new Command('deploy')
       quiet: false,
       excludeDirPaths: [generatedDirPath, path.resolve(typebaseDirPath, server.outDir)],
     });
+
+    if (useMigrations) {
+      const { tables } = await detectDrift({ dbDirPath, migrationsDirPath, serverProvider: provider });
+
+      if (tables.length > 0) {
+        throw new Error(
+          `Your schema files have changes that no migration records, affecting ${tables.join(', ')}. Deploying now would ship types describing a database that does not have them. Run \`db migrations generate\` to record the changes, then deploy again.`
+        );
+      }
+    }
 
     const spinner = ora('Generating server files...').start();
 
@@ -210,6 +227,8 @@ export const deploy = new Command('deploy')
         serverDistDirPath,
       });
 
+      await copyServerAssets({ tempServerDirPath, serverDistDirPath });
+
       await Promise.all(
         ['package.json', ...(generatedFile ? [generatedFile] : [])].map((file) =>
           fs.copyFile(path.join(tempServerDirPath, file), path.join(serverDistDirPath, file))
@@ -219,7 +238,17 @@ export const deploy = new Command('deploy')
       const { connectionUri } = includeDBFiles ? await neon({ target }) : { connectionUri: undefined };
 
       if (connectionUri) {
-        await pushSchema({ serverDistDirPath, connectionUri });
+        if (useMigrations) {
+          const { applied } = await applyMigrations({ migrationsDirPath, connectionUri });
+
+          ora().succeed(
+            applied.length === 0
+              ? 'Database is up to date. No migrations to apply.'
+              : `${applied.length} ${applied.length === 1 ? 'migration' : 'migrations'} applied.`
+          );
+        } else {
+          await pushSchema({ serverDistDirPath, connectionUri });
+        }
 
         const databaseURL = await match(provider)
           .with('vercel', () => getVercelEnvVar({ key: 'DATABASE_URL', target }))

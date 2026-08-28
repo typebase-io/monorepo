@@ -5,10 +5,12 @@ import ora from 'ora';
 
 import { generateAuthSchema } from '#helpers/auth/generate-auth-schema.ts';
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
+import { generateMigration } from '#helpers/db/generate-migration.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
+import { hasMigrations } from '#helpers/shared/has-migrations.ts';
 import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
 
 export const auth = new Command('auth').summary('Manage authentication').addCommand(
@@ -19,13 +21,15 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
     )
     .allowExcessArguments(false)
     .action(async () => {
-      const { projectPath } = await getTypebaseConfig();
+      const { projectPath, serverProvider } = await getTypebaseConfig();
       const typebaseDirPath = path.resolve(projectPath);
 
       const tsConfigFilePath = path.join(typebaseDirPath, 'tsconfig.json');
       const authFilePath = path.join(typebaseDirPath, 'auth.ts');
       const envFilePath = path.join(typebaseDirPath, 'env.ts');
       const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
+      const dbDirPath = path.join(typebaseDirPath, 'db');
+      const migrationsDirPath = path.join(dbDirPath, 'migrations');
       const schemaFilePath = path.join(typebaseDirPath, 'db', 'schema.ts');
       const relationsFilePath = path.join(typebaseDirPath, 'db', 'relations.ts');
       const actionsDirPath = path.join(typebaseDirPath, 'actions');
@@ -45,6 +49,14 @@ export const auth = new Command('auth').summary('Manage authentication').addComm
       await generateAuthSchema({ schemaFilePath, relationsFilePath, authFilePath });
 
       authSpinner.succeed('Auth tables added to schema.ts and relations.ts.');
+
+      if (hasMigrations(migrationsDirPath)) {
+        const migration = await generateMigration({ dbDirPath, migrationsDirPath, serverProvider, name: 'auth tables' });
+
+        if (migration) {
+          ora().succeed(`Migration written to ${path.relative(process.cwd(), migration.dirPath)}.`);
+        }
+      }
 
       const typesSpinner = ora('Generating types...').start();
 

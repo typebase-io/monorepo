@@ -1,0 +1,55 @@
+import 'dotenv/config';
+
+import "./env.ts";
+
+import { createServer } from "node:http";
+import { RPCHandler } from "@orpc/server/node";
+import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+
+import { filterActions } from "typebase-io/server";
+
+import * as ActionModule0 from "./actions/mutations/todos.ts";
+import * as ActionModule1 from "./actions/queries/todos.ts";
+
+const router = {
+  mutations: {
+    todos: filterActions(ActionModule0),
+  },
+  queries: {
+    todos: filterActions(ActionModule1),
+  },
+};
+
+const handler = new RPCHandler(router, {
+  plugins: [
+    new CORSPlugin({
+      origin: (origin, options) => origin,
+      allowMethods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
+    }),
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+const server = createServer(async (req, res) => {
+  const { matched } = await handler.handle(req, res, {
+    prefix: "/rpc",
+    context: {},
+  });
+
+  if (matched) {
+    return;
+  }
+
+  res.statusCode = 404;
+  res.end("Not found");
+});
+
+server.listen(8080, "127.0.0.1", () =>
+  console.log("Listening on 127.0.0.1:8080"),
+);

@@ -3,7 +3,7 @@ export const drizzleConfigTemplate = ({ ts }: { ts: boolean }) => {
 import { env } from "${ts ? '../env.ts' : '../env.js'}";
 
 export default defineConfig({
-  out: "./drizzle",
+  out: "./src/db/migrations",
   schema: "${ts ? './src/db/schema.ts' : './src/db/schema.js'}",
   dialect: "postgresql",
   dbCredentials: {

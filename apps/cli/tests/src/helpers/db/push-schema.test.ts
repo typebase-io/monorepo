@@ -61,6 +61,40 @@ describe('pushSchema', () => {
     vi.restoreAllMocks();
   });
 
+  describe('dry run', () => {
+    it('reports what the push would change without changing it', async () => {
+      const serverDistDirPath = writeServerSchema(tmp);
+      const { apply } = mockDrizzlePush({ sqlStatements: ['ALTER TABLE "users" ADD COLUMN "age" integer;'] });
+
+      const result = await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+
+      expect(result).toEqual({ sqlStatements: ['ALTER TABLE "users" ADD COLUMN "age" integer;'] });
+      expect(apply).not.toHaveBeenCalled();
+      expect(confirm).not.toHaveBeenCalled();
+    });
+
+    it('does not ask about hints, because nothing is being applied', async () => {
+      const serverDistDirPath = writeServerSchema(tmp);
+      const { apply } = mockDrizzlePush({ sqlStatements: ['DROP TABLE "users";'], hints: [{ hint: 'You are about to drop "users"' }] });
+
+      await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+
+      expect(confirm).not.toHaveBeenCalled();
+      expect(apply).not.toHaveBeenCalled();
+    });
+
+    it('reports an empty list when the database already matches', async () => {
+      const serverDistDirPath = writeServerSchema(tmp);
+
+      mockDrizzlePush({});
+
+      const result = await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+
+      expect(result).toEqual({ sqlStatements: [] });
+      expect(dbMocks.client.end).toHaveBeenCalledOnce();
+    });
+  });
+
   it('creates a node_modules symlink, analyzes the schema, and cleans up when there are no changes', async () => {
     const serverDistDirPath = writeServerSchema(tmp);
     const { apply } = mockDrizzlePush({});
