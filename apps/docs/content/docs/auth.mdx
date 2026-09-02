@@ -23,7 +23,7 @@ Adding authentication to a Typebase project involves four steps:
 
 1. **Create an `auth.ts` file** in your `typebase/` directory to configure authentication.
 2. **Run [`npx typebase-io-cli auth generate`](/docs/cli/auth)** to add the required authentication tables to your database schema.
-3. **Push the schema to your database** with [`npx typebase-io-cli db dev push`](/docs/cli/db) (or [`npx typebase-io-cli deploy dev`](/docs/cli/deploy), which pushes as part of deploying).
+3. **Get the schema into your database** with [`npx typebase-io-cli db dev push`](/docs/cli/db) (or [`npx typebase-io-cli deploy dev`](/docs/cli/deploy), which does it as part of deploying). In [migrations mode](/docs/database/migrations), `auth generate` has already recorded the migration for you, so apply it with `npx typebase-io-cli db dev migrate`.
 4. **Create an auth client** on the frontend to handle sign-up, sign-in, and session management.
 
 <Callout type="info">
@@ -162,13 +162,19 @@ export const verifications = p.pgTable('verifications', {
 
 ## Step 3: Push the schema to your database
 
-[`npx typebase-io-cli auth generate`](/docs/cli/auth) only edits source files. It doesn't create the tables in Postgres, so push the schema to your dev database before trying to sign in:
+[`npx typebase-io-cli auth generate`](/docs/cli/auth) only edits source files. It doesn't create the tables in Postgres, so get the schema into your dev database before trying to sign in:
 
 ```npm
 npx typebase-io-cli db dev push
 ```
 
-[`npx typebase-io-cli deploy dev`](/docs/cli/deploy) also runs a schema push as part of deploying, so if you're about to deploy you can skip the explicit `db push`.
+In [migrations mode](/docs/database/migrations), apply the migration `auth generate` recorded instead:
+
+```npm
+npx typebase-io-cli db dev migrate
+```
+
+[`npx typebase-io-cli deploy dev`](/docs/cli/deploy) does the same thing as part of deploying — a push, or your pending migrations — so if you're about to deploy you can skip the explicit step.
 
 <Callout type="warn">
   Skipping this step is the most common cause of "auth is configured but sign-in fails". The auth client will hit your server, but the server will

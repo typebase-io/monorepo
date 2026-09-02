@@ -75,7 +75,7 @@ Plus every key you declared in [`typebase/env.ts`](/docs/env). The server valida
 
 Locally, add them to `typebase/_server/.env` instead and restart. The `.env` file survives re-running `generate-server`.
 
-The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`) once. That provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
+The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`, or `db <target> migrate` in [migrations mode](/docs/database/migrations)) once. That provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
 
 <Callout type="info">
   The generated server reads a plain `DATABASE_URL`, but the CLI stores both connection strings in your project-root `.env` under different keys so

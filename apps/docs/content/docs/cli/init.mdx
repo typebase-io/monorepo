@@ -25,12 +25,13 @@ the values already in it.
 
 ## Options
 
-| Flag                  | Description                                                                     |
-| --------------------- | ------------------------------------------------------------------------------- |
-| `-f, --force`         | Overwrite `tsconfig.json` and regenerate the scaffolded example files.          |
-| `--with-auth`         | Include an example `auth.ts` with email/password authentication.                |
-| `--with-db-publisher` | Include a `publisher.ts`, the `events` table it needs, and actions that use it. |
-| `--skip-example`      | Skip generating the example schema, actions, and `env.ts`.                      |
+| Flag                  | Description                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `-f, --force`         | Overwrite `tsconfig.json` and regenerate the scaffolded example files.                    |
+| `--with-auth`         | Include an example `auth.ts` with email/password authentication.                          |
+| `--with-db-publisher` | Include a `publisher.ts`, the `events` table it needs, and actions that use it.           |
+| `--skip-example`      | Skip generating the example schema, actions, and `env.ts`.                                |
+| `--with-migrations`   | Record schema changes as [migrations](/docs/database/migrations) instead of pushing them. |
 
 ### `--with-auth`
 
@@ -43,6 +44,26 @@ Sets up [authentication](/docs/auth) with better-auth, using email and password.
 - `actions/queries/todos.ts` and `actions/mutations/todos.ts`: built on `authedAction`, and scoped to the signed-in user
 
 <Callout type="info">It cannot be combined with `--skip-example`, which skips the example this flag adds to.</Callout>
+
+### `--with-migrations`
+
+Starts the project in [migrations mode](/docs/database/migrations), so it has schema history from its first commit rather than needing conversion
+later. On top of the usual scaffold it writes:
+
+- `db/migrations/<timestamp>_initial/`: one migration holding the creation SQL for the scaffolded schema, plus the snapshot the next migration is
+  diffed against
+
+The migration is generated from your actual schema files, so combining this with `--with-auth` or `--with-db-publisher` puts those tables in the same
+first migration. It is one migration, not one per flag: with auth the example table references the auth `users` table, so a migration holding the
+example table alone would reference a table nothing had created.
+
+From then on, `db <target> push` refuses to run and you use [`db migrations generate`](/docs/cli/db#db-migrations-generate) and [`db <target>
+migrate`](/docs/cli/db#db-dev-migrate) instead.
+
+<Callout type="info">
+  Already have a project? You don't need to start over. [`db migrations init`](/docs/cli/db#db-migrations-init) adopts migrations on an existing
+  project without recreating your databases.
+</Callout>
 
 ### `--with-db-publisher`
 

@@ -25,4 +25,17 @@ This command:
 - A `typebase/auth.ts` file must exist
 - A `typebase/db/schema.ts` file must exist
 
+### In migrations mode
+
+If your project uses [migrations](/docs/database/migrations), `auth generate` also records a migration for the tables it just added:
+
+```
+✔ Auth tables added to schema.ts and relations.ts.
+✔ Migration written to typebase/db/migrations/20260101120000_auth_tables.
+```
+
+`auth generate` is one of the few commands that edits your schema for you, and what it adds is known and bounded, so it records the migration itself
+rather than leaving your schema files and your history to drift apart. Re-running it when the auth tables are already there and unchanged records
+nothing.
+
 See the [Authentication](/docs/auth) page for full details on setting up auth.

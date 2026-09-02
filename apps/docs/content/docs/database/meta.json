@@ -1,4 +1,4 @@
 {
   "title": "Database",
-  "pages": ["index", "relations", "push"]
+  "pages": ["index", "relations", "push", "migrations"]
 }

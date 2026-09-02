@@ -8,7 +8,7 @@ description: Define your database tables using Drizzle ORM.
   actions that don't touch a database.
 </Callout>
 
-Typebase uses [Drizzle ORM](https://orm.drizzle.team/) under the hood for everything database-related: schema definitions, relations, and queries. Schema changes are applied to your database with a push-based workflow ([`npx typebase-io-cli db dev push`](/docs/cli/db)). If you run into anything not covered here, the [Drizzle documentation](https://orm.drizzle.team/docs/overview) has you covered.
+Typebase uses [Drizzle ORM](https://orm.drizzle.team/) under the hood for everything database-related: schema definitions, relations, and queries. Schema changes reach your database in one of two ways: by [pushing](/docs/database/push) them ([`npx typebase-io-cli db dev push`](/docs/cli/db)), which is the default, or by recording them as [migrations](/docs/database/migrations) and applying those. If you run into anything not covered here, the [Drizzle documentation](https://orm.drizzle.team/docs/overview) has you covered.
 
 <details>
 <summary><strong>New to databases?</strong></summary>
@@ -144,3 +144,6 @@ type NewTodo = DB['todos']['insert'];
 ## Next steps
 
 Now that you know how to define tables, learn how to [set up relations](/docs/database/relations) between them.
+
+Then decide how schema changes reach your database: [pushing](/docs/database/push) them directly, or recording them as
+[migrations](/docs/database/migrations).

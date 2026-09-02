@@ -110,7 +110,7 @@ _server/
     _generated/
       server.ts       # Action builder and middleware setup
     actions/          # Your action files (copied and processed)
-    db/               # Your schema and relations (if applicable)
+    db/               # Your schema, relations and migrations (if applicable)
     auth.ts           # Your auth config (if applicable)
     env.ts            # Validated environment variables (if applicable)
     publisher.ts      # Publisher runtime config (if applicable)
@@ -119,6 +119,11 @@ _server/
 ```
 
 `src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
+
+`src/db/migrations/` is copied across when your project uses [migrations](/docs/database/migrations), for every output format, and the drizzle config
+written next to it points its `out` at them. The generated server is self-contained: you can apply the migrations it shipped with using standard
+drizzle tooling. The server never reads them itself — migrations are applied by the CLI, from your machine or from CI. A project in push mode gets no
+`migrations` folder.
 
 `src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. `dotenv` is added to `package.json`, and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither.
 

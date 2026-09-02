@@ -5,6 +5,12 @@ description: Apply your schema changes to the database.
 
 After modifying your schema, you need to push the changes to your database so the actual tables reflect your definitions.
 
+<Callout type="info">
+  Pushing is one of two ways to get a schema change into a database. The other is [migrations](/docs/database/migrations), where changes are recorded
+  as reviewable SQL files and applied deliberately. Push is the default; everything on this page describes a project that has not opted into
+  migrations.
+</Callout>
+
 ## Dev and prod are separate branches
 
 Typebase provisions two independent Neon branches inside the same project: one for `dev` and one for `prod`. Each branch has its own data, so you can iterate on your schema freely in development without risking your production data. Always test schema changes in dev before pushing to prod.
@@ -24,6 +30,11 @@ npx typebase-io-cli db prod push
 ```
 
 You don't need to run this manually every time. `npx typebase-io-cli deploy dev` and `npx typebase-io-cli deploy prod` automatically push your schema changes as part of the deployment process. So if you're deploying anyway, your database will always be in sync with your schema without any extra steps.
+
+<Callout type="warn">
+  That last part stops being true once a project uses [migrations](/docs/database/migrations). In migrations mode `deploy` applies your pending
+  migrations instead of pushing, and refuses to deploy at all when your schema files hold changes no migration records.
+</Callout>
 
 ## Environment variables
 
@@ -63,3 +74,19 @@ The Neon UI is fine (and useful) for:
 - Exploring what the current schema actually looks like on the branch
 
 For anything that changes the schema shape (tables, columns, types, constraints, indexes tied to your schema), edit `schema.ts` and run `npx typebase-io-cli db dev push` (or `db prod push` for production).
+
+## When push isn't enough
+
+Push applies a change and leaves no record of it. There is no file to review in a pull request, no history to read, and no way to inspect the SQL
+before it runs. Anything the diff cannot express — a backfill, a rename it would turn into a drop-and-recreate — has nowhere to live, and two
+developers changing the schema on separate branches have nothing that notices the divergence.
+
+[Migrations](/docs/database/migrations) exist for exactly those cases. You can [adopt them on an existing
+project](/docs/database/migrations#adopting-migrations-on-an-existing-project) without recreating your databases:
+
+```npm
+npx typebase-io-cli db migrations init
+```
+
+Once a project has a `typebase/db/migrations/` folder, the two modes are mutually exclusive: `push` refuses to run and points at `db <target> migrate`
+instead.

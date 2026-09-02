@@ -18,6 +18,36 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.16 [#v0-1-16]
+
+_2026-09-02._
+
+**Added**
+
+- [Migrations](/docs/database/migrations): an opt-in alternative to pushing, where schema changes are recorded as SQL files you read, edit, commit and
+  review, and reach a database only when applied. A project is in migrations mode when `typebase/db/migrations/` exists.
+  - [`db migrations generate`](/docs/cli/db#db-migrations-generate) diffs your schema files against the last recorded migration and writes the
+    difference. It is offline and contacts no database. `--name` names it, `--custom` gives you an empty file to write SQL into yourself, and
+    `--ignore-conflicts` overrides the [forked-history](/docs/database/migrations#forked-history) check.
+  - [`db <target> migrate`](/docs/cli/db#db-dev-migrate) applies pending migrations to `dev`, `prod`, or, with `db local migrate --url`, a Postgres
+    you run yourself. Each migration runs exactly once per target.
+  - [`db migrations init`](/docs/cli/db#db-migrations-init) adopts migrations on a project whose databases were built by push, recording a baseline and
+    marking the databases that already have those tables as having applied it. It never provisions a target that has no database.
+  - [`init --with-migrations`](/docs/cli/init#--with-migrations) starts a new project in migrations mode, with the scaffolded schema recorded as its
+    first migration.
+  - [`auth generate`](/docs/cli/auth#in-migrations-mode) records a migration for the auth tables it adds.
+  - Migrations ship with [`generate-server`](/docs/cli/generate-server) output and the deployed bundle, and the generated drizzle config points at
+    them.
+
+**Changed**
+
+- `db <target> push` refuses to run in migrations mode and names the `migrate` command for that target. Projects that do not opt into migrations are
+  unaffected.
+- `deploy` applies pending migrations instead of pushing when a project is in migrations mode, and refuses to deploy when your schema files hold
+  changes no migration records. Note that migrations are applied [before the new server ships](/docs/database/migrations#deploying).
+- `db pull` refuses in migrations mode without `--force`, and offers to adopt migrations in a project that has none.
+- The drizzle config written into a generated server points `out` at `./src/db/migrations` rather than an unused `./drizzle` directory.
+
 ## 0.1.15 [#v0-1-15]
 
 _2026-08-26._

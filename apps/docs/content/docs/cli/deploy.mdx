@@ -40,16 +40,16 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 2. **Validates your TypeScript**: Checks your `typebase/` directory against those freshly generated types, so what gets checked is what gets built.
 3. **Generates server files**: Builds the server code from your actions, schema, auth, env, and publisher config.
 4. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
-5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable).
+5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable). In [migrations mode](/docs/database/migrations) it applies your pending migrations instead, and refuses to deploy when your schema files hold changes no migration records.
 6. **Deploys the server**: Uploads the built server to your chosen provider.
 7. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value. Anything you declared in [`env.ts`](/docs/env) is your responsibility: set it with `npx typebase-io-cli env <target> add <KEY> <value>`, or the deployed server will refuse to boot.
 8. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
 
 <Callout type="warn">
-  Schema changes are applied (step 5) before the new server code is live (step 6). This is normal for most deployment workflows, but it means the
-  previous version of your server briefly runs against the new schema. For destructive changes in `prod` (dropped columns, renamed tables), design
-  your schema migrations so the old code keeps working, typically by rolling out additive changes first, then removing the old fields in a later
-  deploy.
+  Schema changes are applied (step 5) before the new server code is live (step 6), whether they arrive by push or as migrations. This is normal for
+  most deployment workflows, but it means the previous version of your server briefly runs against the new schema. For destructive changes in `prod`
+  (dropped columns, renamed tables), design your rollout so the old code keeps working, typically by shipping additive changes first, then removing
+  the old fields in a later deploy.
 </Callout>
 
 ## Options
@@ -151,10 +151,25 @@ The deployment URL looks like: `https://your-project.your-organization.deno.net`
 If your project has a `db/schema.ts`, the CLI will set up a [Neon](https://neon.tech) PostgreSQL database for you:
 
 1. **First deploy**: The CLI asks you to authenticate with Neon, then creates (or selects) a project.
-2. **Schema push**: Your Drizzle schema is pushed to the database.
+2. **Schema push**: Your Drizzle schema is pushed to the database. In [migrations mode](/docs/database/migrations) your pending migrations are applied instead — see [below](#deploying-with-migrations).
 3. **Environment variable**: The connection string is set on your deployment provider under the key `DATABASE_URL`, and mirrored into your project-root `.env` as `DATABASE_URL` for prod or `DATABASE_URL_DEV`.
 
 Dev and prod deployments use separate Neon branches, so your development data doesn't affect production.
+
+## Deploying with migrations
+
+If your project has a `db/migrations` folder, step 2 changes: instead of pushing your schema, the CLI applies your pending migrations. Everything else is the same.
+
+Two things behave differently from push mode:
+
+- **Unrecorded schema changes stop the deploy.** If you edited `db/schema.ts` without running `db migrations generate`, the deploy fails and names the affected tables. Without this, migrations would apply cleanly (there are none pending), and your server would ship with types describing a column the database doesn't have — a green build where every action touching that column fails at runtime.
+- **A failed migration aborts the deploy.** The server is never deployed against a database that didn't get the schema it expects.
+
+<Callout type="warn">
+  Migrations are applied **before** the new server ships, so for a few seconds your old server runs against the new schema. Adding a table or a
+  nullable column is safe. Dropping a column, renaming one, or adding a `NOT NULL` constraint will break the running server until the new one takes
+  over. For those, deploy in two steps: ship a migration the old server can tolerate, then remove the old shape in a follow-up deploy.
+</Callout>
 
 ## Specifying the provider
 

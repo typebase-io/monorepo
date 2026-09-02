@@ -86,7 +86,13 @@ npx typebase-io-cli db dev push
 npx typebase-io-cli db prod push
 ```
 
-[`npx typebase-io-cli deploy`](/docs/cli/deploy) pushes as part of deploying, so if you're deploying anyway there's nothing extra to run.
+In [migrations mode](/docs/database/migrations), record the table as a migration and apply that instead:
+
+```npm
+npx typebase-io-cli db migrations generate --name "add events table"
+```
+
+[`npx typebase-io-cli deploy`](/docs/cli/deploy) pushes — or applies your pending migrations — as part of deploying, so if you're deploying anyway there's nothing extra to run.
 
 ## Publishing
 

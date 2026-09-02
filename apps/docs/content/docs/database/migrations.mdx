@@ -1,0 +1,247 @@
+---
+title: Migrations
+description: Record schema changes as reviewable files instead of pushing them straight to the database.
+---
+
+By default, Typebase applies schema changes by [pushing](/docs/database/push): it compares your schema files against the database and applies the
+difference. That is the fastest way to iterate, and for a project you are still shaping it is the right default.
+
+**Migrations mode** is the alternative. Schema changes are recorded as SQL files you read, edit, commit, and review in a pull request, and they reach a
+database only when you apply them.
+
+## Which one should you use?
+
+Push mode is a good fit while you are still designing the schema, when you are the only person changing it, or when the data in the database is
+disposable.
+
+Reach for migrations when:
+
+- **You need a record of how the schema got here.** Migrations are files in git, so a column appearing in production has a commit, an author, and a
+  review attached to it.
+- **You want to see the SQL before it runs.** Generating and applying are separate steps, so you can read the SQL, edit it, and hold it back until a
+  maintenance window.
+- **Something the diff cannot express.** Backfills, data migrations, and a rename that push would turn into a drop-and-recreate all have a home in a
+  [custom migration](#writing-the-sql-yourself).
+- **More than one person changes the schema.** Two developers who each record a migration on their own branch get [told about it](#forked-history)
+  when the branches merge, instead of one silently overwriting the other.
+
+## The two modes are mutually exclusive
+
+A project is in migrations mode when `typebase/db/migrations/` exists. There is no setting to turn on: **the folder is the switch.**
+
+```txt
+typebase/
+└── db/
+    ├── migrations/          ← this folder means migrations mode
+    │   └── 20260101120000_add_todos/
+    │       ├── migration.sql
+    │       └── snapshot.json
+    ├── relations.ts
+    └── schema.ts
+```
+
+In migrations mode `push` refuses to run:
+
+```
+This project uses migrations, so pushing would change the schema without recording it.
+Run `db dev migrate` to apply your migrations instead.
+```
+
+That is deliberate. A push would change the database without recording anything, and the next migration you generated would be diffed against a
+snapshot that no longer describes the database.
+
+<Callout type="info">
+  Nothing changes for a project that stays in push mode. If you never create the folder, every command behaves exactly as it did before.
+</Callout>
+
+## Starting a new project with migrations
+
+Pass `--with-migrations` to [`init`](/docs/cli/init):
+
+```npm
+npx typebase-io-cli init --with-migrations
+```
+
+Your project has schema history from its first commit. The scaffolded schema is recorded as one real migration, generated from your actual schema
+files, so a database built purely from that history has everything the example app needs. It works alongside `--with-auth` and `--with-db-publisher`,
+and all of them end up in that single first migration.
+
+## Adopting migrations on an existing project
+
+If your databases were built by push, [`db migrations init`](/docs/cli/db#db-migrations-init) moves you across without recreating them or taking
+downtime:
+
+```npm
+npx typebase-io-cli db migrations init
+```
+
+It records a **baseline**: one migration holding the creation SQL for the schema you already have. A brand-new database replays that baseline for real,
+which is what makes a fresh clone or a preview environment able to build a working database from history alone.
+
+Your existing databases already have those tables, so they are _marked_ as having applied the baseline rather than running it. Before that, each target
+is compared against your schema files — nothing is applied by the comparison — so you are never asked to baseline a claim that is not true. If a target
+has drifted, you are offered the chance to bring it in line first.
+
+```
+✔ Baseline recorded at typebase/db/migrations/20260101120000_baseline.
+✔ dev marked as having applied 20260101120000_baseline.
+✔ prod marked as having applied 20260101120000_baseline.
+```
+
+<Callout type="info">
+  A target with no database yet is reported and skipped. Nothing is provisioned for it, and it will replay the baseline for real the first time you
+  migrate it. That means you can adopt migrations on `dev` before `prod` exists at all.
+</Callout>
+
+## Recording a schema change
+
+Edit `typebase/db/schema.ts` as you normally would, then:
+
+```npm
+npx typebase-io-cli db migrations generate --name "add priority to todos"
+```
+
+That writes a new directory under `typebase/db/migrations/`:
+
+```txt
+20260101120000_add_priority_to_todos/
+├── migration.sql     ← the SQL, for you to read, edit and commit
+└── snapshot.json     ← the schema after this migration, used to diff the next one
+```
+
+```sql title="migration.sql"
+ALTER TABLE "todos" ADD COLUMN "priority" integer;
+```
+
+Generating is **offline**. No database is contacted, so it works on a plane, in CI, or before you have provisioned anything. Directory names start with
+a UTC timestamp, so reading the folder tells you the order things happened, and a new migration shows up in a pull request as a new file rather than an
+edit to an existing one.
+
+If your schema matches the last recorded migration there is nothing to record, and the command tells you so instead of writing an empty migration.
+
+## Applying migrations
+
+Generating does not touch a database. Applying does:
+
+```npm
+npx typebase-io-cli db dev migrate
+```
+
+```npm
+npx typebase-io-cli db prod migrate
+```
+
+Each migration runs exactly once per target, so re-running the command is safe, and the output names what actually ran:
+
+```
+✔ 2 migrations applied.
+  20260101120000_add_priority_to_todos
+  20260102090000_backfill_priority
+```
+
+For a Postgres you run yourself, pass a connection string — or set `DATABASE_URL` and omit the flag:
+
+```npm
+npx typebase-io-cli db local migrate --url postgres://localhost:5432/mydb
+```
+
+The bookkeeping lives in the database itself, in a `drizzle.__drizzle_migrations` table that is created on first use. That is what lets each target
+know which migrations it has already seen, and why `dev` and `prod` can be at different points in the history.
+
+## The dev-to-prod flow
+
+```npm
+npx typebase-io-cli db migrations generate --name "add priority"
+```
+
+1. Review `migration.sql` and commit it alongside the schema change.
+2. `npx typebase-io-cli db dev migrate` to try it on dev.
+3. Open the pull request. The migration is a new file, reviewed like any other code.
+4. `npx typebase-io-cli deploy prod` once it is merged — [deploy applies pending migrations for you](#deploying).
+
+## Unrecorded changes
+
+**Drift** is a difference between your schema files and the last recorded migration: a change you made but never generated a migration for.
+
+`migrate` warns and carries on, because bringing a target up to date is often exactly what you are doing before you continue working on the schema:
+
+```
+⚠ Your schema files have changes that no migration records, affecting todos.
+Run `db migrations generate` to record them. Applying now brings this target up to the last recorded migration only.
+```
+
+[`deploy`](#deploying) refuses outright. Neither ever writes a migration for you: a file appearing in your repository mid-deploy, under a name the tool
+invented, is not something you want.
+
+## Writing the SQL yourself
+
+Some changes cannot be derived from a schema diff — a backfill, a data migration, DDL the tooling does not cover. Generate an empty migration and write
+it yourself:
+
+```npm
+npx typebase-io-cli db migrations generate --custom --name "backfill priority"
+```
+
+You get a migration directory with an empty `migration.sql` to fill in. It is applied in timestamp order like any other migration.
+
+A custom migration records **no schema change**: its snapshot is a copy of the previous one. So if you edited `schema.ts` before running it, that edit
+is still unrecorded afterwards and still produces its own migration the next time you generate. That is deliberate — the alternative would let a schema
+change be absorbed into history with no SQL ever written for it.
+
+## Forked history
+
+Every snapshot records its own id and the id it continues from, so the migrations form a chain. Two developers who each record a migration on their own
+branch create two migrations continuing from the same point, and when the branches merge there is no single answer to "diff against the latest
+snapshot".
+
+Generating notices and refuses:
+
+```
+Your migration history has forked. These 2 migrations each continue from the same point, so there
+is no single snapshot to generate from:
+
+  20260101120000_add_priority
+  20260101130000_add_status
+
+This usually happens when two branches each recorded a migration and were then merged. Delete all
+but one of them, re-run generate, and commit the migration that replaces them.
+```
+
+Do what it says: delete all but one, re-run `generate`, and commit the migration that replaces them. `--ignore-conflicts` generates anyway, once you
+understand which one you are building on.
+
+## Deploying
+
+In migrations mode, [`deploy`](/docs/cli/deploy) applies pending migrations in the slot where it would otherwise have pushed, before the new server
+ships. A failed migration aborts the deploy, so a server expecting a new column is never shipped against a database that lacks it.
+
+It also **refuses to deploy** when your schema files have changes no migration records, naming the affected tables. Without that, migrations would
+apply cleanly (there are none pending) and your server would ship with generated types describing a column the database does not have — a green build
+where every action touching that column fails at runtime.
+
+<Callout type="warn">
+  Migrations are applied **before** the new server ships, so for a few seconds your old server runs against the new schema. Adding a table or a
+  nullable column is safe. Dropping a column, renaming one, or adding a `NOT NULL` constraint will break the running server until the new one takes
+  over. For those, deploy in two steps: ship a migration the old server can tolerate, then remove the old shape in a follow-up deploy.
+</Callout>
+
+## What ships with a generated server
+
+[`generate-server`](/docs/cli/generate-server) copies your migrations into the output, and the drizzle config it writes points at them, so you can
+apply them with standard drizzle tooling against the server you were given. The deployed bundle carries them too.
+
+The server itself never reads them. Migrations are applied by the CLI, from your machine or from CI.
+
+## Other commands in migrations mode
+
+- [`auth generate`](/docs/cli/auth) records a migration for the auth tables it adds, so your schema files and your history cannot drift apart through
+  a command you think of as routine.
+- [`db pull`](/docs/cli/db#db-pull) refuses without `--force`, because replacing your schema files orphans the history that describes them. With
+  `--force` it pulls and rebaselines from what it read, then tells you every target has to be marked again.
+
+## What migrations do not do
+
+- **No rollbacks.** History is forward-only. To undo a change, record a new migration that reverses it.
+- **No squashing.** History is append-only.
+- **No automatic conflict resolution.** A fork is detected and explained; resolving it is yours.
+- **Postgres only**, like the rest of Typebase's database support.

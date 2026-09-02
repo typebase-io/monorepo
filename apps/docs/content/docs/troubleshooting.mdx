@@ -345,6 +345,9 @@ npx typebase-io-cli db prod push
 
 Or just deploy: `npx typebase-io-cli deploy dev` / `npx typebase-io-cli deploy prod` runs the push automatically for each target.
 
+In [migrations mode](/docs/database/migrations) the equivalent is `db dev migrate` / `db prod migrate` — and if you added the table without generating
+a migration, run `db migrations generate` first.
+
 ### "No relations found" when using `db.query.X`
 
 Every table exported from `schema.ts` must also appear in `db/relations.ts`, even if it has no foreign keys. See [Relations](/docs/database/relations) for the empty-entry pattern.
@@ -352,6 +355,53 @@ Every table exported from `schema.ts` must also appear in `db/relations.ts`, eve
 ### Schema push hangs or times out
 
 Neon free-tier branches sleep when idle and take a few seconds to wake up. The first push after a long gap can be slow. If it hangs for more than ~30 seconds, cancel and retry. The second attempt will hit the awake branch.
+
+## Migrations
+
+### `db push` says the project uses migrations
+
+Expected, and not a bug. A project with a `typebase/db/migrations/` folder is in [migrations mode](/docs/database/migrations), where the two ways of
+applying a schema change are mutually exclusive. Use `db <target> migrate` instead. A push would change the database without recording anything, and
+the next migration you generated would be diffed against a snapshot that no longer described it.
+
+If you did not mean to be in migrations mode, the folder is the switch: deleting `typebase/db/migrations/` puts the project back in push mode. Only do
+that if nothing has been applied from it.
+
+### "Your migration history has forked"
+
+Two migrations continue from the same point, usually because two branches each recorded one and were then merged. There is no single snapshot to
+generate from, so generating refuses and names the competing migrations.
+
+Delete all but one of them, run `db migrations generate` again, and commit the migration that replaces them. `--ignore-conflicts` generates anyway once
+you understand which one you are building on. See [forked history](/docs/database/migrations#forked-history).
+
+### Deploy refuses with "changes that no migration records"
+
+Your schema files hold an edit you never generated a migration for. Deploying would ship types describing a column the database does not have: the
+build stays green and every action touching that column fails at runtime. Record the change and deploy again:
+
+```npm
+npx typebase-io-cli db migrations generate --name "describe the change"
+```
+
+`migrate` only warns about the same situation, because bringing a target up to date is often what you are doing before you continue working on the
+schema.
+
+### A migration I generated is empty
+
+You ran `db migrations generate` when the schema already matched the last recorded migration, so there was nothing to record. That is reported rather
+than written. If you wanted an empty migration to write SQL into by hand, pass `--custom`.
+
+### `db migrations init` says a target does not match my schema files
+
+The comparison it runs before recording the baseline found the database and your schema files out of step, and the baseline has to describe something
+true. Accept the offer to bring the target in line, or change your schema files to match what the database has, then run it again. The comparison
+itself applies nothing.
+
+### `db pull` refuses in migrations mode
+
+A pull replaces the schema files that your recorded history describes, which would orphan it. Pass `--force` to pull anyway and rebaseline the history
+from what was pulled — and note that every target then has to be marked again with `db migrations init`.
 
 ## Auth
 

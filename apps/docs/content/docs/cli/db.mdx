@@ -4,12 +4,18 @@ description: Manage your database schema.
 ---
 
 Move your schema in either direction: push the Drizzle schema in your project to a database, or pull a database you already have into your project.
+Or record your schema changes as [migrations](/docs/database/migrations) and apply those instead.
+
+<Callout type="info">
+  Which commands apply here depends on the mode your project is in. A project with a `typebase/db/migrations/` folder is in **migrations mode** and
+  uses `migrate`; every other project is in **push mode** and uses `push`. See [Migrations](/docs/database/migrations).
+</Callout>
 
 ## Pushing your schema
 
 ### `db dev push`
 
-Push your schema to the dev Neon database.
+Push your schema to the dev database.
 
 ```npm
 npx typebase-io-cli db dev push
@@ -17,7 +23,7 @@ npx typebase-io-cli db dev push
 
 ### `db prod push`
 
-Push your schema to the production Neon database.
+Push your schema to the production database.
 
 ```npm
 npx typebase-io-cli db prod push
@@ -52,6 +58,104 @@ Every `db push`:
   columns, renamed tables) cannot be undone. The CLI will detect these and prompt for confirmation before continuing. Treat `db prod push` with extra
   care since dropped data is unrecoverable.
 </Callout>
+
+### Push in migrations mode
+
+If `typebase/db/migrations/` exists, `push` refuses to run and names the command to use instead:
+
+```
+This project uses migrations, so pushing would change the schema without recording it.
+Run `db dev migrate` to apply your migrations instead.
+```
+
+It does not warn-and-proceed and does not silently redirect: a push would change the schema without recording anything, and the next migration you
+generated would be diffed against a snapshot that no longer describes the database.
+
+## Applying migrations
+
+These commands exist for projects in [migrations mode](/docs/database/migrations). They refuse to run in a project with no `migrations` folder, and
+point at `db migrations init`.
+
+### `db dev migrate`
+
+Apply pending migrations to the dev database.
+
+```npm
+npx typebase-io-cli db dev migrate
+```
+
+### `db prod migrate`
+
+Apply pending migrations to the production database.
+
+```npm
+npx typebase-io-cli db prod migrate
+```
+
+### `db local migrate`
+
+Apply pending migrations to a Postgres running on your own machine.
+
+```npm
+npx typebase-io-cli db local migrate --url postgres://localhost:5432/mydb
+```
+
+As with `db local push`, the `--url` flag falls back to `DATABASE_URL` from your shell or your project-root `.env`.
+
+| Flag          | Description                                                |
+| ------------- | ---------------------------------------------------------- |
+| `--url <url>` | Connection string. Defaults to `DATABASE_URL` when omitted |
+
+### What happens
+
+Each migration runs exactly once per target, so re-running is safe. The command reports what it applied, or that the target was already up to date:
+
+```
+✔ 2 migrations applied.
+  20260101120000_add_priority_to_todos
+  20260102090000_backfill_priority
+```
+
+If your schema files hold changes no migration records, `migrate` warns and carries on, since bringing a target up to date is often what you are doing
+before you continue working on the schema. It never generates the missing migration for you.
+
+## Recording migrations
+
+### `db migrations generate`
+
+Diff your schema files against the last recorded migration and write the difference as a new migration. Offline: no database is contacted.
+
+```npm
+npx typebase-io-cli db migrations generate --name "add priority to todos"
+```
+
+| Flag                 | Description                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `--name <name>`      | Name for the migration, so the history reads well in a pull request                              |
+| `--custom`           | Create an empty migration and write the SQL yourself, for changes the schema diff cannot express |
+| `--ignore-conflicts` | Generate even though the migration history has forked                                            |
+
+Generating when nothing has changed reports that the schema is up to date and writes nothing. Generating on a [forked
+history](/docs/database/migrations#forked-history) refuses and names the competing migrations, unless you pass `--ignore-conflicts`.
+
+### `db migrations init`
+
+Adopt migrations in a project that has been pushing its schema. Records a [baseline](/docs/database/migrations#adopting-migrations-on-an-existing-project)
+holding the creation SQL for your current schema, and marks the databases that already have those tables as having applied it.
+
+```npm
+npx typebase-io-cli db migrations init
+```
+
+It asks before recording anything, and names the targets it is about to mark:
+
+```
+? Record a baseline for your current schema and mark dev and prod as having applied it? (Y/n)
+```
+
+Only targets that already have a database are inspected. Nothing is ever provisioned, so a target with no database yet is reported and skipped; it
+replays the baseline for real the first time you migrate it. Each existing target is compared against your schema files first, the comparison applies
+nothing, and a target that has drifted can be brought in line before the baseline is recorded.
 
 ## Pulling an existing database
 
@@ -93,6 +197,23 @@ read back out of Postgres. What it does guarantee is that pushing what you pulle
 | ------------- | ------------------------------------------------------------------ |
 | `--url <url>` | Connection string of the database to read. Prompted for if omitted |
 | `-f, --force` | Replace `db/schema.ts` and `db/relations.ts` without asking        |
+
+### Pull in migrations mode
+
+In [migrations mode](/docs/database/migrations) a pull would orphan the recorded history, since what it writes is _equivalent_ to the source database
+rather than identical to the files that history describes. So it refuses without `--force`:
+
+```
+This project records its schema as migrations, and pulling would replace the schema files that
+history describes. Re-run with `--force` to pull anyway and rebaseline the history from what was
+pulled.
+```
+
+With `--force` it pulls, then replaces the history with a single baseline built from what it read. Your databases still record the migrations that
+baseline replaced, so the pull tells you that every target has to be marked again with `db migrations init`. It changes nothing on any database itself.
+
+In a project with **no** migrations, pull offers to start using them, since adopting is a natural thing to want at that moment. Declining leaves
+everything as it was.
 
 ### What to watch out for
 
