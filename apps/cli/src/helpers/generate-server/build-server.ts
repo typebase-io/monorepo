@@ -17,6 +17,7 @@ import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
+import { seedServerEnv } from '#helpers/generate-server/seed-server-env.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { canonicalizePath } from '#helpers/shared/canonicalize-path.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -95,6 +96,9 @@ export const buildServer = async ({
   const serverOutputDirPath = path.join(tempServerDirPath, 'src', '_generated');
   const indexFileOutPath = path.join(tempServerDirPath, 'src', 'index.ts');
 
+  let envKeys: string[] = [];
+  let seededEnvKeys: string[] = [];
+
   try {
     const {
       hasDB: includeDBFiles,
@@ -143,7 +147,7 @@ export const buildServer = async ({
     await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
 
     if (includeEnvFile) {
-      await generateEnvFile({
+      envKeys = await generateEnvFile({
         envFilePath,
         envOutputDirPath: path.join(tempServerDirPath, 'src'),
         adapter,
@@ -236,6 +240,8 @@ export const buildServer = async ({
     }
 
     await fs.cp(outputDirPath, serverDistDirPath, { recursive: true });
+
+    seededEnvKeys = await seedServerEnv({ serverDistDirPath, keys: envKeys });
   } catch (err) {
     spinner?.stop();
     throw err;
@@ -244,5 +250,5 @@ export const buildServer = async ({
     await fs.rm(tempDistDirPath, { recursive: true, force: true });
   }
 
-  return { serverDistDirPath };
+  return { serverDistDirPath, seededEnvKeys };
 };

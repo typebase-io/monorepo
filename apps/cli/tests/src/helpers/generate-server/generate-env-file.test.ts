@@ -441,4 +441,27 @@ describe('generateEnvFile', () => {
       expect(tmp.exists('out/env.ts')).toBe(false);
     });
   });
+
+  describe('the keys it reports', () => {
+    it('names what the generated server validates, so a caller can seed them', async () => {
+      tmp.write('env.ts', `import { defineEnv } from "typebase-io/server";\n\nexport const env = defineEnv({ RESEND_API_KEY: {} });\n`);
+
+      expect(await run({ hasDB: true, hasAuth: true })).toEqual(expect.arrayContaining(['DATABASE_URL', 'BETTER_AUTH_SECRET', 'RESEND_API_KEY']));
+    });
+
+    it('reports only the defaults when the project declares none of its own', async () => {
+      tmp.write('env.ts', `import { defineEnv } from "typebase-io/server";\n\nexport const env = defineEnv({});\n`);
+
+      expect(await run({ hasDB: true, hasAuth: false })).toEqual(['DATABASE_URL']);
+    });
+
+    it('skips a spread, which names nothing that can be seeded', async () => {
+      tmp.write(
+        'env.ts',
+        `import { defineEnv } from "typebase-io/server";\n\nconst shared = {};\n\nexport const env = defineEnv({ ...shared, RESEND_API_KEY: {} });\n`
+      );
+
+      expect(await run({ hasDB: false, hasAuth: false })).toEqual(['RESEND_API_KEY']);
+    });
+  });
 });

@@ -711,6 +711,16 @@ export const todos = p.pgTable("todos", {
       expect(select).toHaveBeenCalledOnce();
     });
 
+    it('never ships a .env in the deployed bundle', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      tmp.write('.env', 'DATABASE_URL=postgres://prod/db\nNEON_API_KEY=napi_secret\n');
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(fs.existsSync(path.join(tmp.path, 'captured/.env'))).toBe(false);
+    });
+
     it('still pushes the schema and never applies migrations', async () => {
       await setupProject({ withAuth: false, withDb: true });
 

@@ -91,4 +91,6 @@ export const generateEnvFile = async ({
 
   await fs.writeFile(outputFilePath, generatedFile.getFullText());
   await fixImportExtensions(envOutputDirPath, useTs ? 'ts' : 'js');
+
+  return schemaObject.getProperties().flatMap((property) => (property.isKind(SyntaxKind.PropertyAssignment) ? [property.getName()] : []));
 };

@@ -294,4 +294,38 @@ describe('buildServer', () => {
       expect(fs.existsSync(generated(serverDistDirPath, 'db/migrations'))).toBe(false);
     });
   });
+
+  describe('the generated server env file', () => {
+    const serverEnv = () =>
+      fs.existsSync(path.join(tmp.path, 'typebase/_server/.env')) ? fs.readFileSync(path.join(tmp.path, 'typebase/_server/.env'), 'utf8') : '';
+
+    it('is filled from the project env, so a local server has what it validates', async () => {
+      tmp.write('.env', 'DATABASE_URL=postgres://prod/db\nDATABASE_URL_DEV=postgres://dev/db\nNEON_API_KEY=napi_secret\n');
+
+      const { seededEnvKeys } = await build();
+
+      expect(seededEnvKeys).toEqual(['DATABASE_URL']);
+      expect(serverEnv()).toBe('DATABASE_URL=postgres://dev/db\n');
+    });
+
+    it('survives a rebuild with the values you changed', async () => {
+      tmp.write('.env', 'DATABASE_URL=postgres://dev/db\n');
+
+      await build();
+
+      tmp.write('typebase/_server/.env', 'DATABASE_URL=postgres://my-own/db\n');
+
+      const { seededEnvKeys } = await build();
+
+      expect(seededEnvKeys).toEqual([]);
+      expect(serverEnv()).toBe('DATABASE_URL=postgres://my-own/db\n');
+    });
+
+    it('is left alone when the project has no env file', async () => {
+      const { seededEnvKeys } = await build();
+
+      expect(seededEnvKeys).toEqual([]);
+      expect(serverEnv()).toBe('');
+    });
+  });
 });

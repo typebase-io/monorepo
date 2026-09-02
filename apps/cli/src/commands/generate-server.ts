@@ -44,7 +44,7 @@ export const generateServer = new Command('generate-server')
       const spinner = rebuild ? ora('Regenerating...').start() : undefined;
 
       try {
-        const { serverDistDirPath } = await buildServer({
+        const { serverDistDirPath, seededEnvKeys } = await buildServer({
           projectPath,
           output,
           adapter,
@@ -54,6 +54,10 @@ export const generateServer = new Command('generate-server')
           signal,
           quiet: rebuild,
         });
+
+        if (seededEnvKeys.length > 0) {
+          ora().succeed(`${seededEnvKeys.join(', ')} copied from your project \`.env\`.`);
+        }
 
         if (spinner) {
           spinner.succeed('Server regenerated!');
