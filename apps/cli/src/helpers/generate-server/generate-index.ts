@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { match } from 'ts-pattern';
 
-import { type ServerAdapter } from '#helpers/constants.ts';
+import { type ServerAdapter, type ServerOutput } from '#helpers/constants.ts';
 import { getServerRouter } from '#helpers/shared/get-server-router.ts';
 import { bunIndexFileTemplate } from '#helpers/templates/index-file/bun.ts';
 import { cloudflareIndexFileTemplate } from '#helpers/templates/index-file/cloudflare.ts';
@@ -30,7 +30,7 @@ export const generateIndex = async ({
   actionsDirPath: string;
   outputFilePath: string;
   actionsOutputDirPath: string;
-  generation: 'ts' | 'esm' | 'cjs';
+  generation: ServerOutput;
   hasAuth: boolean;
   hasEnv: boolean;
   trustedOrigins: string[];

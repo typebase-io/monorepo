@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import { Project, VariableDeclarationKind } from 'ts-morph';
 
+import { type ServerOutput } from '#helpers/constants.ts';
 import { buildRouterTree } from '#helpers/shared/build-router-tree.ts';
 import { isTsFile } from '#helpers/shared/is-ts-file.ts';
 import { renderRouterObject } from '#helpers/shared/render-router-object.ts';
@@ -20,7 +21,7 @@ export const getServerRouter = async ({
   actionsDirPath: string;
   outputFilePath: string;
   actionsOutputDirPath: string;
-  generation: 'ts' | 'esm' | 'cjs';
+  generation: ServerOutput;
   exportable: boolean;
 }) => {
   const project = new Project({ tsConfigFilePath });

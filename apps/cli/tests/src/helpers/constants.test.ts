@@ -4,14 +4,38 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { DEPS, envTargets, publisherProviders, serverAdapters, serverProviders, typebaseConfigSchema } from '#helpers/constants.ts';
+import {
+  DEPS,
+  LOCAL_SERVER_CACHE_MARKER_FILE_NAME,
+  TYPEBASE_CONFIG_FILE_NAME,
+  envTargets,
+  publisherProviders,
+  serverAdapters,
+  serverOutputs,
+  serverProviders,
+  typebaseConfigSchema,
+} from '#helpers/constants.ts';
 
 describe('constants', () => {
-  it('exposes the supported server adapters, server providers, publisher providers and env targets', () => {
+  it('exposes the supported server adapters, server outputs, server providers, publisher providers and env targets', () => {
     expect(serverAdapters).toEqual(['node', 'bun', 'cloudflare', 'deno', 'fastify', 'hono']);
+    expect(serverOutputs).toEqual(['ts', 'esm', 'cjs']);
     expect(serverProviders).toEqual(['vercel', 'cloudflare', 'deno']);
     expect(publisherProviders).toEqual(['db']);
     expect(envTargets).toEqual(['dev', 'prod']);
+  });
+
+  it('names the files the CLI reads and writes by convention', () => {
+    expect(TYPEBASE_CONFIG_FILE_NAME).toBe('typebase.json');
+    expect(LOCAL_SERVER_CACHE_MARKER_FILE_NAME).toBe('typebase-server-cache.json');
+  });
+
+  it('accepts every server output in the config schema', () => {
+    for (const output of serverOutputs) {
+      expect(typebaseConfigSchema.safeParse({ server: { output } }).success).toBe(true);
+    }
+
+    expect(typebaseConfigSchema.safeParse({ server: { output: 'swc' } }).success).toBe(false);
   });
 });
 

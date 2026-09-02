@@ -12,6 +12,7 @@ export const generatePackageJson = async ({
   outputDirPath,
   generation,
   outDir,
+  configuredOutDir,
   hasAuth,
   hasEnv,
 }: {
@@ -20,10 +21,11 @@ export const generatePackageJson = async ({
   outputDirPath: string;
   generation: 'cjs' | 'esm' | 'ts';
   outDir: string;
+  configuredOutDir: string;
   hasAuth: boolean;
   hasEnv: boolean;
 }) => {
-  const defaultSkipDirs = new Set(['node_modules', 'dist', 'build', outDir]);
+  const defaultSkipDirs = new Set(['node_modules', 'dist', 'build', outDir, configuredOutDir]);
   const userDependencies = await getPackageDeps({ sourceDirPath: typebaseDirPath, skipDirs: (name) => defaultSkipDirs.has(name) });
   const userPackageJson = await getUserPackageJson(typebaseDirPath);
   const typebaseVersion =

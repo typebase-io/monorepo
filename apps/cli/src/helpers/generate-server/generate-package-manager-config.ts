@@ -1,26 +1,25 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { match } from 'ts-pattern';
+
 import { getPackageManager } from '#helpers/shared/get-package-manager.ts';
 
 export const generatePackageManagerConfig = async ({ outputDirPath }: { outputDirPath: string }): Promise<string | undefined> => {
   const packageManager = await getPackageManager();
 
-  if (packageManager === 'yarn-berry') {
-    const content = 'enableScripts: true\n';
+  const config = match(packageManager)
+    .with('yarn-berry', () => ({ fileName: '.yarnrc.yml', content: 'enableScripts: true\n' }))
+    .with('bun', () => ({ fileName: 'bunfig.toml', content: '[install]\ntrustedDependencies = ["esbuild"]\n' }))
+    .with('pnpm', () => ({ fileName: 'pnpm-workspace.yaml', content: 'packages: []\n\nallowBuilds:\n  esbuild: true\n' }))
+    .with('npm', 'yarn-classic', 'unknown', () => undefined)
+    .exhaustive();
 
-    await fs.writeFile(path.join(outputDirPath, '.yarnrc.yml'), content);
-
-    return '.yarnrc.yml';
+  if (!config) {
+    return undefined;
   }
 
-  if (packageManager === 'bun') {
-    const content = '[install]\ntrustedDependencies = ["esbuild"]\n';
+  await fs.writeFile(path.join(outputDirPath, config.fileName), config.content);
 
-    await fs.writeFile(path.join(outputDirPath, 'bunfig.toml'), content);
-
-    return 'bunfig.toml';
-  }
-
-  return undefined;
+  return config.fileName;
 };

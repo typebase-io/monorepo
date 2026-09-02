@@ -8,16 +8,20 @@ import { pushSchema as drizzlePush } from 'drizzle-kit/api-postgres';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import ora from 'ora';
 
+import { type RunPrompt } from '#helpers/shared/run-until-stopped.ts';
+
 export const pushSchema = async ({
   serverDistDirPath,
   connectionUri,
   skipConfirmation,
   dryRun,
+  prompt = (ask) => ask(),
 }: {
   serverDistDirPath: string;
   connectionUri: string;
   skipConfirmation: boolean;
   dryRun?: boolean;
+  prompt?: RunPrompt;
 }) => {
   const schemaPath = path.join(serverDistDirPath, 'src', 'db', 'schema.js');
   const symlinkPath = path.join(serverDistDirPath, 'node_modules');
@@ -67,7 +71,7 @@ export const pushSchema = async ({
         console.log('\n');
 
         if (!skipConfirmation) {
-          const accepted = await confirm({ message: 'Apply these changes?' });
+          const accepted = await prompt(() => confirm({ message: 'Apply these changes?' }));
 
           if (!accepted) {
             throw new Error('Schema push cancelled. Deploy aborted.');

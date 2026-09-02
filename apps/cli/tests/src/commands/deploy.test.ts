@@ -415,14 +415,17 @@ describe('deploy command', () => {
       expect(streamLogs).not.toHaveBeenCalled();
     });
 
-    it('bundles the package-manager config file when one is generated', async () => {
+    it.each([
+      { lockFile: 'bun.lockb', configFile: 'bunfig.toml' },
+      { lockFile: 'pnpm-lock.yaml', configFile: 'pnpm-workspace.yaml' },
+    ])('bundles the $configFile when one is generated', async ({ lockFile, configFile }) => {
       await setupProject({ withAuth: true, withDb: true });
 
-      tmp.write('bun.lockb', '');
+      tmp.write(lockFile, '');
 
       await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
 
-      expect(tmp.exists('captured/bunfig.toml')).toBe(true);
+      expect(tmp.exists(`captured/${configFile}`)).toBe(true);
     });
   });
 

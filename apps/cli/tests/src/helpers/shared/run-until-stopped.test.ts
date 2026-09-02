@@ -5,11 +5,19 @@ import { runUntilStopped } from '#helpers/shared/run-until-stopped.ts';
 const createFakeStdin = () => {
   const handlers = new Map<string, ((data: Buffer) => void)[]>();
 
-  return {
+  const stdin = {
     isTTY: true,
-    setRawMode: vi.fn(),
-    resume: vi.fn(),
-    pause: vi.fn(),
+    isRaw: false,
+    paused: true,
+    setRawMode: vi.fn((value: boolean) => {
+      stdin.isRaw = value;
+    }),
+    resume: vi.fn(() => {
+      stdin.paused = false;
+    }),
+    pause: vi.fn(() => {
+      stdin.paused = true;
+    }),
     on: vi.fn((event: string, handler: (data: Buffer) => void) => {
       handlers.set(event, [...(handlers.get(event) ?? []), handler]);
     }),
@@ -19,13 +27,18 @@ const createFakeStdin = () => {
         (handlers.get(event) ?? []).filter((registered) => registered !== handler)
       );
     }),
+    listenerCount: (event: string) => (handlers.get(event) ?? []).length,
     press: (key: string) => {
       for (const handler of handlers.get('data') ?? []) {
         handler(Buffer.from(key));
       }
     },
   };
+
+  return stdin;
 };
+
+const exitPromptError = () => Object.assign(new Error('User force closed the prompt with SIGINT'), { name: 'ExitPromptError' });
 
 const untilAborted = (signal: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -64,7 +77,7 @@ describe('runUntilStopped', () => {
 
     await runUntilStopped(run);
 
-    expect(run).toHaveBeenCalledWith(expect.any(AbortSignal));
+    expect(run).toHaveBeenCalledWith(expect.any(AbortSignal), expect.any(Function));
   });
 
   it.each([
@@ -177,5 +190,188 @@ describe('runUntilStopped', () => {
     expect(stdin.setRawMode).not.toHaveBeenCalled();
     expect(stdin.on).not.toHaveBeenCalled();
     expect(stdin.pause).not.toHaveBeenCalled();
+  });
+
+  describe('prompts', () => {
+    const snapshot = () => ({ isRaw: stdin.isRaw, paused: stdin.paused, listeners: stdin.listenerCount('data') });
+
+    let leaked: ((data: Buffer) => void) | undefined;
+
+    const tearDownLikeTheLibrary = () => {
+      stdin.setRawMode(false);
+      stdin.pause();
+
+      if (leaked) {
+        stdin.off('data', leaked);
+      }
+
+      leaked = () => undefined;
+
+      stdin.on('data', leaked);
+    };
+
+    const ask =
+      <T>(answer: T) =>
+      () => {
+        tearDownLikeTheLibrary();
+
+        return Promise.resolve(answer);
+      };
+
+    const askFailingWith = (error: Error) => () => {
+      tearDownLikeTheLibrary();
+
+      return Promise.reject(error);
+    };
+
+    beforeEach(() => {
+      leaked = undefined;
+    });
+
+    it('hands stdin to the prompt and takes it back afterwards', async () => {
+      let duringPrompt: ReturnType<typeof snapshot> | undefined;
+      let afterPrompt: ReturnType<typeof snapshot> | undefined;
+      let answer: string | undefined;
+
+      await runUntilStopped(async (_signal, prompt) => {
+        answer = await prompt(() => {
+          duringPrompt = snapshot();
+
+          return ask('yes')();
+        });
+
+        afterPrompt = snapshot();
+      });
+
+      expect(answer).toBe('yes');
+      expect(duringPrompt).toEqual({ isRaw: false, paused: true, listeners: 0 });
+      expect(afterPrompt).toEqual({ isRaw: true, paused: false, listeners: 2 });
+    });
+
+    it.each([
+      { name: '"x"', key: 'x' },
+      { name: 'Ctrl+C', key: '\u0003' },
+    ])('stops the run when $name is pressed after a prompt has been answered', async ({ key }) => {
+      let taskSignal: AbortSignal | undefined;
+      let answered = false;
+
+      const promise = runUntilStopped(async (signal, prompt) => {
+        taskSignal = signal;
+
+        await prompt(ask('yes'));
+
+        answered = true;
+
+        return untilAborted(signal);
+      });
+
+      await vi.waitFor(() => {
+        expect(answered).toBe(true);
+      });
+
+      stdin.press(key);
+      await promise;
+
+      expect(taskSignal?.aborted).toBe(true);
+    });
+
+    it('stops the run on SIGINT after a prompt has been answered', async () => {
+      const onSpy = vi.spyOn(process, 'on');
+
+      let taskSignal: AbortSignal | undefined;
+      let answered = false;
+
+      const promise = runUntilStopped(async (signal, prompt) => {
+        taskSignal = signal;
+
+        await prompt(ask('yes'));
+
+        answered = true;
+
+        return untilAborted(signal);
+      });
+
+      await vi.waitFor(() => {
+        expect(answered).toBe(true);
+      });
+
+      const onSigint = onSpy.mock.calls.find(([event]) => event === 'SIGINT')?.[1];
+
+      onSigint?.();
+      await promise;
+
+      expect(taskSignal?.aborted).toBe(true);
+    });
+
+    it('does not accumulate listeners however many prompts run', async () => {
+      const listeners: number[] = [];
+
+      await runUntilStopped(async (_signal, prompt) => {
+        for (const round of [1, 2, 3, 4, 5]) {
+          await prompt(ask(round));
+
+          listeners.push(stdin.listenerCount('data'));
+        }
+      });
+
+      expect(listeners).toEqual([2, 2, 2, 2, 2]);
+    });
+
+    it('stops the run cleanly when the prompt is closed with Ctrl+C, without resolving it', async () => {
+      let taskSignal: AbortSignal | undefined;
+      let continuedAfterPrompt = false;
+
+      await expect(
+        runUntilStopped(async (signal, prompt) => {
+          taskSignal = signal;
+
+          await prompt(askFailingWith(exitPromptError()));
+
+          continuedAfterPrompt = true;
+        })
+      ).resolves.toBeUndefined();
+
+      expect(taskSignal?.aborted).toBe(true);
+      expect(continuedAfterPrompt).toBe(false);
+      expect(stdin.isRaw).toBe(false);
+      expect(stdin.paused).toBe(true);
+    });
+
+    it('lets the run clean up after Ctrl+C at a prompt', async () => {
+      const cleanedUp = vi.fn();
+
+      await runUntilStopped(async (_signal, prompt) => {
+        try {
+          await prompt(askFailingWith(exitPromptError()));
+        } finally {
+          cleanedUp();
+        }
+      });
+
+      expect(cleanedUp).toHaveBeenCalledOnce();
+    });
+
+    it('rethrows a prompt failure that is not a Ctrl+C', async () => {
+      await expect(
+        runUntilStopped(async (_signal, prompt) => {
+          await prompt(askFailingWith(new Error('boom')));
+        })
+      ).rejects.toThrow('boom');
+
+      expect(stdin.setRawMode).toHaveBeenLastCalledWith(false);
+    });
+
+    it('runs the prompt without touching a non-interactive stdin', async () => {
+      Object.defineProperty(process, 'stdin', { value: { ...stdin, isTTY: false }, configurable: true });
+
+      let answer: string | undefined;
+
+      await runUntilStopped(async (_signal, prompt) => {
+        answer = await prompt(() => Promise.resolve('yes'));
+      });
+
+      expect(answer).toBe('yes');
+      expect(stdin.setRawMode).not.toHaveBeenCalled();
+    });
   });
 });

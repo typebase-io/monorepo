@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pushSchema } from '#helpers/db/push-schema.ts';
+import { type RunPrompt } from '#helpers/shared/run-until-stopped.ts';
 
 import { type TempDir, createTempDir } from '#tests/helpers/temp-dir.ts';
 
@@ -158,6 +159,30 @@ describe('pushSchema', () => {
     expect(apply).toHaveBeenCalledOnce();
     expect(dbMocks.client.end).toHaveBeenCalledOnce();
     expect(tmp.exists('server-dist/node_modules')).toBe(false);
+  });
+
+  it('hands destructive confirmation through the surrounding prompt lifecycle when provided', async () => {
+    const serverDistDirPath = writeServerSchema(tmp);
+    let promptCalls = 0;
+    const prompt: RunPrompt = <T>(ask: () => Promise<T>): Promise<T> => {
+      promptCalls += 1;
+
+      return ask();
+    };
+
+    const { apply } = mockDrizzlePush({
+      sqlStatements: ['drop table users;'],
+      hints: [{ hint: 'You are about to drop users.' }],
+    });
+
+    vi.mocked(confirm).mockResolvedValue(true);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false, prompt });
+
+    expect(promptCalls).toBe(1);
+    expect(confirm).toHaveBeenCalledWith({ message: 'Apply these changes?' });
+    expect(apply).toHaveBeenCalledOnce();
   });
 
   it('throws and skips apply when warning confirmation is rejected', async () => {

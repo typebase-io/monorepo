@@ -41,6 +41,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'ts',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: true,
       hasEnv: true,
     });
@@ -59,6 +60,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'esm',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
     });
@@ -77,6 +79,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'cjs',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: true,
       hasEnv: true,
     });
@@ -95,6 +98,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'esm',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
     });
@@ -113,6 +117,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'esm',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
     });
@@ -133,6 +138,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'esm',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
     });
@@ -151,6 +157,7 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'ts',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
     });
@@ -169,10 +176,61 @@ describe('generatePackageJson', () => {
       outputDirPath,
       generation: 'esm',
       outDir: '_server',
+      configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-no-env.txt');
+  });
+
+  describe('generated output already in the project', () => {
+    const setupWithGeneratedServer = () => {
+      const dirs = setup({ dependencies: { 'typebase-io': '0.1.0', zod: '3.2.1' } });
+
+      tmp.write('typebase/_server/src/actions/todos.ts', `import { leftOver } from 'left-over-package';\nexport const x = leftOver;`);
+      tmp.write('typebase/dist/actions/todos.ts', `import { built } from 'built-package';\nexport const x = built;`);
+
+      return dirs;
+    };
+
+    it('never reads it as a source of dependencies', async () => {
+      vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+      const { typebaseDirPath, outputDirPath } = setupWithGeneratedServer();
+
+      await generatePackageJson({
+        adapter: 'node',
+        typebaseDirPath,
+        outputDirPath,
+        generation: 'esm',
+        outDir: '_server',
+        configuredOutDir: '_server',
+        hasAuth: false,
+        hasEnv: true,
+      });
+
+      expect(tmp.read('out/package.json')).not.toContain('left-over-package');
+      expect(tmp.read('out/package.json')).not.toContain('built-package');
+    });
+
+    it('still skips it when the server is generated somewhere else entirely', async () => {
+      vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+      const { typebaseDirPath, outputDirPath } = setupWithGeneratedServer();
+
+      await generatePackageJson({
+        adapter: 'node',
+        typebaseDirPath,
+        outputDirPath,
+        generation: 'esm',
+        outDir: path.join(tmp.path, 'cache', 'server'),
+        configuredOutDir: '_server',
+        hasAuth: false,
+        hasEnv: true,
+      });
+
+      expect(tmp.read('out/package.json')).not.toContain('left-over-package');
+    });
   });
 });

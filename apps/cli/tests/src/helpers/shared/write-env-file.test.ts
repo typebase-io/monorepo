@@ -53,6 +53,19 @@ describe('writeEnvFile', () => {
     expect(tmp.read('.env')).toBe('FOO=new\nOTHER=keep\n');
   });
 
+  it('writes to an explicitly targeted env file without changing the project env file', async () => {
+    tmp.write('.env', 'DATABASE_URL=postgres://project/database\n');
+
+    const serverEnvPath = tmp.write('server/.env', 'DATABASE_URL=postgres://stale/database\nOTHER=keep\n');
+
+    await withCwd(tmp.path, async () => {
+      await writeEnvFile('DATABASE_URL', 'postgres://selected/database', serverEnvPath);
+    });
+
+    expect(tmp.read('.env')).toBe('DATABASE_URL=postgres://project/database\n');
+    expect(tmp.read('server/.env')).toBe('DATABASE_URL=postgres://selected/database\nOTHER=keep\n');
+  });
+
   it('replaces a variable declared with the export prefix', async () => {
     tmp.write('.env', 'export FOO=old\n');
 

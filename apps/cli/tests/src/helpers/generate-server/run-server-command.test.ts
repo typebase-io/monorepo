@@ -168,6 +168,49 @@ describe('runServerCommand', () => {
     await expect(runner.finished()).resolves.toBeUndefined();
   });
 
+  describe('given arguments to spawn directly', () => {
+    it('runs the command itself, with no shell between it and the process', async () => {
+      const runner = runServerCommand({
+        command: process.execPath,
+        args: ['-e', `const fs = require('fs'); fs.writeFileSync('direct.txt', process.cwd() + ':' + process.ppid)`],
+        cwd: tmp.path,
+      });
+
+      await runner.restart();
+      await runner.finished();
+
+      const [cwd = '', parentPid = ''] = read('direct.txt').split(':');
+
+      expect(fs.realpathSync(cwd)).toBe(fs.realpathSync(tmp.path));
+      expect(Number(parentPid)).toBe(process.pid);
+    });
+
+    it('stops a directly spawned server, leaving nothing behind', async () => {
+      const runner = runServerCommand({
+        command: process.execPath,
+        args: ['-e', `const fs = require('fs'); fs.writeFileSync('direct-pid.txt', String(process.pid)); setInterval(() => {}, 1000)`],
+        cwd: tmp.path,
+      });
+
+      await runner.restart();
+      await until(() => read('direct-pid.txt') !== '', 'the server to report its pid');
+
+      const pid = Number(read('direct-pid.txt'));
+
+      await runner.stop();
+
+      await until(() => {
+        try {
+          process.kill(pid, 0);
+
+          return false;
+        } catch {
+          return true;
+        }
+      }, 'the server process to be gone');
+    });
+  });
+
   it('survives a command that cannot run, so a watcher keeps going', async () => {
     const runner = runServerCommand({ command: 'definitely-not-a-real-command-xyz', cwd: tmp.path });
 

@@ -5,6 +5,7 @@ import path from 'node:path';
 import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { type ServerOutput } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
@@ -232,7 +233,7 @@ describe('buildServer', () => {
   describe('assets the transpiler does not emit', () => {
     const MIGRATION = '20260101000000_initial';
 
-    const buildAs = (output: 'ts' | 'esm' | 'cjs') =>
+    const buildAs = (output: ServerOutput) =>
       withCwd(tmp.path, () =>
         buildServer({
           projectPath: path.join(tmp.path, 'typebase'),

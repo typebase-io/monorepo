@@ -59,6 +59,7 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     outputDirPath: tempServerDir,
     generation: output,
     outDir: 'build',
+    configuredOutDir: '_server',
     hasAuth: includeAuthFile,
     hasEnv: includeEnvFile,
   });

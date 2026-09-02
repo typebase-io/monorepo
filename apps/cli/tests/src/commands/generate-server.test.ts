@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import * as dotenv from 'dotenv';
 import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,6 +59,8 @@ const TS_BARE = TS_AUTH_DB.filter(
   (f) => !f.startsWith('src/db/') && f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts' && f !== 'src/env.ts'
 );
 
+const runPrompt = <T>(ask: () => Promise<T>) => ask();
+
 describe('generate-server command', () => {
   let tmp: TempDir;
 
@@ -99,7 +102,7 @@ describe('generate-server command', () => {
     const watchOptions = () => vi.mocked(watchServer).mock.calls[0]?.[0];
 
     beforeEach(() => {
-      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal, runPrompt));
     });
 
     it('does not watch unless asked to', async () => {
@@ -214,6 +217,16 @@ describe('generate-server command', () => {
     });
   });
 
+  it.each(['ts', 'esm', 'cjs'] as const)('gives the %s server its own pnpm workspace, so installing there stays inside it', async (output) => {
+    await setupProject({ withAuth: true, withDb: true });
+
+    tmp.write('pnpm-lock.yaml', '');
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--output', output], { from: 'user' }));
+
+    expect(tmp.read('typebase/_server/pnpm-workspace.yaml')).toEqualTemplate('generate-package-manager-config', 'pnpm-workspace.yaml.txt');
+  });
+
   it('refuses to build a project that has auth but no database schema', async () => {
     await setupProject({ withAuth: true, withDb: false });
 
@@ -319,6 +332,32 @@ describe('generate-server command', () => {
       await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
 
       expect(tmp.exists('typebase/_server/src/actions/queries/extra.ts')).toBe(true);
+    });
+
+    it('copies the keys the generated server validates out of the project env file, and says which', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      tmp.write('.env', ['DATABASE_URL=postgres://project/database', 'BETTER_AUTH_SECRET=already-chosen', 'VERCEL_TOKEN=vercel-token'].join('\n'));
+
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      const serverEnv = dotenv.parse(tmp.read('typebase/_server/.env'));
+
+      expect(serverEnv.DATABASE_URL).toBe('postgres://project/database');
+      expect(serverEnv.BETTER_AUTH_SECRET).toBe('already-chosen');
+      expect(serverEnv.VERCEL_TOKEN).toBeUndefined();
+      expect(succeeded()).toContain('DATABASE_URL');
+      expect(succeeded()).toContain('copied from your project `.env`.');
+    });
+
+    it('says nothing about copying when the project env file holds none of those keys', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      tmp.write('.env', 'VERCEL_TOKEN=vercel-token');
+
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expect(succeeded()).not.toContain('copied from your project');
     });
 
     it('preserves .env and node_modules across regenerations', async () => {
@@ -535,7 +574,7 @@ export const auth = defineAuth({
     beforeEach(async () => {
       await setupProject({ withAuth: false, withDb: true });
 
-      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal, runPrompt));
     });
 
     it('runs the command in the generated server once it exists', async () => {
@@ -566,7 +605,7 @@ export const auth = defineAuth({
           controller.abort();
         }, 300);
 
-        return run(controller.signal);
+        return run(controller.signal, runPrompt);
       });
 
       await withCwd(tmp.path, () =>
@@ -599,7 +638,7 @@ export const auth = defineAuth({
     });
 
     it('keeps watching after a command that failed, and runs it again on the next change', async () => {
-      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal, runPrompt));
 
       vi.mocked(watchServer).mockImplementation(async ({ build }) => {
         await build(new AbortController().signal, { rebuild: false });
@@ -623,7 +662,7 @@ export const auth = defineAuth({
     });
 
     it('restarts the command on every rebuild, and leaves nothing running when the watch stops', async () => {
-      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal, runPrompt));
 
       vi.mocked(watchServer).mockImplementation(async ({ build }) => {
         await build(new AbortController().signal, { rebuild: false });

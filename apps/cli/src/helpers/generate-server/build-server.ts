@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import ora from 'ora';
 
-import { type ServerAdapter } from '#helpers/constants.ts';
+import { type ServerAdapter, type ServerOutput } from '#helpers/constants.ts';
 import { canReplaceServerDir } from '#helpers/generate-server/can-replace-server-dir.ts';
 import { copyServerAssets } from '#helpers/generate-server/copy-server-assets.ts';
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
@@ -38,7 +38,7 @@ export const buildServer = async ({
   quiet = false,
 }: {
   projectPath: string;
-  output: 'ts' | 'esm' | 'cjs';
+  output: ServerOutput;
   adapter: ServerAdapter;
   outDir: string;
   configuredOutDir: string;
@@ -140,6 +140,7 @@ export const buildServer = async ({
       outputDirPath: tempServerDirPath,
       generation: output,
       outDir,
+      configuredOutDir,
       hasAuth: includeAuthFile,
       hasEnv: includeEnvFile,
     });

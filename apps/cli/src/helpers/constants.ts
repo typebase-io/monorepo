@@ -3,11 +3,17 @@ import { z } from 'zod';
 import type { PackageManager } from '#helpers/shared/get-package-manager.ts';
 
 export const TYPEBASE_CONFIG_FILE_NAME = 'typebase.json';
+
+export const LOCAL_SERVER_CACHE_MARKER_FILE_NAME = 'typebase-server-cache.json';
+
 export const TYPEBASE_CONFIG_SCHEMA_URL =
   'https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json';
 
 export const serverAdapters = ['node', 'bun', 'cloudflare', 'deno', 'fastify', 'hono'] as const;
 export type ServerAdapter = (typeof serverAdapters)[number];
+
+export const serverOutputs = ['ts', 'esm', 'cjs'] as const;
+export type ServerOutput = (typeof serverOutputs)[number];
 
 export const serverProviders = ['vercel', 'cloudflare', 'deno'] as const;
 export type ServerProvider = (typeof serverProviders)[number];
@@ -114,7 +120,7 @@ export const typebaseConfigSchema = z.object({
     z
       .object({
         output: z.optional(
-          z.enum(['ts', 'esm', 'cjs']).meta({
+          z.enum(serverOutputs).meta({
             title: 'Output',
             description: 'The output format for the server build.',
           })

@@ -1,33 +1,26 @@
 import path from 'node:path';
 
-import { Command, InvalidArgumentError, Option } from '@commander-js/extra-typings';
+import { Command, Option } from '@commander-js/extra-typings';
 import ora from 'ora';
 
-import { serverAdapters } from '#helpers/constants.ts';
+import { serverAdapters, serverOutputs } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
 import { runServerCommand } from '#helpers/generate-server/run-server-command.ts';
 import { watchServer } from '#helpers/generate-server/watch-server.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { parsePort } from '#helpers/shared/parse-port.ts';
 import { runUntilStopped } from '#helpers/shared/run-until-stopped.ts';
 
 export const generateServer = new Command('generate-server')
   .summary('Generate the server code locally')
   .description('Generate local server files in `<typebase>/_server/` from `<typebase>/actions` and `<typebase>/db`.')
   .allowExcessArguments(false)
-  .addOption(new Option('--output <type>', 'Generate TypeScript, CommonJS or ESM server files').choices(['ts', 'esm', 'cjs']))
+  .addOption(new Option('--output <type>', 'Generate TypeScript, CommonJS or ESM server files').choices(serverOutputs))
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
   .option('--out-dir <path>', 'Output directory for generated server files')
   .option('--watch', 'Rebuild whenever a file inside the typebase directory changes. Press "x" or Ctrl+C to stop')
   .option('--command <command>', 'Command to run in the generated server directory after it is generated, restarted on every rebuild')
-  .option('--port <number>', 'Port the generated server listens on', (value) => {
-    const parsed = Number(value);
-
-    if (!Number.isInteger(parsed) || parsed <= 0) {
-      throw new InvalidArgumentError('Port must be a positive integer.');
-    }
-
-    return parsed;
-  })
+  .option('--port <number>', 'Port the generated server listens on', parsePort)
   .action(async (params) => {
     const { projectPath, server } = await getTypebaseConfig();
 

@@ -2,8 +2,7 @@ import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export const writeEnvFile = async (name: string, value: string) => {
-  const envPath = path.resolve('.env');
+export const writeEnvFile = async (name: string, value: string, envPath = path.resolve('.env')) => {
   const content = existsSync(envPath) ? await fs.readFile(envPath, 'utf8') : '';
 
   const line = `${name}=${value}`;

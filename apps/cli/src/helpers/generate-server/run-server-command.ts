@@ -1,11 +1,24 @@
-import { type ChildProcess, spawn } from 'node:child_process';
+import { type ChildProcess, type SpawnOptions, spawn } from 'node:child_process';
+import path from 'node:path';
 
 import chalk from 'chalk';
 import ora from 'ora';
 
 import { stopProcessTree } from '#helpers/generate-server/stop-process-tree.ts';
 
-export const runServerCommand = ({ command, cwd, forceAfterMs = 5_000 }: { command: string; cwd: string; forceAfterMs?: number }) => {
+export const runServerCommand = ({
+  command,
+  args,
+  cwd,
+  forceAfterMs = 5_000,
+}: {
+  command: string;
+  args?: string[];
+  cwd: string;
+  forceAfterMs?: number;
+}) => {
+  const label = args ? [path.basename(command), ...args].join(' ') : command;
+
   let child: ChildProcess | undefined;
   let exited: Promise<void> = Promise.resolve();
 
@@ -36,22 +49,23 @@ export const runServerCommand = ({ command, cwd, forceAfterMs = 5_000 }: { comma
   };
 
   const start = () => {
-    ora().info(chalk.dim(`Running \`${command}\`...`));
+    ora().info(chalk.dim(`Running \`${label}\`...`));
 
-    const current = spawn(command, { cwd, shell: true, stdio: ['ignore', 'inherit', 'inherit'], detached: process.platform !== 'win32' });
+    const options: SpawnOptions = { cwd, stdio: ['ignore', 'inherit', 'inherit'], detached: process.platform !== 'win32' };
+    const current = args ? spawn(command, args, options) : spawn(command, { ...options, shell: true });
 
     child = current;
 
     exited = new Promise<void>((resolve) => {
       current.once('error', (error) => {
-        ora().fail(chalk.red(`\`${command}\` could not be started: ${error.message}`));
+        ora().fail(chalk.red(`\`${label}\` could not be started: ${error.message}`));
 
         resolve();
       });
 
       current.once('exit', (code) => {
         if (child === current && code !== null && code !== 0) {
-          ora().fail(chalk.red(`\`${command}\` exited with code ${code}.`));
+          ora().fail(chalk.red(`\`${label}\` exited with code ${code}.`));
         }
 
         resolve();

@@ -160,6 +160,7 @@ export const deploy = new Command('deploy')
         outputDirPath: tempServerDirPath,
         generation: output,
         outDir,
+        configuredOutDir: server.outDir,
         hasAuth: includeAuthFile,
         hasEnv: includeEnvFile,
       });

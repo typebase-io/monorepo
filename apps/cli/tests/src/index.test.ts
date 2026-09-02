@@ -4,6 +4,7 @@ const spies = vi.hoisted(() => ({
   init: vi.fn(),
   codegen: vi.fn(),
   generateServer: vi.fn(),
+  start: vi.fn(),
   auth: vi.fn(),
   db: vi.fn(),
   deploy: vi.fn(),
@@ -31,6 +32,12 @@ vi.mock('#commands/generate-server.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
 
   return { generateServer: new Command('generate-server').action(spies.generateServer) };
+});
+
+vi.mock('#commands/start.ts', async () => {
+  const { Command } = await import('@commander-js/extra-typings');
+
+  return { start: new Command('start').action(spies.start) };
 });
 
 vi.mock('#commands/auth.ts', async () => {
@@ -120,6 +127,13 @@ describe('cli entrypoint', () => {
     process.argv = originalArgv;
     process.exitCode = 0;
     vi.restoreAllMocks();
+  });
+
+  it('runs the start command, checking for the typebase-io install first', async () => {
+    await runCli(['start']);
+
+    expect(spies.isTypebaseIoInstalled).toHaveBeenCalled();
+    expect(spies.start).toHaveBeenCalledOnce();
   });
 
   it('runs a subcommand when typebase-io is installed', async () => {
