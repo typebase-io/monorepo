@@ -427,6 +427,14 @@ For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://*
 
 ## Local development
 
+### `ELIFECYCLE Command failed.` after every reload with `--command`
+
+Not a failure. Stopping the command signals it, and pnpm reports any script that ends on a signal as a failed lifecycle — the same line you get from
+pressing Ctrl+C during a plain `pnpm start`. The rebuild and the restart both worked.
+
+Use `--command "pnpm --silent start"`, or run the server directly with `--command "node src/index.js"`, to keep it quiet. See
+[running the server on every rebuild](/docs/cli/generate-server#running-the-server-on-every-rebuild).
+
 ### `generate-server` output is stale
 
 The generated server in `typebase/_server/` is a snapshot of the moment you ran the command. Re-run `npx typebase-io-cli generate-server` and restart the local server after changing anything inside `typebase/`.

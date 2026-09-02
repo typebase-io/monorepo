@@ -49,8 +49,32 @@ usually) is printed and leaves the watcher running, so fixing the file triggers 
 
 <Callout type="warn">
   Watch mode rebuilds the files in `typebase/_server/`, but the server process you started from them keeps running the old code. Restart it to pick up
-  a rebuild.
+  a rebuild, or let [`--command`](#rebuild-and-restart-in-one-command) do it for you.
 </Callout>
+
+## Rebuild and restart in one command
+
+`--command` runs a command inside the generated server after every build, and restarts it on every rebuild. That gives you one process to start and
+nothing to remember: edit a file, and what is running is the new build.
+
+Install the generated server's dependencies once:
+
+```npm
+npx typebase-io-cli generate-server
+```
+
+```bash
+cd typebase/_server
+pnpm install
+```
+
+Then, from your project root:
+
+```npm
+npx typebase-io-cli generate-server --watch --command "pnpm start"
+```
+
+Press `x` or Ctrl+C to stop; the server stops with it. Regenerating keeps `node_modules` and `.env`, so the install above is a one-time step.
 
 ## Environment variables
 

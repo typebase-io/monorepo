@@ -289,7 +289,7 @@ Prefer the locally installed binary (`npx typebase-io-cli ...` or the project's 
 | `db migrations init`                                                                 | Adopt migrations on a push-mode project. Writes to every existing target's bookkeeping table; needs explicit user authorization. Never provisions a target that has no database.                                                                                                |
 | `db pull [--url <conn>] [-f]`                                                        | Destructively replaces local schema and relations from the DB, then codegens. It reads `public`; cross-schema references may need cleanup. Warn first and avoid `-f` without explicit approval. In migrations mode it refuses without `-f` and rebaselines history when forced. |
 | `deploy dev` / `deploy prod` `[--skip-schema-changes-confirmation]`                  | Codegen, validate, build, transpile, push applicable schema, deploy, sync automatic DB/auth variables, and write deployment URL/local connection values.                                                                                                                        |
-| `generate-server [options]`                                                          | Build a safe, replaceable snapshot in `<tb>/_server`; rerun after backend changes or use `--watch`.                                                                                                                                                                             |
+| `generate-server [options]`                                                          | Build a safe, replaceable snapshot in `<tb>/_server`; rerun after backend changes or use `--watch`. `--command "<cmd>"` runs a command inside the generated server after each build, restarting it on every rebuild; long-running like `--watch`.                               |
 | `env <dev\|prod> get\|add ...`                                                       | Read/upload provider values after the provider project exists. Encrypted secrets may read as `ENCRYPTED`.                                                                                                                                                                       |
 | `logs <dev\|prod>`                                                                   | Long-running provider log stream; stop with `x`/Ctrl+C on a TTY or SIGINT otherwise.                                                                                                                                                                                            |
 | `config`                                                                             | Read-only `{ projectRoot, configPath, schema }` config snapshot; the only command not requiring `typebase-io`.                                                                                                                                                                  |
@@ -341,6 +341,17 @@ After successful setup, the CLI persists `serverProvider` and real provider/Neon
 Only projects with `db/schema.ts` need Neon/`DATABASE_URL`; only auth projects need `BETTER_AUTH_SECRET`. Custom keys in `env.ts` are not synced by deploy; required keys without schema defaults must already be set unless validation is intentionally skipped. Schema push occurs before new server code goes live, so stage destructive production changes additively across releases.
 
 Dev and prod have separate deployment URLs, provider env vars, and Neon branches. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. Browser code instead needs framework-public variables.
+
+### `generate-server --command`
+
+Runs a command inside the generated server after every successful build, restarting it on each rebuild.
+
+- **Long-running with `--watch`.** Handle it like `--watch` and `logs`: background or timeout, never a blocking foreground call.
+- **Install the generated server's dependencies first.** The command runs in `<tb>/<outDir>` (default `<tb>/_server`), so `pnpm start` there needs an install in that directory first. Regeneration keeps `node_modules` and `.env` and replaces everything else, so installing once is enough.
+- **The command gets no stdin.** Output passes through; interactive commands do not work, and that is what keeps `x`/Ctrl+C stopping the watcher.
+- **`ELIFECYCLE Command failed.` after a reload is not an error.** Stopping the command signals it, and pnpm reports a signalled script as failed. Suggest `pnpm --silent start` instead of debugging it.
+- **A failed build leaves the running command alone**, and a command that exits does not stop the watcher; the next change runs it again.
+- Do not use it for migrations, deploys, or anything that writes to a database: it re-runs on every rebuild.
 
 ### Logs and local servers
 

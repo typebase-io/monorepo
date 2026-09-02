@@ -39,6 +39,11 @@ _2026-09-02._
   - Migrations ship with [`generate-server`](/docs/cli/generate-server) output and the deployed bundle, and the generated drizzle config points at
     them.
 
+- [`generate-server --command "<command>"`](/docs/cli/generate-server#running-the-server-on-every-rebuild) runs a command inside the generated server
+  once it has been generated. With `--watch` it restarts that command on every rebuild, so what is running is always the latest build:
+  `npx typebase-io-cli generate-server --watch --command "pnpm start"`. Stopping the watcher stops the command, including the server a package script
+  started rather than just the script itself. A build that fails leaves the running command alone, and a command that exits does not stop the watcher.
+
 - `--skip-confirmation` on [`db <target> push`](/docs/cli/db#pushing-your-schema) and `--skip-schema-changes-confirmation` on
   [`deploy`](/docs/cli/deploy) answer the [destructive-change prompt](/docs/database/push#answering-the-prompt-ahead-of-time) in advance, for pipelines
   with nobody at the keyboard. The warnings are still printed either way, so the log records what was dropped.

@@ -80,6 +80,7 @@ npx typebase-io-cli generate-server --adapter fastify
 | `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
 | `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
 | `--watch`             | Rebuild on every change inside your `typebase/` directory            | `false`   |
+| `--command <command>` | Command to run in the generated server after it is generated         | none      |
 | `--port <number>`     | Port the generated server listens on                                 | `8080`    |
 
 ## Default configuration
@@ -159,6 +160,63 @@ triggers another attempt.
   Watch mode is a long-running command. If you drive the CLI from a script or an agent, run it in the background or with a timeout, and stop it with
   SIGINT rather than `x` when the output is piped.
 </Callout>
+
+## Running the server on every rebuild
+
+`--command` runs a command inside the generated server directory once generation finishes. Combined with `--watch`, it restarts that command on every
+rebuild, so what is running is always the latest build:
+
+```npm
+npx typebase-io-cli generate-server --watch --command "pnpm start"
+```
+
+The one-time setup is installing dependencies in the generated server, since the command runs there:
+
+```npm
+npx typebase-io-cli generate-server
+```
+
+```bash
+cd typebase/_server
+pnpm install
+```
+
+Then leave the watcher running. Editing anything in `typebase/` rebuilds the server and restarts your command against it.
+
+<Callout type="info">
+  Regenerating replaces `typebase/_server/`, but `node_modules` and `.env` are kept — which is why installing once is enough, and why your local
+  environment variables survive.
+</Callout>
+
+The command is run through a shell, so it behaves the way it does when typed. Stopping with `x` or Ctrl+C stops the command too, including the server
+your package script started rather than just the script itself.
+
+A rebuild that fails leaves the running command alone, so a type error does not take your server down. A command that exits — because it crashed, or
+because it was never long-running — does not stop the watcher either; the next change runs it again.
+
+Without `--watch`, the command runs once after generating and the CLI waits for it, still stopping it on `x` or Ctrl+C.
+
+<Callout type="info">
+  The command does not get the terminal's input. That keeps `x` and Ctrl+C working while it runs, so an interactive command is not what this flag is
+  for. Its output goes straight to your terminal as usual.
+</Callout>
+
+### `ELIFECYCLE Command failed.` after every reload
+
+Expected, and not a failure. Stopping the command signals it, and pnpm reports any script that ends on a signal as a failed lifecycle — the same line
+you get from pressing Ctrl+C during a plain `pnpm start`. The rebuild and the restart both worked.
+
+Pass `--silent` to keep pnpm quiet about it:
+
+```npm
+npx typebase-io-cli generate-server --watch --command "pnpm --silent start"
+```
+
+Running the server directly, without a package script in between, avoids it too:
+
+```npm
+npx typebase-io-cli generate-server --watch --command "node src/index.js"
+```
 
 ## Regeneration
 
