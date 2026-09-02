@@ -45,6 +45,18 @@ Or set `DATABASE_URL` (in your shell or in your project-root `.env`) and omit th
 npx typebase-io-cli db local push
 ```
 
+### Options
+
+| Flag                  | Description                                                           |
+| --------------------- | --------------------------------------------------------------------- |
+| `--url <url>`         | `db local push` only. Connection string, defaulting to `DATABASE_URL` |
+| `--skip-confirmation` | Apply destructive changes without asking. They are still reported     |
+
+<Callout type="warn">
+  `--skip-confirmation` exists for CI, where there is nobody to answer the prompt. It approves dropped columns and dropped tables in advance, and
+  dropped data is unrecoverable. The warnings are still printed, so what was applied is on the record — but nothing stops it.
+</Callout>
+
 ### What happens
 
 Every `db push`:

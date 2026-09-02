@@ -39,6 +39,10 @@ _2026-09-02._
   - Migrations ship with [`generate-server`](/docs/cli/generate-server) output and the deployed bundle, and the generated drizzle config points at
     them.
 
+- `--skip-confirmation` on [`db <target> push`](/docs/cli/db#pushing-your-schema) and `--skip-schema-changes-confirmation` on
+  [`deploy`](/docs/cli/deploy) answer the [destructive-change prompt](/docs/database/push#answering-the-prompt-ahead-of-time) in advance, for pipelines
+  with nobody at the keyboard. The warnings are still printed either way, so the log records what was dropped.
+
 **Changed**
 
 - `db <target> push` refuses to run in migrations mode and names the `migrate` command for that target. Projects that do not opt into migrations are

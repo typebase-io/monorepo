@@ -55,7 +55,21 @@ If a schema change would destroy existing data (such as dropping a table or remo
 ? Are you sure you want to continue? (y/N)
 ```
 
-The CLI will not apply destructive changes without your confirmation. In production, treat these warnings carefully. Dropped columns and tables cannot be recovered.
+By default the CLI will not apply a destructive change until you answer that prompt. In production, treat these warnings carefully. Dropped columns and tables cannot be recovered.
+
+### Answering the prompt ahead of time
+
+A pipeline has nobody at the keyboard, so each command that pushes takes a flag that answers the prompt in advance:
+
+```npm
+npx typebase-io-cli db dev push --skip-confirmation
+```
+
+```npm
+npx typebase-io-cli deploy dev --skip-schema-changes-confirmation
+```
+
+The warnings are printed either way, so the log still records what was dropped. Nothing stops it, though, so reach for these only on a pipeline where the schema change has already been reviewed.
 
 ## Viewing your data in Neon
 
