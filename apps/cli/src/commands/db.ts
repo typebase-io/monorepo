@@ -83,8 +83,9 @@ const createTargetCommand = (target: 'dev' | 'prod') =>
     .addCommand(
       new Command('push')
         .summary('Push schema changes to your database')
+        .option('--skip-confirmation', 'Apply destructive changes without asking. They are still reported.')
         .allowExcessArguments(false)
-        .action(async () => {
+        .action(async ({ skipConfirmation = false }) => {
           const { projectPath, serverProvider } = await getTypebaseConfig();
 
           const typebaseDirPath = path.resolve(projectPath);
@@ -116,7 +117,7 @@ const createTargetCommand = (target: 'dev' | 'prod') =>
           try {
             const { connectionUri } = await neon({ target });
 
-            await pushSchema({ serverDistDirPath, connectionUri });
+            await pushSchema({ serverDistDirPath, connectionUri, skipConfirmation });
           } finally {
             await cleanup();
           }
@@ -181,6 +182,7 @@ const createLocalCommand = () =>
       new Command('push')
         .summary('Push schema changes to your local database')
         .option('--url <url>', 'Database URL (defaults to DATABASE_URL env var)')
+        .option('--skip-confirmation', 'Apply destructive changes without asking. They are still reported.')
         .allowExcessArguments(false)
         .action(async (options) => {
           const connectionUri = options.url ?? readEnvVariable('DATABASE_URL');
@@ -204,7 +206,7 @@ const createLocalCommand = () =>
           const { serverDistDirPath, cleanup } = await buildSchema({ dbDirPath, serverProvider });
 
           try {
-            await pushSchema({ serverDistDirPath, connectionUri });
+            await pushSchema({ serverDistDirPath, connectionUri, skipConfirmation: options.skipConfirmation ?? false });
           } finally {
             await cleanup();
           }
@@ -270,7 +272,7 @@ const createMigrationsCommand = () =>
 
             try {
               for (const { target, connectionUri } of targets) {
-                const { sqlStatements } = await pushSchema({ serverDistDirPath, connectionUri, dryRun: true });
+                const { sqlStatements } = await pushSchema({ serverDistDirPath, connectionUri, dryRun: true, skipConfirmation: true });
 
                 if (sqlStatements.length === 0) {
                   continue;
@@ -286,7 +288,7 @@ const createMigrationsCommand = () =>
                   );
                 }
 
-                await pushSchema({ serverDistDirPath, connectionUri });
+                await pushSchema({ serverDistDirPath, connectionUri, skipConfirmation: false });
               }
             } finally {
               await cleanup();

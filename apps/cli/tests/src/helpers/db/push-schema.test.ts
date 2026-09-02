@@ -66,7 +66,12 @@ describe('pushSchema', () => {
       const serverDistDirPath = writeServerSchema(tmp);
       const { apply } = mockDrizzlePush({ sqlStatements: ['ALTER TABLE "users" ADD COLUMN "age" integer;'] });
 
-      const result = await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+      const result = await pushSchema({
+        serverDistDirPath,
+        connectionUri: 'postgres://user:pass@localhost/db',
+        dryRun: true,
+        skipConfirmation: false,
+      });
 
       expect(result).toEqual({ sqlStatements: ['ALTER TABLE "users" ADD COLUMN "age" integer;'] });
       expect(apply).not.toHaveBeenCalled();
@@ -77,7 +82,7 @@ describe('pushSchema', () => {
       const serverDistDirPath = writeServerSchema(tmp);
       const { apply } = mockDrizzlePush({ sqlStatements: ['DROP TABLE "users";'], hints: [{ hint: 'You are about to drop "users"' }] });
 
-      await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+      await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true, skipConfirmation: false });
 
       expect(confirm).not.toHaveBeenCalled();
       expect(apply).not.toHaveBeenCalled();
@@ -88,7 +93,12 @@ describe('pushSchema', () => {
 
       mockDrizzlePush({});
 
-      const result = await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', dryRun: true });
+      const result = await pushSchema({
+        serverDistDirPath,
+        connectionUri: 'postgres://user:pass@localhost/db',
+        dryRun: true,
+        skipConfirmation: false,
+      });
 
       expect(result).toEqual({ sqlStatements: [] });
       expect(dbMocks.client.end).toHaveBeenCalledOnce();
@@ -99,7 +109,7 @@ describe('pushSchema', () => {
     const serverDistDirPath = writeServerSchema(tmp);
     const { apply } = mockDrizzlePush({});
 
-    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' });
+    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false });
 
     expect(drizzle).toHaveBeenCalledWith('postgres://user:pass@localhost/db');
     expect(dbMocks.client.on).toHaveBeenCalledWith('error', expect.any(Function));
@@ -120,7 +130,7 @@ describe('pushSchema', () => {
 
     const { apply } = mockDrizzlePush({ sqlStatements: ['create table users (id integer);'] });
 
-    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' });
+    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false });
 
     expect(confirm).not.toHaveBeenCalled();
     expect(apply).toHaveBeenCalledOnce();
@@ -139,7 +149,7 @@ describe('pushSchema', () => {
     vi.mocked(confirm).mockResolvedValue(true);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' });
+    await pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false });
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Warnings:'));
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('You are about to drop users.'));
@@ -161,7 +171,7 @@ describe('pushSchema', () => {
     vi.mocked(confirm).mockResolvedValue(false);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' })).rejects.toThrow(
+    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false })).rejects.toThrow(
       'Schema push cancelled. Deploy aborted.'
     );
 
@@ -178,7 +188,9 @@ describe('pushSchema', () => {
       apply: vi.fn().mockRejectedValue(new Error('apply failed')),
     });
 
-    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' })).rejects.toThrow('apply failed');
+    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false })).rejects.toThrow(
+      'apply failed'
+    );
 
     expect(dbMocks.client.end).toHaveBeenCalledOnce();
     expect(tmp.exists('server-dist/node_modules')).toBe(false);
@@ -187,10 +199,66 @@ describe('pushSchema', () => {
   it('removes the temporary symlink when importing the schema fails', async () => {
     const serverDistDirPath = tmp.mkdir('server-dist');
 
-    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db' })).rejects.toThrow();
+    await expect(pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation: false })).rejects.toThrow();
 
     expect(drizzle).not.toHaveBeenCalled();
     expect(drizzlePush).not.toHaveBeenCalled();
     expect(tmp.exists('server-dist/node_modules')).toBe(false);
+  });
+
+  describe('skipConfirmation', () => {
+    const push = (skipConfirmation: boolean) => {
+      const serverDistDirPath = writeServerSchema(tmp);
+
+      return pushSchema({ serverDistDirPath, connectionUri: 'postgres://user:pass@localhost/db', skipConfirmation });
+    };
+
+    const warnings = () =>
+      vi
+        .mocked(console.log)
+        .mock.calls.flat()
+        .map((line) => String(line))
+        .join('\n');
+
+    beforeEach(() => {
+      vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    });
+
+    it('applies destructive changes without asking when set', async () => {
+      const { apply } = mockDrizzlePush({ sqlStatements: ['DROP TABLE "users";'], hints: [{ hint: 'You are about to drop "users"' }] });
+
+      await push(true);
+
+      expect(confirm).not.toHaveBeenCalled();
+      expect(apply).toHaveBeenCalledOnce();
+    });
+
+    it('still reports what was destructive, so the record is not lost', async () => {
+      mockDrizzlePush({ sqlStatements: ['DROP TABLE "users";'], hints: [{ hint: 'You are about to drop "users"' }] });
+
+      await push(true);
+
+      expect(warnings()).toContain('You are about to drop "users"');
+    });
+
+    it('asks when not set', async () => {
+      const { apply } = mockDrizzlePush({ sqlStatements: ['DROP TABLE "users";'], hints: [{ hint: 'You are about to drop "users"' }] });
+
+      vi.mocked(confirm).mockResolvedValue(true);
+
+      await push(false);
+
+      expect(confirm).toHaveBeenCalledOnce();
+      expect(apply).toHaveBeenCalledOnce();
+    });
+
+    it('changes nothing about a push with no destructive changes', async () => {
+      const { apply } = mockDrizzlePush({ sqlStatements: ['ALTER TABLE "users" ADD COLUMN "age" integer;'] });
+
+      await push(true);
+
+      expect(confirm).not.toHaveBeenCalled();
+      expect(apply).toHaveBeenCalledOnce();
+    });
   });
 });

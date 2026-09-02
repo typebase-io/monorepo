@@ -55,6 +55,7 @@ export const deploy = new Command('deploy')
   })
   .addOption(new Option('--provider <provider>', 'Deployment provider').choices(serverProviders))
   .option('--logs', 'Stream the server logs once the deployment is live')
+  .option('--skip-schema-changes-confirmation', 'Apply destructive database schema changes without asking. They are still reported.')
   .allowExcessArguments(false)
   .action(async (target, options) => {
     const { projectPath, serverProvider, server } = await getTypebaseConfig();
@@ -247,7 +248,7 @@ export const deploy = new Command('deploy')
               : `${applied.length} ${applied.length === 1 ? 'migration' : 'migrations'} applied.`
           );
         } else {
-          await pushSchema({ serverDistDirPath, connectionUri });
+          await pushSchema({ serverDistDirPath, connectionUri, skipConfirmation: options.skipSchemaChangesConfirmation ?? false });
         }
 
         const databaseURL = await match(provider)

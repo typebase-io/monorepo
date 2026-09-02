@@ -11,10 +11,12 @@ import ora from 'ora';
 export const pushSchema = async ({
   serverDistDirPath,
   connectionUri,
+  skipConfirmation,
   dryRun,
 }: {
   serverDistDirPath: string;
   connectionUri: string;
+  skipConfirmation: boolean;
   dryRun?: boolean;
 }) => {
   const schemaPath = path.join(serverDistDirPath, 'src', 'db', 'schema.js');
@@ -64,10 +66,12 @@ export const pushSchema = async ({
 
         console.log('\n');
 
-        const accepted = await confirm({ message: 'Apply these changes?' });
+        if (!skipConfirmation) {
+          const accepted = await confirm({ message: 'Apply these changes?' });
 
-        if (!accepted) {
-          throw new Error('Schema push cancelled. Deploy aborted.');
+          if (!accepted) {
+            throw new Error('Schema push cancelled. Deploy aborted.');
+          }
         }
       }
 

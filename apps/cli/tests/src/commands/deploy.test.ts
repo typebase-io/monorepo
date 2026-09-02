@@ -683,6 +683,34 @@ export const todos = p.pgTable("todos", {
   });
 
   describe('in push mode', () => {
+    it('asks about destructive changes by default', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: false }));
+    });
+
+    it('passes --skip-schema-changes-confirmation through to the push', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel', '--skip-schema-changes-confirmation'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: true }));
+    });
+
+    it('leaves every other prompt alone', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      fs.rmSync(path.join(tmp.path, 'typebase.json'), { force: true });
+
+      vi.mocked(select).mockResolvedValue('vercel');
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--skip-schema-changes-confirmation'], { from: 'user' }));
+
+      expect(select).toHaveBeenCalledOnce();
+    });
+
     it('still pushes the schema and never applies migrations', async () => {
       await setupProject({ withAuth: false, withDb: true });
 

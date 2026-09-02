@@ -161,6 +161,22 @@ describe('db command', () => {
       expect(pushSchema).not.toHaveBeenCalled();
     });
 
+    it('asks about destructive changes by default', async () => {
+      tmp.write('typebase.json', JSON.stringify({ serverProvider: 'vercel' }));
+
+      await withCwd(tmp.path, () => db.parseAsync(['dev', 'push'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: false }));
+    });
+
+    it('passes --skip-confirmation through', async () => {
+      tmp.write('typebase.json', JSON.stringify({ serverProvider: 'vercel' }));
+
+      await withCwd(tmp.path, () => db.parseAsync(['dev', 'push', '--skip-confirmation'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: true }));
+    });
+
     it('propagates a failure from pushSchema', async () => {
       tmp.write('typebase.json', JSON.stringify({ serverProvider: 'vercel' }));
 
@@ -210,6 +226,18 @@ describe('db command', () => {
         expect(builtSchemaExistedAtPush).toBe(true);
       }
     );
+
+    it('asks about destructive changes by default', async () => {
+      await withCwd(tmp.path, () => db.parseAsync(['local', 'push', '--url', 'postgres://local/db'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: false }));
+    });
+
+    it('passes --skip-confirmation through', async () => {
+      await withCwd(tmp.path, () => db.parseAsync(['local', 'push', '--url', 'postgres://local/db', '--skip-confirmation'], { from: 'user' }));
+
+      expect(pushSchema).toHaveBeenCalledWith(expect.objectContaining({ skipConfirmation: true }));
+    });
 
     it('throws when no database url can be resolved', async () => {
       await expect(withCwd(tmp.path, () => db.parseAsync(['local', 'push'], { from: 'user' }))).rejects.toThrow(
@@ -1119,6 +1147,7 @@ export const todos = p.pgTable("todos", {
       expect(warned()).toContain('Your dev database does not match your schema files.');
 
       expect(vi.mocked(pushSchema).mock.calls.map(([{ dryRun }]) => dryRun)).toEqual([true, undefined, true]);
+      expect(vi.mocked(pushSchema).mock.calls.map(([{ skipConfirmation }]) => skipConfirmation)).toEqual([true, false, true]);
       expect(baselineNames()).toHaveLength(1);
     });
 
