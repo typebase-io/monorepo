@@ -5,6 +5,7 @@ import ora from 'ora';
 
 import { serverAdapters } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
+import { runServerCommand } from '#helpers/generate-server/run-server-command.ts';
 import { watchServer } from '#helpers/generate-server/watch-server.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { runUntilStopped } from '#helpers/shared/run-until-stopped.ts';
@@ -17,6 +18,7 @@ export const generateServer = new Command('generate-server')
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
   .option('--out-dir <path>', 'Output directory for generated server files')
   .option('--watch', 'Rebuild whenever a file inside the typebase directory changes. Press "x" or Ctrl+C to stop')
+  .option('--command <command>', 'Command to run in the generated server directory after it is generated, restarted on every rebuild')
   .option('--port <number>', 'Port the generated server listens on', (value) => {
     const parsed = Number(value);
 
@@ -36,6 +38,8 @@ export const generateServer = new Command('generate-server')
 
     const typebaseDirPath = path.resolve(projectPath);
 
+    const serverCommand = params.command ? runServerCommand({ command: params.command, cwd: path.resolve(typebaseDirPath, outDir) }) : undefined;
+
     const build = async (signal?: AbortSignal, { rebuild = false } = {}) => {
       const spinner = rebuild ? ora('Regenerating...').start() : undefined;
 
@@ -53,30 +57,48 @@ export const generateServer = new Command('generate-server')
 
         if (spinner) {
           spinner.succeed('Server regenerated!');
-
-          return;
+        } else {
+          ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
         }
-
-        ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
       } catch (err) {
         spinner?.stop();
 
         throw err;
       }
+
+      await serverCommand?.restart();
     };
 
     if (!params.watch) {
       await build();
 
+      if (serverCommand) {
+        await runUntilStopped(async (signal) => {
+          const stopped = new Promise<void>((resolve) => {
+            signal.addEventListener('abort', () => {
+              resolve();
+            });
+          });
+
+          await Promise.race([serverCommand.finished(), stopped]);
+
+          await serverCommand.stop();
+        });
+      }
+
       return;
     }
 
-    await runUntilStopped((signal) =>
-      watchServer({
-        build,
-        dirPath: typebaseDirPath,
-        ignoredDirPaths: [path.resolve(typebaseDirPath, outDir), path.join(typebaseDirPath, '_generated')],
-        signal,
-      })
-    );
+    try {
+      await runUntilStopped((signal) =>
+        watchServer({
+          build,
+          dirPath: typebaseDirPath,
+          ignoredDirPaths: [path.resolve(typebaseDirPath, outDir), path.join(typebaseDirPath, '_generated')],
+          signal,
+        })
+      );
+    } finally {
+      await serverCommand?.stop();
+    }
   });

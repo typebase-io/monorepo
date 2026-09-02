@@ -512,4 +512,161 @@ export const auth = defineAuth({
       expect(listFiles(path.join(tmp.path, 'typebase/_server')).filter((file) => file.includes('migrations'))).toEqual([]);
     });
   });
+
+  describe('--command', () => {
+    const marker = () => path.join(tmp.path, 'ran.txt');
+
+    const markerArg = () => `'${marker()}'`;
+
+    const readMarker = () => (fs.existsSync(marker()) ? fs.readFileSync(marker(), 'utf8') : '');
+
+    const until = async (predicate: () => boolean, label: string) => {
+      for (let attempt = 0; attempt < 1200; attempt += 1) {
+        if (predicate()) {
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+
+      throw new Error(`Timed out waiting for ${label}.`);
+    };
+
+    beforeEach(async () => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+    });
+
+    it('runs the command in the generated server once it exists', async () => {
+      await withCwd(tmp.path, () =>
+        generateServer.parseAsync(['--command', `node -e "require('fs').writeFileSync(${markerArg()}, String(require('fs').existsSync('src')))"`], {
+          from: 'user',
+        })
+      );
+
+      expect(readMarker()).toBe('true');
+    });
+
+    it('waits for the command to finish before returning', async () => {
+      await withCwd(tmp.path, () =>
+        generateServer.parseAsync(['--command', `node -e "setTimeout(() => require('fs').writeFileSync(${markerArg()}, 'late'), 150)"`], {
+          from: 'user',
+        })
+      );
+
+      expect(readMarker()).toBe('late');
+    });
+
+    it('stops the command when the run is stopped, so nothing is left holding the port', async () => {
+      const controller = new AbortController();
+
+      vi.mocked(runUntilStopped).mockImplementation((run) => {
+        setTimeout(() => {
+          controller.abort();
+        }, 300);
+
+        return run(controller.signal);
+      });
+
+      await withCwd(tmp.path, () =>
+        generateServer.parseAsync(
+          ['--command', `true && node -e "require('fs').writeFileSync(${markerArg()}, String(process.pid)); setInterval(() => {}, 1000)"`],
+          { from: 'user' }
+        )
+      );
+
+      const pid = Number(readMarker());
+
+      expect(pid).toBeGreaterThan(0);
+
+      await until(() => {
+        try {
+          process.kill(pid, 0);
+
+          return false;
+        } catch {
+          return true;
+        }
+      }, 'the command to be gone');
+    });
+
+    it('generates as usual when no command is passed', async () => {
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expect(fs.existsSync(path.join(tmp.path, 'typebase/_server/src/index.ts'))).toBe(true);
+      expect(readMarker()).toBe('');
+    });
+
+    it('keeps watching after a command that failed, and runs it again on the next change', async () => {
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+
+      vi.mocked(watchServer).mockImplementation(async ({ build }) => {
+        await build(new AbortController().signal, { rebuild: false });
+
+        await until(() => readMarker().trim().split('\n').filter(Boolean).length === 1, 'the failing command to run');
+
+        await build(new AbortController().signal, { rebuild: true });
+
+        await until(() => readMarker().trim().split('\n').filter(Boolean).length === 2, 'it to run again');
+      });
+
+      await expect(
+        withCwd(tmp.path, () =>
+          generateServer.parseAsync(['--watch', '--command', `node -e "require('fs').appendFileSync(${markerArg()}, 'tried\\n'); process.exit(1)"`], {
+            from: 'user',
+          })
+        )
+      ).resolves.not.toThrow();
+
+      expect(readMarker().trim().split('\n').filter(Boolean)).toEqual(['tried', 'tried']);
+    });
+
+    it('restarts the command on every rebuild, and leaves nothing running when the watch stops', async () => {
+      vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal));
+
+      vi.mocked(watchServer).mockImplementation(async ({ build }) => {
+        await build(new AbortController().signal, { rebuild: false });
+
+        await until(() => readMarker().trim().split('\n').filter(Boolean).length === 1, 'the first run');
+
+        await build(new AbortController().signal, { rebuild: true });
+
+        await until(() => readMarker().trim().split('\n').filter(Boolean).length === 2, 'the rebuild to restart it');
+      });
+
+      await withCwd(tmp.path, () =>
+        generateServer.parseAsync(
+          [
+            '--watch',
+            '--command',
+            `true && node -e "const fs=require('fs'); fs.appendFileSync(${markerArg()}, process.pid + '\\n'); setInterval(() => {}, 1000)"`,
+          ],
+          { from: 'user' }
+        )
+      );
+
+      const pids = readMarker()
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => Number(line));
+
+      expect(pids).toHaveLength(2);
+
+      await until(
+        () =>
+          pids.every((pid) => {
+            try {
+              process.kill(pid, 0);
+
+              return false;
+            } catch {
+              return true;
+            }
+          }),
+        'every run to be gone'
+      );
+    });
+  });
 });
