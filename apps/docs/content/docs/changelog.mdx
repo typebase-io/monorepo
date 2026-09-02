@@ -39,6 +39,12 @@ _2026-09-02._
   - Migrations ship with [`generate-server`](/docs/cli/generate-server) output and the deployed bundle, and the generated drizzle config points at
     them.
 
+- [`generate-server`](/docs/cli/generate-server) fills the generated server's `.env` from your project-root `.env`, so a server you run locally starts
+  with the values the CLI already collected instead of you copying them across. Only the keys the server validates are copied — `DATABASE_URL`,
+  `BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env) — and `DATABASE_URL` comes from `DATABASE_URL_DEV` when there is one, so a
+  local server reaches the dev branch rather than production. Keys already in the file are never overwritten. Provider tokens are not copied, and
+  [`deploy`](/docs/cli/deploy) is unchanged: it syncs variables to the provider and never puts a `.env` in the bundle.
+
 - [`generate-server --command "<command>"`](/docs/cli/generate-server#running-the-server-on-every-rebuild) runs a command inside the generated server
   once it has been generated. With `--watch` it restarts that command on every rebuild, so what is running is always the latest build:
   `npx typebase-io-cli generate-server --watch --command "pnpm start"`. Stopping the watcher stops the command, including the server a package script

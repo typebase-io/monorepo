@@ -78,7 +78,22 @@ Press `x` or Ctrl+C to stop; the server stops with it. Regenerating keeps `node_
 
 ## Environment variables
 
-The generated server reads its config from a `.env` file in `typebase/_server/`. At minimum you'll need:
+The generated server reads its config from a `.env` file in `typebase/_server/`. **`generate-server` fills that file in for you** from your
+project-root `.env`, so a server you run locally usually starts without you copying anything across.
+
+It only copies the keys the generated server actually validates — `DATABASE_URL`, `BETTER_AUTH_SECRET`, and whatever you declared in
+[`env.ts`](/docs/env). Provider tokens like `NEON_API_KEY` stay in your project root, where they belong to the CLI rather than the server.
+
+<Callout type="info">
+  `DATABASE_URL` is taken from your project's `DATABASE_URL_DEV` when there is one, so a server on your machine reaches the dev branch rather than
+  production. If you only ever deployed to prod, the prod connection string is all there is and that is what gets copied — worth a look before you
+  start writing data.
+</Callout>
+
+A key already present in `typebase/_server/.env` is never overwritten, so anything you changed by hand survives a rebuild. Delete a line and
+regenerate to pick the project value back up.
+
+At minimum you'll need:
 
 ```bash title="typebase/_server/.env"
 DATABASE_URL=postgresql://...   # only if your project has a db/schema.ts

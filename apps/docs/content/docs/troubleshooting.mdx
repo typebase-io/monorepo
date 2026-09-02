@@ -435,6 +435,15 @@ pressing Ctrl+C during a plain `pnpm start`. The rebuild and the restart both wo
 Use `--command "pnpm --silent start"`, or run the server directly with `--command "node src/index.js"`, to keep it quiet. See
 [running the server on every rebuild](/docs/cli/generate-server#running-the-server-on-every-rebuild).
 
+### The local server still says an environment variable is missing
+
+`generate-server` fills `typebase/_server/.env` from your project-root `.env`, but only with keys that are actually there. A key you never set locally
+stays missing. Run [`npx typebase-io-cli deploy dev`](/docs/cli/deploy) once to have the CLI write `DATABASE_URL_DEV` into your project `.env`, or add
+the value to `typebase/_server/.env` yourself.
+
+A key already in `typebase/_server/.env` is never overwritten, so a stale value there wins over your project `.env`. Delete the line and regenerate to
+pick the project value back up.
+
 ### `generate-server` output is stale
 
 The generated server in `typebase/_server/` is a snapshot of the moment you ran the command. Re-run `npx typebase-io-cli generate-server` and restart the local server after changing anything inside `typebase/`.

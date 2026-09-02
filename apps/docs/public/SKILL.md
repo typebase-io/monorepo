@@ -342,6 +342,10 @@ Only projects with `db/schema.ts` need Neon/`DATABASE_URL`; only auth projects n
 
 Dev and prod have separate deployment URLs, provider env vars, and Neon branches. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. Browser code instead needs framework-public variables.
 
+### Generated server environment
+
+`generate-server` fills `<tb>/<outDir>/.env` from the project-root `.env`, copying only the keys the generated server validates (`DATABASE_URL`, `BETTER_AUTH_SECRET`, and the `defineEnv` keys). `DATABASE_URL` is taken from `DATABASE_URL_DEV` when present so a local server hits dev, not prod. Keys already in the file are never overwritten, and provider tokens are never copied. This is `generate-server` only: `deploy` syncs variables to the provider and never puts a `.env` in the bundle. Do not hand-copy the project `.env` into the generated server; if a value is missing there, it is missing from the project `.env` too.
+
 ### `generate-server --command`
 
 Runs a command inside the generated server after every successful build, restarting it on each rebuild.

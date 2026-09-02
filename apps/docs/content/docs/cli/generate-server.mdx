@@ -121,6 +121,12 @@ _server/
 
 `src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
 
+`.env` in the generated server is filled in from your project-root `.env`, with the keys the server validates: `DATABASE_URL`,
+`BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env). `DATABASE_URL` comes from your `DATABASE_URL_DEV` when there is one, so a
+server you run locally reaches the dev branch. Keys already in the file are never overwritten, and nothing else from your project `.env` — provider
+tokens especially — is copied. This is a `generate-server` convenience only; [`deploy`](/docs/cli/deploy) syncs variables to the provider instead and
+never puts a `.env` in the bundle.
+
 `src/db/migrations/` is copied across when your project uses [migrations](/docs/database/migrations), for every output format, and the drizzle config
 written next to it points its `out` at them. The generated server is self-contained: you can apply the migrations it shipped with using standard
 drizzle tooling. The server never reads them itself — migrations are applied by the CLI, from your machine or from CI. A project in push mode gets no
