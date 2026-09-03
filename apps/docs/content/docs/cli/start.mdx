@@ -1,0 +1,264 @@
+---
+title: typebase-io-cli start
+description: Run your Typebase server on your own machine.
+---
+
+The `npx typebase-io-cli start` command builds your server, installs its dependencies, brings your database in step with your schema, and runs it on your machine. It keeps running: every change inside `typebase/` rebuilds, re-syncs and restarts it.
+
+It is the [`deploy`](/docs/cli/deploy) pipeline with the deployment removed. Nothing is uploaded, no provider is chosen, and no database is provisioned. It connects to the database you give it.
+
+## Quick start
+
+```npm
+npx typebase-io-cli start
+```
+
+Run it from your project root. Press `x` or `Ctrl+C` to stop.
+
+If your project has a `db/schema.ts`, it needs a database to apply your schema to. By default that comes from `DATABASE_URL_LOCAL` in your project-root `.env`:
+
+```bash title=".env"
+DATABASE_URL_LOCAL=postgres://localhost:5432/mydb
+```
+
+Or name a different one with a [flag](#choosing-a-database). A project with no schema needs no database at all.
+
+## What happens during a run
+
+Every pass, including the first:
+
+1. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand.
+2. **Validates your TypeScript**: Checks your `typebase/` directory against those freshly generated types.
+3. **Generates server files**: Builds the server into the [server cache](#the-server-cache), outside your project.
+4. **Installs its dependencies**: With your own package manager, in the cache. Skipped when the generated `package.json` has not changed.
+5. **Pushes your database schema**: Syncs your Drizzle schema to the database you chose. A change that would drop data stops here for confirmation. In [migrations mode](/docs/database/migrations) it applies your pending migrations instead. Skipped when nothing under `typebase/db/` has changed.
+6. **Starts the server**: Spawned directly as a Node process against its entry file.
+
+Then it watches `typebase/` and does all six again on every change. Steps 4 and 5 are the [skipped ones](#what-gets-skipped-on-a-rebuild); the rest run every time.
+
+<Callout type="info">
+  Restarting the command is a full reset. The two skip checks live in memory and start empty, so the first pass of every run does everything.
+</Callout>
+
+## Options
+
+| Flag                                 | Description                                                                           | Default              |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | -------------------- |
+| `--database-url <url>`               | Connection string of the database to run against                                      | `DATABASE_URL_LOCAL` |
+| `--dev-database`                     | Run against `DATABASE_URL_DEV`, your dev branch                                       | off                  |
+| `--prod-database`                    | Run against `DATABASE_URL`, your production branch                                    | off                  |
+| `--port <number>`                    | Port the server listens on                                                            | `server.port` (8080) |
+| `--output <type>`                    | Output format to run: `ts`, `esm`, or `cjs`                                           | detected             |
+| `--command <command>`                | Command to start the server with, run in the server cache                             | none                 |
+| `--install-command <command>`        | Command to install the server's dependencies with                                     | your package manager |
+| `--skip-schema-changes-confirmation` | Apply destructive **database schema** changes without asking. They are still reported | off                  |
+
+The three database flags conflict with each other. Passing more than one is an error.
+
+## Choosing a database
+
+There is no precedence chain here. Each way of choosing reads exactly one key, and none falls back to another:
+
+| How                    | Database                                         |
+| ---------------------- | ------------------------------------------------ |
+| No flag                | `DATABASE_URL_LOCAL` in your project-root `.env` |
+| `--database-url <url>` | The connection string you pass                   |
+| `--dev-database`       | `DATABASE_URL_DEV`, the dev branch               |
+| `--prod-database`      | `DATABASE_URL`, the production branch            |
+
+The run reports which one it picked before anything reaches it. It names the flag or the environment key, never the URL, which carries credentials:
+
+```
+ℹ Using the database from DATABASE_URL_LOCAL.
+```
+
+A Postgres in Docker and a hosted Neon branch are equally first-class; the command does not care which the connection string points at.
+
+<Callout type="warn">
+  The default is a key you set yourself rather than your dev branch. A local run pushes schema changes, so defaulting to `DATABASE_URL_DEV` would push
+  them to a shared database for anyone who ran the command without a flag.
+</Callout>
+
+### When the key is empty
+
+A project with a schema and no URL for the database it chose stops before anything is generated or installed, and names the key:
+
+```
+No local database URL found. Set DATABASE_URL_LOCAL in .env, or choose another
+database with --database-url, --dev-database or --prod-database.
+```
+
+The generated server validates its database URL on startup and would exit a few seconds later anyway. Failing here puts the error next to its cause instead of inside a child process.
+
+### Push mode and migrations mode
+
+In [push mode](/docs/database/push) the run pushes your schema, and a destructive change asks first:
+
+```
+⚠ The following changes are destructive:
+  - Column "email" will be dropped from table "users"
+
+? Are you sure you want to continue? (y/N)
+```
+
+In [migrations mode](/docs/database/migrations) it applies your pending migrations. Unrecorded schema changes warn and carry on:
+
+```
+⚠ Your schema files have changes that no migration records, affecting todos.
+Run `db migrations generate` to record them. Applying now brings this database
+up to the last recorded migration only.
+```
+
+This is where `start` differs from [`deploy`](/docs/cli/deploy#deploying-with-migrations), which refuses. Deploy is right to refuse, since shipping types that describe columns the database lacks is a production failure. A watch loop that stopped dead on every unrecorded edit would be unusable. It matches [`db <target> migrate`](/docs/cli/db#db-dev-migrate) instead.
+
+## The server cache
+
+The generated server is not written into your project. It goes into a per-project directory under your user cache directory:
+
+```
+~/.cache/typebase/<project-name>-<fingerprint>/
+  server/                        # the generated server and its node_modules
+  typebase-server-cache.json     # the project this cache belongs to
+```
+
+`XDG_CACHE_HOME` is honoured where it is set. The fingerprint comes from the project path, so one project always resolves to one directory and two projects never collide.
+
+This is not a temporary folder. It persists between runs, which is what makes the loop fast: dependencies stay installed, so only the first run pays for an install. It also means a local run never adds a file to review, commit, or ignore, and `typebase/_server/` is left untouched.
+
+Each directory records the absolute path of the project that owns it, and every run removes the ones whose project is gone. A directory the CLI cannot identify as an abandoned server cache is never removed, and a failure to clean up never stops the run.
+
+<Callout type="info">
+  The cost is that the generated server is no longer somewhere you can casually open and read. [`generate-server`](/docs/cli/generate-server) is still
+  the command for that, and is unaffected by any of this.
+</Callout>
+
+## What gets skipped on a rebuild
+
+Generating is cheap. Installing dependencies and connecting to a database are not, so each is checked against the content that feeds it:
+
+| Step               | Runs when                                              |
+| ------------------ | ------------------------------------------------------ |
+| Dependency install | the generated `package.json` differs from last install |
+| Database sync      | anything under `typebase/db/` differs from last sync   |
+
+So editing an action rebuilds and restarts without opening a database connection, and adding a column to `db/schema.ts` pushes it.
+
+Both compare a hash of the content rather than watching which files changed, since the watcher does not report that, and hashing also catches a file edited while a build was in flight. Neither is written to disk.
+
+The database check over-approximates: a comment-only edit to `schema.ts` re-runs a push, which costs one round trip reporting that the schema is already up to date. It under-approximates for a schema importing from outside `typebase/db/`. Restarting the command is the way out, and there is no flag to force either step.
+
+## The output format
+
+`start` does not read `server.output` from your `typebase.json`. That setting describes the artifact `generate-server` writes; what matters here is what the Node running the CLI can execute.
+
+| Node           | What happens                                                     |
+| -------------- | ---------------------------------------------------------------- |
+| 22.18 or newer | TypeScript is generated and run directly, with no transpile step |
+| Anything older | JavaScript is generated and transpiled on every build            |
+
+On the older path it warns once:
+
+```
+⚠ The Node version you are using cannot run TypeScript so the server is going to
+  get transpiled before it starts. Node 22.18 or newer skips this step.
+```
+
+`--output` overrides the detection and silences the warning, since you chose the format rather than having it chosen. Reach for it when the detection is wrong: it reflects the Node running the CLI, and `--command` can start the server on a different one.
+
+The configured adapter is not read either. A local run always uses the `node` adapter; the others exist to satisfy deploy targets.
+
+## Ports
+
+`--port` overrides `server.port` from your `typebase.json`, which is how you run more than one project at a time:
+
+```npm
+npx typebase-io-cli start --port 8081
+```
+
+A busy port fails before anything is built:
+
+```
+Port 8080 is already in use. Pass a different one with --port.
+```
+
+That check runs once, not on rebuilds, where it would race the old process releasing the port the new one is about to take.
+
+## Environment variables
+
+Two keys are ever written to your **project-root `.env`**:
+
+- **`TYPEBASE_APP_URL_LOCAL`**: the URL the server is listening on, written on every run.
+- **`BETTER_AUTH_SECRET`**: generated and saved when your project has an `auth.ts` and no secret exists yet. It goes where a later [`deploy`](/docs/cli/deploy) will find it, so running locally first does not invalidate every session afterwards.
+
+Your database URLs are read and never written, so a local run cannot repoint your other tooling.
+
+The `.env` inside the server cache is filled by the same seeding [`generate-server`](/docs/cli/generate-server#what-gets-generated) uses, with one difference: `DATABASE_URL` is always overwritten with the database you chose. Without that, a URL passed with `--database-url` would be migrated while the server queried a stale one, with nothing on screen to suggest it. Every other key keeps the never-overwrite rule, and provider tokens are still never copied.
+
+<Callout type="info">
+  You never edit that file. It is machine-managed and refilled on every pass, so a variable the server says is missing is missing from your
+  project-root `.env` too. Add it there.
+</Callout>
+
+### Pointing your frontend at the local run
+
+Nothing reads `TYPEBASE_APP_URL_LOCAL` for you. Typebase has no URL-from-environment resolution, so you write the URL into your own client. Put the local key at the front of the chain and a local run takes precedence whenever one is running:
+
+```ts title="lib/typebase/client.ts"
+export const client = createRouterClient<Router>({
+  url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
+});
+```
+
+Delete the line from `.env` and you are back on dev without touching the client. Browser code needs your framework's public prefix on top of this; see [Work locally](/docs/work-locally#pointing-your-frontend-at-it).
+
+If you have an `auth.ts`, add your frontend's local origin to `trustedOrigins` so the local server accepts its requests.
+
+## A custom start or install command
+
+`--command` replaces the default start, and runs in the server cache:
+
+```npm
+npx typebase-io-cli start --command "node --inspect src/index.ts"
+```
+
+The default spawns Node directly against the entry file rather than going through a package script, which is what keeps a reload quiet. Package managers report any signalled script as a failure, so `pnpm start` prints `ELIFECYCLE Command failed.` on every restart. Running Node directly removes the cause instead of muting it.
+
+`--install-command` replaces the install, and also runs in the cache:
+
+```npm
+npx typebase-io-cli start --install-command "npm ci --omit=dev"
+```
+
+Without it the run uses your project's own package manager, so you never end up with a second lockfile format or a manager you have not installed. A spinner runs while it works; on a non-zero exit the package manager's own output is printed rather than a generic message. An install still going after ten minutes is stopped and reported the same way.
+
+## When something fails
+
+| Failure                             | What happens                                                                           |
+| ----------------------------------- | -------------------------------------------------------------------------------------- |
+| A build fails, usually a type error | Printed, and the run keeps watching. Fixing the file triggers the next attempt         |
+| The database sync fails             | Printed, and the run keeps watching. The next change tries again                       |
+| An install fails on a rebuild       | Printed, the restart is skipped, and your running server is left alive on its old code |
+| An install fails on the first pass  | The run stops, since there was never going to be a server to watch                     |
+
+A failed rebuild install deliberately leaves the working server alone. Restarting into half-installed dependencies turns one legible error into a crash loop that buries it.
+
+## Stopping
+
+`x` or `Ctrl+C` stops everything: the server process, the watcher, and the command itself. No server process survives the command that started it.
+
+While a destructive-change prompt is open, the stop key belongs to the prompt and does nothing. `Ctrl+C` is the way out from there, and it stops the whole run rather than reading as declining the change and carrying on. Both work normally again once the prompt is answered.
+
+<Callout type="info">
+  `start` is a long-running command. If you drive the CLI from a script or an agent, run it in the background or with a timeout, and stop it with
+  SIGINT rather than `x` when the output is piped.
+</Callout>
+
+## start or generate-server
+
+| You want                                          | Command                                        |
+| ------------------------------------------------- | ---------------------------------------------- |
+| A server running on your machine, kept up to date | `start`                                        |
+| To read the generated code, or self-host it       | [`generate-server`](/docs/cli/generate-server) |
+| A different adapter or a fixed output format      | [`generate-server`](/docs/cli/generate-server) |
+
+`generate-server` writes a real, inspectable server into `typebase/_server/` and never touches a database, so a schema change still needs [`db <target> push`](/docs/cli/db#pushing-your-schema) or [`db <target> migrate`](/docs/cli/db#applying-migrations) alongside it. The two commands are independent: adopting one changes nothing about the other.

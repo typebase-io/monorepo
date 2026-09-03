@@ -24,6 +24,29 @@ _2026-09-02._
 
 **Added**
 
+- [`start`](/docs/cli/start): one command that runs your Typebase server on your own machine. It builds the server, installs its dependencies, brings
+  your database in step with your schema, starts it, and then rebuilds, re-syncs and restarts on every change inside `typebase/`. No directory change,
+  no manual install, no separate database step. It replaces the four-step `generate-server` sequence for local work; `generate-server` is unchanged and
+  remains the command for a server you want to open, read, or self-host.
+  - The database is chosen explicitly and there is no fallback chain: no flag reads `DATABASE_URL_LOCAL`, `--dev-database` reads `DATABASE_URL_DEV`,
+    `--prod-database` reads `DATABASE_URL`, and `--database-url` takes one directly. A project with a schema and an empty key stops immediately naming
+    that key, rather than starting a server that dies seconds later on environment validation. A project with no schema skips the database step.
+  - [Push mode](/docs/database/push) pushes and [migrations mode](/docs/database/migrations) applies pending migrations, both on every change under
+    `typebase/db/`. The destructive-change prompt is preserved, with `--skip-schema-changes-confirmation` to answer it in advance.
+    [Drift](/docs/database/migrations#unrecorded-changes) warns and continues rather than refusing, matching `db <target> migrate`, so the loop keeps
+    working while you are still deciding what the migration should say.
+  - The generated server is built into a [server cache](/docs/cli/start#the-server-cache) outside your project, so a local run never adds a file to
+    review, commit, or ignore, and `typebase/_server/` is left untouched. It persists between runs, which is what keeps the loop fast, and prunes
+    itself when the project that owns it is deleted.
+  - The install and the database step are [skipped on a rebuild](/docs/cli/start#what-gets-skipped-on-a-rebuild) when the content that feeds them has
+    not changed, so editing an action never opens a database connection or pays for an install. Both checks live in memory, so restarting the command
+    redoes everything.
+  - The output format is chosen by asking your Node whether it can execute TypeScript: Node 22.18 or newer runs it directly and skips transpiling.
+    `--output` overrides it. Other options: `--port`, `--command`, `--install-command`.
+  - `TYPEBASE_APP_URL_LOCAL` is written to your project-root `.env` on every run, so a [client](/docs/client#which-url-to-pass) reading
+    `TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL` reaches a local run whenever one is going. Your database URLs are read and
+    never written. An auth secret is generated and saved where a later deploy will find it.
+
 - [Migrations](/docs/database/migrations): an opt-in alternative to pushing, where schema changes are recorded as SQL files you read, edit, commit and
   review, and reach a database only when applied. A project is in migrations mode when `typebase/db/migrations/` exists.
   - [`db migrations generate`](/docs/cli/db#db-migrations-generate) diffs your schema files against the last recorded migration and writes the
@@ -62,6 +85,10 @@ _2026-09-02._
   changes no migration records. Note that migrations are applied [before the new server ships](/docs/database/migrations#deploying).
 - `db pull` refuses in migrations mode without `--force`, and offers to adopt migrations in a project that has none.
 - The drizzle config written into a generated server points `out` at `./src/db/migrations` rather than an unused `./drizzle` directory.
+- [`generate-server`](/docs/cli/generate-server#what-gets-generated) writes a `pnpm-workspace.yaml` next to the generated `package.json` for pnpm
+  projects, making the generated server a workspace root in its own right. Without it, installing inside a generated server that sits under a pnpm
+  workspace walked up to your workspace root, installed your own projects instead, and left the generated server with no dependencies at all — while
+  still reporting success. `.yarnrc.yml` for yarn berry and `bunfig.toml` for bun are written the same way; npm and yarn classic need no extra file.
 
 ## 0.1.15 [#v0-1-15]
 

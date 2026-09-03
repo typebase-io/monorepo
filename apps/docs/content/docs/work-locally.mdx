@@ -1,187 +1,135 @@
 ---
 title: Work Locally
-description: Run your Typebase server on localhost during development.
+description: Run your Typebase server on your own machine during development.
 ---
 
-For most day-to-day work, the simplest setup is to deploy your server to `dev` once and point your frontend at the deployed URL. Your frontend hot-reloads instantly, and you redeploy the backend with `npx typebase-io-cli deploy dev` whenever you change it.
+There are two ways to work on your backend. You can deploy to `dev` once, point your frontend at the deployed URL, and redeploy whenever the backend
+changes. Or you can run the server on your own machine, where saving a file is all it takes for the running server to be the one you just wrote.
 
-But sometimes you want to iterate on server code without redeploying (for debugging, working offline, or just a faster feedback loop). In those cases you can run the server on your own machine.
-
-## Generate the server
+The second is a **local run**:
 
 ```npm
-npx typebase-io-cli generate-server
+npx typebase-io-cli start
 ```
 
-This writes a runnable server to `typebase/_server/`. See the [generate-server reference](/docs/cli/generate-server) for output formats and adapters.
+## Which one should you use?
 
-<Callout type="warn">
-  Each run is a snapshot of your `typebase/` directory. Re-run `generate-server` any time you change anything inside `typebase/`, whether that's an
-  action, your schema, your auth config, your env schema, or your publisher. Or use [watch mode](#rebuild-on-every-change) to have it re-run for you.
-  Re-running replaces `typebase/_server/` with a fresh build, but your `.env` and installed `node_modules` are preserved.
-</Callout>
+Deploying to `dev` is less to run and a good fit while your work is mostly on the frontend, or when your backend changes once a day rather than once a
+minute.
 
-## Start it
+Reach for a local run when:
 
-```bash
-cd typebase/_server
-npm install
-npx tsx src/index.ts
-```
-
-The server listens on `http://localhost:8080` by default. Pass `--port` to `generate-server` (or set `server.port` in `typebase.json`) to use a different port.
+- **You are iterating on server code.** A save rebuilds, re-applies your schema, and restarts the server, so there is no redeploy between writing an
+  action and calling it.
+- **You want a debugger.** It is a Node process on your machine, so `--command "node --inspect src/index.ts"` attaches one.
+- **You are offline, or the network is slow.** Nothing is uploaded and nothing is fetched from a provider.
+- **You do not want to touch a shared database.** A local run defaults to a Postgres you run yourself rather than your dev branch.
 
 <Callout type="info">
-  `generate-server` defaults to TypeScript output and the `node` adapter. If you'd rather run plain JavaScript, pass `--output esm` or `--output cjs`
-  and run the built files with `node src/index.js`.
+  A local run never deploys. It does not pick a provider, upload anything, write provider environment variables, or provision a database. It connects
+  to the database you give it and runs the server on your machine.
 </Callout>
 
-## Rebuild on every change
+## Starting a local run
 
-Passing `--watch` keeps `generate-server` running and rebuilds whenever a file inside `typebase/` changes:
-
-```npm
-npx typebase-io-cli generate-server --watch
-```
-
-Press `x` or Ctrl+C to stop it. The first build reports each step; later ones are a single `Regenerating...` line. A build that fails (a type error,
-usually) is printed and leaves the watcher running, so fixing the file triggers the next attempt.
-
-<Callout type="warn">
-  Watch mode rebuilds the files in `typebase/_server/`, but the server process you started from them keeps running the old code. Restart it to pick up
-  a rebuild, or let [`--command`](#rebuild-and-restart-in-one-command) do it for you.
-</Callout>
-
-## Rebuild and restart in one command
-
-`--command` runs a command inside the generated server after every build, and restarts it on every rebuild. That gives you one process to start and
-nothing to remember: edit a file, and what is running is the new build.
-
-Install the generated server's dependencies once:
+Run it from your project root. There is no directory to change into and nothing to install first:
 
 ```npm
-npx typebase-io-cli generate-server
+npx typebase-io-cli start
 ```
 
-```bash
-cd typebase/_server
-pnpm install
-```
+Each pass builds your server, installs its dependencies, brings your database in step with your schema, and starts it. Then it watches `typebase/` and
+does all four again on every change. Press `x` or Ctrl+C to stop, and the server stops with it.
 
-Then, from your project root:
+The generated server is built into a [server cache](/docs/cli/start#the-server-cache) outside your project, so a local run never adds a file for you to
+review, commit, or ignore. `typebase/_server/` is left alone.
 
-```npm
-npx typebase-io-cli generate-server --watch --command "pnpm start"
-```
+Restarting the command redoes everything, which is the way out of any state you do not trust. The [`start` reference](/docs/cli/start) covers every
+option.
 
-Press `x` or Ctrl+C to stop; the server stops with it. Regenerating keeps `node_modules` and `.env`, so the install above is a one-time step.
+## Giving it a database
 
-## Environment variables
-
-The generated server reads its config from a `.env` file in `typebase/_server/`. **`generate-server` fills that file in for you** from your
-project-root `.env`, so a server you run locally usually starts without you copying anything across.
-
-It only copies the keys the generated server actually validates — `DATABASE_URL`, `BETTER_AUTH_SECRET`, and whatever you declared in
-[`env.ts`](/docs/env). Provider tokens like `NEON_API_KEY` stay in your project root, where they belong to the CLI rather than the server.
-
-<Callout type="info">
-  `DATABASE_URL` is taken from your project's `DATABASE_URL_DEV` when there is one, so a server on your machine reaches the dev branch rather than
-  production. If you only ever deployed to prod, the prod connection string is all there is and that is what gets copied — worth a look before you
-  start writing data.
-</Callout>
-
-A key already present in `typebase/_server/.env` is never overwritten, so anything you changed by hand survives a rebuild. Delete a line and
-regenerate to pick the project value back up.
-
-At minimum you'll need:
-
-```bash title="typebase/_server/.env"
-DATABASE_URL=postgresql://...   # only if your project has a db/schema.ts
-BETTER_AUTH_SECRET=...          # only if your project has an auth.ts
-```
-
-Plus every key you declared in [`typebase/env.ts`](/docs/env). The server validates all of them on startup and exits with a list of what's missing, so you don't have to guess:
-
-```
-✗ Typebase server failed to start.
-
-  Invalid environment variables:
-    RESEND_API_KEY  Required
-
-  Set them with:
-    npx typebase-io-cli env <target> add <KEY> <value>
-```
-
-Locally, add them to `typebase/_server/.env` instead and restart. The `.env` file survives re-running `generate-server`.
-
-The easiest way to get these values is to run `npx typebase-io-cli deploy dev` or `npx typebase-io-cli deploy prod` (or the equivalent `npx typebase-io-cli db <target> push`, or `db <target> migrate` in [migrations mode](/docs/database/migrations)) once. That provisions the Neon branch, writes the connection string to your project-root `.env`, and syncs the secrets to your provider.
-
-<Callout type="info">
-  The generated server reads a plain `DATABASE_URL`, but the CLI stores both connection strings in your project-root `.env` under different keys so
-  they can coexist:
-
-- `DATABASE_URL` → prod branch
-- `DATABASE_URL_DEV` → dev branch
-
-For local development, copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`:
-
-```bash title="typebase/_server/.env"
-# running against the dev branch: paste DATABASE_URL_DEV from your project-root .env
-DATABASE_URL=postgresql://...
-```
-
-Most of the time you'll want the dev branch so local experiments don't touch production data.
-
-</Callout>
-
-If the value isn't in your project root yet (for example, on a fresh machine), you can fetch it from the provider. Pick the target that matches the branch you want.
-
-Dev branch:
-
-```npm
-npx typebase-io-cli env dev get DATABASE_URL
-```
-
-```npm
-npx typebase-io-cli env dev get BETTER_AUTH_SECRET
-```
-
-Prod branch:
-
-```npm
-npx typebase-io-cli env prod get DATABASE_URL
-```
-
-```npm
-npx typebase-io-cli env prod get BETTER_AUTH_SECRET
-```
-
-If a command prints `ENCRYPTED`, that provider is hiding the raw secret value. In that case, copy the value from the original source instead: the Neon console for `DATABASE_URL`, or the provider dashboard for `BETTER_AUTH_SECRET`.
-
-## Point your frontend at localhost
-
-In your frontend project's `.env`, override the server URL so your client hits localhost instead of the deployed server:
+A local run applies your schema changes, so a project with a `db/schema.ts` has to say which database to apply them to. Set `DATABASE_URL_LOCAL` to a
+Postgres you run yourself:
 
 ```bash title=".env"
-TYPEBASE_APP_URL=http://localhost:8080
-
-# Or
-
-TYPEBASE_APP_URL_DEV=http://localhost:8080
+DATABASE_URL_LOCAL=postgres://localhost:5432/mydb
 ```
 
-<Callout type="info">
-  The CLI stores both deployment URLs in your project-root `.env` under different keys so they
-  can coexist:
+That is the default because a local run pushes schema changes, and defaulting to your dev branch would push them somewhere your team shares. To reach a
+[target](/docs/database/push#dev-and-prod-are-separate-branches) instead, say so:
 
-- `TYPEBASE_APP_URL` → prod deployment
-- `TYPEBASE_APP_URL_DEV` → dev deployment
+```npm
+npx typebase-io-cli start --dev-database
+```
 
-</Callout>
+| Flag                   | Database                                         |
+| ---------------------- | ------------------------------------------------ |
+| none                   | `DATABASE_URL_LOCAL` in your project-root `.env` |
+| `--database-url <url>` | The connection string you pass                   |
+| `--dev-database`       | `DATABASE_URL_DEV`, your dev branch              |
+| `--prod-database`      | `DATABASE_URL`, your production branch           |
 
-## Trusted origins for auth
+Each one reads exactly one key, and none falls back to another. The run names the one it picked before it touches it:
 
-If you have an `auth.ts` file, add your frontend's local origin to `trustedOrigins` so the local server accepts its requests:
+```
+ℹ Using the database from DATABASE_URL_LOCAL.
+```
+
+If the key you chose is empty, the run stops and tells you which one to set. A project with no `db/schema.ts` skips all of this and needs no database at
+all.
+
+## Editing your schema
+
+Every pass brings the database in step before the server restarts, so the server you are talking to matches the schema you just saved. In [push
+mode](/docs/database/push) it pushes; in [migrations mode](/docs/database/migrations) it applies your pending migrations.
+
+Two things differ from a deploy, both because a watch loop cannot stop and wait:
+
+- **[Drift](/docs/database/migrations#unrecorded-changes) warns instead of refusing.** A schema edit you have not recorded as a migration keeps the loop
+  running, so you can carry on deciding what the migration should say. `deploy` still refuses, which is right for production.
+- **The database is only touched when `typebase/db/` changed.** Editing an action rebuilds and restarts without opening a connection.
+
+A destructive change still stops and asks, on every pass. `--skip-schema-changes-confirmation` answers in advance.
+
+## Pointing your frontend at it
+
+Every run writes the URL it is listening on to your project-root `.env`:
+
+```bash title=".env"
+TYPEBASE_APP_URL_LOCAL=http://127.0.0.1:8080
+```
+
+Nothing reads that key on its own. Typebase has no URL-from-environment resolution, so you write the URL into your own client, and you pick the order.
+Putting the local key first means a local run wins whenever one is going, with dev and prod behind it:
+
+```ts title="lib/typebase/client.ts"
+export const client = createRouterClient<Router>({
+  url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
+});
+```
+
+Delete the line from `.env`, or comment it out, and you are back on dev without touching the client.
+
+Browser code cannot read those directly. It needs whatever prefix your framework uses for public variables, in the same order:
+
+```bash title=".env"
+NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_LOCAL
+```
+
+Your framework's guide has the exact form: [Next.js](/docs/integrations/nextjs#environment-variables),
+[SvelteKit](/docs/integrations/sveltekit#environment-variables), [Nuxt](/docs/integrations/nuxt#environment-variables),
+[Expo](/docs/integrations/expo#environment-variables).
+
+To run two projects at once, give one of them a different port. A port already in use fails immediately and names the flag:
+
+```npm
+npx typebase-io-cli start --port 8081
+```
+
+## Auth on localhost
+
+Add your frontend's local origin to `trustedOrigins` so the local server accepts its requests:
 
 ```ts title="typebase/auth.ts"
 export const auth = defineAuth({
@@ -192,20 +140,95 @@ export const auth = defineAuth({
 
 Use whatever ports your frontend and server actually run on.
 
-## Pushing schema changes
+The rest is handled for you. A local run generates a `BETTER_AUTH_SECRET` if your project has none and saves it where a later deploy will find it, so
+running locally first does not invalidate every session afterwards. It also writes the local URL into the generated server's auth config as
+[`baseURL`](/docs/auth#the-base-url), which is what lets better-auth build callbacks and email links.
 
-You can apply schema changes to your dev Neon branch without doing a full deploy:
+## Environment variables
+
+The server's `.env` lives in the [server cache](/docs/cli/start#the-server-cache) and is filled from your project-root `.env` on every pass. You do not
+edit it and you do not copy anything across.
+
+Only the keys the server validates are copied: `DATABASE_URL`, `BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env). Provider tokens
+like `NEON_API_KEY` stay in your project root, where they belong to the CLI rather than the server.
+
+So a variable the server says is missing is missing from your project root too:
+
+```
+✗ Typebase server failed to start.
+
+  Invalid environment variables:
+    RESEND_API_KEY  Required
+```
+
+Add it to your project-root `.env` and the next pass picks it up. For the two keys the CLI manages, it can fetch the value from your provider — useful on
+a fresh clone:
+
+```npm
+npx typebase-io-cli env dev get DATABASE_URL
+```
+
+```npm
+npx typebase-io-cli env dev get BETTER_AUTH_SECRET
+```
+
+Use `env prod get` for the prod branch. If either prints `ENCRYPTED`, that provider is hiding the raw value, so copy it from the original source: the
+Neon console for `DATABASE_URL`, or your provider's dashboard for `BETTER_AUTH_SECRET`.
+
+## When you want a server you can read
+
+Keeping the build outside your project is what stops a local run from adding files you have to review. The cost is that the generated server is not
+somewhere you can casually open.
+
+[`generate-server`](/docs/cli/generate-server) writes one into `typebase/_server/` instead:
+
+```npm
+npx typebase-io-cli generate-server
+```
+
+Reach for it to read the generated code, to hand a build artifact to your own infrastructure, or when you need an adapter or output format a local run
+would not pick. It generates and stops there, so you install and start it yourself:
+
+```bash
+cd typebase/_server
+npm install
+npx tsx src/index.ts
+```
+
+It also never touches a database, so a schema change still needs [`db <target> push`](/docs/cli/db#pushing-your-schema) or [`db <target>
+migrate`](/docs/cli/db#applying-migrations) alongside it.
+
+### Rebuild on every change
+
+`--watch` rebuilds whenever a file inside `typebase/` changes:
+
+```npm
+npx typebase-io-cli generate-server --watch
+```
+
+Press `x` or Ctrl+C to stop. A build that fails, usually a type error, is printed and leaves the watcher running.
+
+<Callout type="warn">
+  Watch mode rebuilds the files in `typebase/_server/`, but the server you started from them keeps running the old code until you restart it. Adding
+  [`--command`](/docs/cli/generate-server#running-the-server-on-every-rebuild) restarts it for you.
+</Callout>
+
+`generate-server --watch --command "pnpm start"` gets close to a local run, but you still install by hand, the build still lands in your project tree,
+and the database is still yours to keep in step.
+
+## Applying a schema change on its own
+
+You do not need a server running to move a schema change into a database:
 
 ```npm
 npx typebase-io-cli db dev push
 ```
 
-This is the same command `npx typebase-io-cli deploy dev` runs under the hood, so your local server and your next deploy stay on the same schema.
-
-If you'd rather run your local server against a Postgres instance on your own machine (Docker, Postgres.app, etc.) instead of a Neon branch, point `db local push` at it:
+This is what `deploy dev` runs under the hood, so your deployed server and your next deploy stay on the same schema. In migrations mode, use
+`db dev migrate`. For a Postgres on your own machine, point `db local push` at it:
 
 ```npm
 npx typebase-io-cli db local push --url postgres://localhost:5432/mydb
 ```
 
-You can also set `DATABASE_URL` (in your shell or in `typebase/_server/.env`) and omit the `--url` flag. See the [db local push reference](/docs/cli/db#db-local-push) for details.
+If a local run is already pointed at that database, it does this for you on every change. See the [db reference](/docs/cli/db) for both commands.

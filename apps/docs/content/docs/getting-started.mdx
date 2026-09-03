@@ -170,6 +170,20 @@ npx typebase-io-cli codegen
 
 See [Actions](/docs/actions) to learn everything about writing actions.
 
+## Run it locally
+
+One command builds your server and runs it on your own machine, rebuilding and restarting on every change:
+
+```npm
+npx typebase-io-cli start
+```
+
+Press `x` or Ctrl+C to stop.
+
+If your project has a `db/schema.ts`, the run applies your schema too, so it needs a database to apply it to. Point `DATABASE_URL_LOCAL` at a Postgres you run yourself, or pass `--dev-database` once you have deployed to `dev`. A project with no schema skips that step and needs no database at all.
+
+The URL it listens on is saved to `.env` as `TYPEBASE_APP_URL_LOCAL`. See [Work locally](/docs/work-locally) for the full loop, or the [`start` reference](/docs/cli/start) for every option.
+
 ## Deploy
 
 Deploy your server to the cloud:
@@ -184,7 +198,7 @@ On first run, the CLI will ask you to:
 2. Log in to that provider
 3. Set up a PostgreSQL database (via Neon)
 
-After setup, running `npx typebase-io-cli deploy dev` is a single command. The CLI saves your server URL to `.env` as `TYPEBASE_APP_URL_DEV` (deploying `prod` uses `TYPEBASE_APP_URL` instead, so both can coexist).
+After setup, running `npx typebase-io-cli deploy dev` is a single command. The CLI saves your server URL to `.env` as `TYPEBASE_APP_URL_DEV` (deploying `prod` uses `TYPEBASE_APP_URL` instead, and a [local run](/docs/work-locally) writes `TYPEBASE_APP_URL_LOCAL`, so all three coexist). Your client picks the order: local first, then dev, then prod.
 
 See [Deploy](/docs/cli/deploy) for the full deployment reference.
 

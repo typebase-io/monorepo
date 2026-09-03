@@ -34,9 +34,11 @@ import { createRouterClient } from 'typebase-io/client';
 import type { Router } from '../../typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
-  url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
+  url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
 });
 ```
+
+That chain is [local run](/docs/work-locally), then dev, then prod — see [the server URL](#the-server-url).
 
 Then call any action like a regular function:
 
@@ -209,6 +211,24 @@ A path is kept: `https://api.example.com/base` becomes `https://api.example.com/
 </Callout>
 
 Anything that isn't a string, a `URL` or a function, is passed straight through untouched, so you keep full control when you need it.
+
+### Which URL to pass
+
+The CLI writes up to three URLs into your project-root `.env`, under different keys so they coexist:
+
+| Key                      | Written by                                     | Points at        |
+| ------------------------ | ---------------------------------------------- | ---------------- |
+| `TYPEBASE_APP_URL_LOCAL` | [`start`](/docs/cli/start), on every local run | your own machine |
+| `TYPEBASE_APP_URL_DEV`   | [`deploy dev`](/docs/cli/deploy)               | the dev branch   |
+| `TYPEBASE_APP_URL`       | [`deploy prod`](/docs/cli/deploy)              | the prod branch  |
+
+None of them is read automatically — Typebase has no URL-from-environment resolution, so you pick the order yourself. Local first, then dev, then prod is the usual chain: a local run wins whenever one is running, and removing the key from `.env` falls back to dev without touching the client.
+
+```ts
+url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '';
+```
+
+Browser code can't read those directly and needs your framework's public prefix instead. Your [integration guide](#framework-specific-guides) has the exact form.
 
 ## Plugins
 

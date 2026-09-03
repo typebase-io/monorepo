@@ -527,7 +527,11 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist. Use this for all server-side calls (Server Components, Server Actions).
+The CLI writes your server URL to `.env` under a key that depends on where the server is, so all three coexist: `TYPEBASE_APP_URL_LOCAL` for a [local run](/docs/work-locally), `TYPEBASE_APP_URL_DEV` for `dev`, and `TYPEBASE_APP_URL` for `prod`. Use these for all server-side calls (Server Components, Server Actions), with local at the front of the chain:
+
+```ts title="lib/typebase/client.ts"
+url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '';
+```
 
 If you use the TanStack Query client, the variable also needs to be available in the browser with the `NEXT_PUBLIC_` prefix. We recommend adding this to your `.env` file so you don't have to duplicate the value:
 
@@ -535,7 +539,13 @@ If you use the TanStack Query client, the variable also needs to be available in
 NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL
 ```
 
-When developing locally, set `NEXT_PUBLIC_TYPEBASE_APP_URL` to whichever target your frontend should hit, typically the dev deployment:
+When developing locally, set `NEXT_PUBLIC_TYPEBASE_APP_URL` to whichever server your frontend should hit. Against a local run:
+
+```bash title=".env"
+NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_LOCAL
+```
+
+Or against the dev deployment:
 
 ```bash title=".env"
 NEXT_PUBLIC_TYPEBASE_APP_URL=$TYPEBASE_APP_URL_DEV

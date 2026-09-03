@@ -448,7 +448,7 @@ Each exported [action](/docs/actions) from your files becomes a callable method 
 
 ## Environment variables
 
-After running `npx typebase-io-cli deploy`, the CLI saves your server URL to `.env`. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist. Expose it in `nuxt.config.ts` under `runtimeConfig.public` so it's available on both server and client:
+The CLI writes your server URL to `.env` under a key that depends on where the server is, so all three coexist: `TYPEBASE_APP_URL_LOCAL` for a [local run](/docs/work-locally), `TYPEBASE_APP_URL_DEV` for `dev`, and `TYPEBASE_APP_URL` for `prod`. Expose one in `nuxt.config.ts` under `runtimeConfig.public` so it's available on both server and client:
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({
@@ -460,13 +460,13 @@ export default defineNuxtConfig({
 });
 ```
 
-When developing locally, set `TYPEBASE_APP_URL` to whichever target your frontend should hit, typically the dev deployment:
+When developing locally, put the local key at the front of the chain. A local run then wins whenever one is running, and falls back to the dev deployment when it isn't:
 
 ```ts title="nuxt.config.ts"
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
-      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_DEV,
+      TYPEBASE_APP_URL: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV,
     },
   },
 });

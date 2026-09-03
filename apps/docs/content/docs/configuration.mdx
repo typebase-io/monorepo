@@ -73,6 +73,12 @@ Configuration for `npx typebase-io-cli generate-server`. These are the defaults 
 }
 ```
 
+<Callout type="info">
+  [`start`](/docs/cli/start) reads only `port` from this block. It picks its own output format from what the running Node can execute, always uses the
+  `node` adapter, and builds into the [server cache](/docs/cli/start#the-server-cache) rather than `outDir`. `--output` and `--port` override on the
+  command line.
+</Callout>
+
 #### `server.output`
 
 The output format for generated server files.

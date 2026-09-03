@@ -145,6 +145,8 @@ For a Postgres you run yourself, pass a connection string — or set `DATABASE_U
 npx typebase-io-cli db local migrate --url postgres://localhost:5432/mydb
 ```
 
+A [local run](/docs/work-locally) applies them for you: every time you change something under `typebase/db/`, [`start`](/docs/cli/start) applies whatever is pending to the database it is running against before it restarts the server. Like `migrate`, it warns on [drift](#unrecorded-changes) and carries on.
+
 The bookkeeping lives in the database itself, in a `drizzle.__drizzle_migrations` table that is created on first use. That is what lets each target
 know which migrations it has already seen, and why `dev` and `prod` can be at different points in the history.
 

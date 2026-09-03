@@ -30,7 +30,7 @@ Your project has two parts:
   </Folder>
 </Files>
 
-The `typebase/` directory is your **server code**. When you run `npx typebase-io-cli deploy`, it gets built and deployed as a standalone HTTP server. Your frontend communicates with it over the network, but calls look and feel like local function calls, with full autocomplete and type checking.
+The `typebase/` directory is your **server code**. When you run `npx typebase-io-cli deploy`, it gets built and deployed as a standalone HTTP server. `npx typebase-io-cli start` builds and runs that same server on your own machine instead, rebuilding and restarting it as you edit — see [Work locally](/docs/work-locally). Either way your frontend communicates with it over the network, but calls look and feel like local function calls, with full autocomplete and type checking.
 
 <Callout type="warn">
 **The server/client boundary**

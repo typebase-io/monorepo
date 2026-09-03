@@ -1,6 +1,6 @@
 ---
 name: typebase
-description: Build, deploy, and consume a Typebase backend using typed actions and streams, middleware, Drizzle PostgreSQL schema and relations, better-auth, validated environment variables, and typed publishers. Use when a project contains typebase-io, typebase-io-cli, typebase.json, or a Typebase project directory, or when the user mentions Typebase, the action builder, defineAuth, defineEnv, definePublisher, codegen, db push/pull/migrate, migrations, deploy, logs, or generate-server.
+description: Build, run, deploy, and consume a Typebase backend using typed actions and streams, middleware, Drizzle PostgreSQL schema and relations, better-auth, validated environment variables, and typed publishers. Use when a project contains typebase-io, typebase-io-cli, typebase.json, or a Typebase project directory, or when the user mentions Typebase, the action builder, defineAuth, defineEnv, definePublisher, codegen, db push/pull/migrate, migrations, deploy, logs, start, a local run, or generate-server.
 ---
 
 # Typebase
@@ -169,7 +169,7 @@ In migrations mode `push` hard-errors and names the `migrate` command, so reachi
 
 In migrations mode the loop is: edit `schema.ts` → `db migrations generate --name "<what changed>"` → read the generated `migration.sql` → `db dev migrate`. Generating is offline and contacts no database; applying is the step that writes. Never hand-edit a migration that has already been applied to any target, and never edit `snapshot.json`. Use `db migrations generate --custom` for backfills, data migrations, and anything a schema diff cannot express. If generate reports a forked history, resolve it by deleting all but one of the competing migrations and regenerating; only pass `--ignore-conflicts` with explicit user authorization. `deploy` refuses outright when schema files hold changes no migration records, so generate before deploying.
 
-After schema edits, test with `db dev push` (push mode) or `db dev migrate` (migrations mode) before production. A deploy pushes or applies migrations for the target automatically. A first standalone push is interactive and can authenticate to Neon, select/create a project and branch, persist IDs/credentials, and mutate remote state; verify `.env` is ignored and use the user's authorized target/project. Run a prod push only when production was explicitly requested. Never accept a destructive warning without explicit user authorization; dropped data is unrecoverable. `--skip-confirmation` on `db push`, and `--skip-schema-changes-confirmation` on `deploy`, answer that prompt in advance and exist for CI: never pass either yourself without the user explicitly asking for it, and never to escape a prompt you were meant to stop at. Neither affects any other prompt. Treat `schema.ts` as the source of truth: use Neon UI for inspection, reads, and intentional data fixes, not schema edits that create drift.
+After schema edits, test with `db dev push` (push mode) or `db dev migrate` (migrations mode) before production. A deploy pushes or applies migrations for the target automatically. A first standalone push is interactive and can authenticate to Neon, select/create a project and branch, persist IDs/credentials, and mutate remote state; verify `.env` is ignored and use the user's authorized target/project. Run a prod push only when production was explicitly requested. Never accept a destructive warning without explicit user authorization; dropped data is unrecoverable. `--skip-confirmation` on `db push`, and `--skip-schema-changes-confirmation` on `deploy` and `start`, answer that prompt in advance and exist for CI: never pass any of them yourself without the user explicitly asking for it, and never to escape a prompt you were meant to stop at. Neither affects any other prompt. Treat `schema.ts` as the source of truth: use Neon UI for inspection, reads, and intentional data fixes, not schema edits that create drift.
 
 ## Publisher and realtime
 
@@ -289,6 +289,7 @@ Prefer the locally installed binary (`npx typebase-io-cli ...` or the project's 
 | `db migrations init`                                                                 | Adopt migrations on a push-mode project. Writes to every existing target's bookkeeping table; needs explicit user authorization. Never provisions a target that has no database.                                                                                                |
 | `db pull [--url <conn>] [-f]`                                                        | Destructively replaces local schema and relations from the DB, then codegens. It reads `public`; cross-schema references may need cleanup. Warn first and avoid `-f` without explicit approval. In migrations mode it refuses without `-f` and rebaselines history when forced. |
 | `deploy dev` / `deploy prod` `[--skip-schema-changes-confirmation]`                  | Codegen, validate, build, transpile, push applicable schema, deploy, sync automatic DB/auth variables, and write deployment URL/local connection values.                                                                                                                        |
+| `start [options]`                                                                    | Run the server locally: build, install, sync the database, start, and repeat on every change. Long-running. Never deploys or provisions. See below.                                                                                                                             |
 | `generate-server [options]`                                                          | Build a safe, replaceable snapshot in `<tb>/_server`; rerun after backend changes or use `--watch`. `--command "<cmd>"` runs a command inside the generated server after each build, restarting it on every rebuild; long-running like `--watch`.                               |
 | `env <dev\|prod> get\|add ...`                                                       | Read/upload provider values after the provider project exists. Encrypted secrets may read as `ENCRYPTED`.                                                                                                                                                                       |
 | `logs <dev\|prod>`                                                                   | Long-running provider log stream; stop with `x`/Ctrl+C on a TTY or SIGINT otherwise.                                                                                                                                                                                            |
@@ -340,7 +341,23 @@ After successful setup, the CLI persists `serverProvider` and real provider/Neon
 
 Only projects with `db/schema.ts` need Neon/`DATABASE_URL`; only auth projects need `BETTER_AUTH_SECRET`. Custom keys in `env.ts` are not synced by deploy; required keys without schema defaults must already be set unless validation is intentionally skipped. Schema push occurs before new server code goes live, so stage destructive production changes additively across releases.
 
-Dev and prod have separate deployment URLs, provider env vars, and Neon branches. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. Browser code instead needs framework-public variables.
+Dev and prod have separate deployment URLs, provider env vars, and Neon branches. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. A local run adds `TYPEBASE_APP_URL_LOCAL`/`DATABASE_URL_LOCAL` as a third pair. Nothing resolves those keys automatically: the client's `url` is written by hand, so put local first — `TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL`. Browser code instead needs framework-public variables.
+
+### `start` (local run)
+
+`start` builds the server, installs its dependencies, brings the chosen database in step with the schema, starts the server, and repeats all four on every change inside `<tb>`. It is the deploy pipeline with the deployment removed: it never selects a provider, uploads, writes provider variables, or provisions a database, and never prompts about any of that.
+
+- **Long-running.** Handle it like `--watch` and `logs`: background or timeout, never a blocking foreground call. Stop with SIGINT when the output is piped; `x`/Ctrl+C on a TTY.
+- **It writes to a database.** This is the difference from `generate-server`, and the reason it is not a safe idle command. Confirm the target before running it in a project you did not set up.
+- **Never pass `--skip-schema-changes-confirmation` unless the user explicitly asked for it.** It answers the destructive-schema-change prompt in advance, exactly as on `deploy`, and dropped data is unrecoverable. It is for CI, not for escaping a prompt you were meant to stop at. Same rule as `--skip-confirmation` on `db push`; see the database section above.
+- **The database is chosen explicitly and there is no fallback chain.** No flag reads `DATABASE_URL_LOCAL`; `--dev-database` reads `DATABASE_URL_DEV`; `--prod-database` reads `DATABASE_URL`; `--database-url <url>` takes one directly. The three conflict. A project with `db/schema.ts` and an empty key hard-errors up front naming that key. `--prod-database` points a rebuilding watch loop at production: only on explicit request.
+- **Drift warns and continues** in migrations mode, unlike `deploy`, which refuses. A warning here is not a stop signal, but do surface it — the user may want `db migrations generate` first.
+- **The generated server lives in a server cache** under `XDG_CACHE_HOME`/`~/.cache/typebase/<project>-<hash>/server`, outside the project. Nothing is written into `<tb>` and `<tb>/_server` is untouched, so a local run adds no files to review or commit. Do not hand-edit the cache; it is replaced on every build.
+- **Install and database steps are gated** on hashes of the generated `package.json` and of `<tb>/db/` respectively. Both are in-memory and start empty, so restarting the command redoes everything. That restart is the documented escape hatch; there is no force flag.
+- **Other options:** `--port <n>` (a busy port hard-errors up front naming the flag), `--output ts|esm|cjs` (otherwise detected from whether the running Node can execute TypeScript; `typebase.json`'s `server.output` is not consulted), `--command` to replace the default start, `--install-command` to replace the install. The configured adapter is ignored; a local run is always `node`.
+- **Failure handling:** a failed build or database sync is printed and the run keeps watching; a failed install on a rebuild leaves the running server alive on its old code; a failed install on the first pass stops the run.
+
+Prefer `start` over `generate-server --watch --command` when the user wants to run their server locally. Prefer `generate-server` when the generated files themselves are wanted — reading, self-hosting, a non-`node` adapter, or a specific on-disk output format.
 
 ### Generated server environment
 
@@ -361,7 +378,7 @@ Runs a command inside the generated server after every successful build, restart
 
 `logs` and `deploy --logs` are long-running; do not use them in one-shot runs. Provider behavior differs: Vercel is delayed and preserves only the first `console.log` per request; Deno streams logged lines but requests with no log may be invisible; Cloudflare tails quickly and needs Node 22.4+. Restart Vercel/Deno logs after redeploy; Cloudflare follows the Worker name.
 
-For local execution, `generate-server` writes a snapshot to the configured `server.outDir` (default `_server` under `<tb>`), preserving its `.env` and `node_modules` on regeneration. Install/run from that output, set required values in its `.env`, use `DATABASE_URL_DEV` as local `DATABASE_URL` when targeting dev, trust the localhost frontend origin, and point the frontend to the local port. `--watch` rebuilds but does not restart the running server; run it with a persistent session or timeout and stop it cleanly.
+For local execution, prefer `start`; it handles the install, the database, and the restart. `generate-server` remains the way to get an inspectable server: it writes a snapshot to the configured `server.outDir` (default `_server` under `<tb>`), preserving its `.env` and `node_modules` on regeneration. Install/run from that output, set required values in its `.env`, use `DATABASE_URL_DEV` as local `DATABASE_URL` when targeting dev, trust the localhost frontend origin, and point the frontend to the local port. `--watch` rebuilds but does not restart the running server; run it with a persistent session or timeout and stop it cleanly.
 
 ## Frontend clients
 
@@ -373,7 +390,7 @@ import { createRouterClient } from 'typebase-io/client';
 import type { Router } from '../../src/typebase/_generated/server';
 
 export const client = createRouterClient<Router>({
-  url: process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
+  url: process.env.TYPEBASE_APP_URL_LOCAL || process.env.TYPEBASE_APP_URL_DEV || process.env.TYPEBASE_APP_URL || '',
 });
 ```
 
@@ -460,7 +477,9 @@ Keep `app.json` scheme, plugin scheme/storage prefix, and trusted origins aligne
 - `db.query.X` missing or “no relations found”: register the table in `db/relations.ts`, even as `{}`.
 - “relation does not exist”: schema code changed but the target database was not pushed.
 - Publisher build failure: add the canonical `events` table/relations, or make `definePublisher` statically resolvable.
-- Boot-time invalid env: declare the right schema and set the value in the correct provider target or local generated-server `.env`. Respect `skipValidation` if intentionally configured.
+- Boot-time invalid env: declare the right schema and set the value in the correct provider target or local generated-server `.env`. Under `start`, set it in the project-root `.env` instead — the server cache's `.env` is machine-managed and refilled each pass. Respect `skipValidation` if intentionally configured.
+- `start` says no local database URL was found: it reads one key and never falls back. Set `DATABASE_URL_LOCAL`, or name a different database with `--dev-database`/`--prod-database`/`--database-url`. Do not silently switch the user to a shared database to make the command run.
+- `start` change not picked up: the install and database steps are gated on content hashes. A schema importing from outside `<tb>/db/` misses the database gate; restart the command, which resets both.
 - Auth sign-in fails after setup: run `auth generate`, push its tables, verify first-party cookie proxy/Expo cookie forwarding, and check exact trusted origins.
 - `/rpc/rpc` 404: a string `url` already included `/rpc`; string inputs must be the server base URL. Non-string URL values are not modified and must target the full RPC endpoint themselves.
 - `env get` says `ENCRYPTED`: retrieve the original secret from its authoritative provider; the CLI cannot reveal it.

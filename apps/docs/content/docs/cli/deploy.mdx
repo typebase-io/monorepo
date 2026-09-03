@@ -204,14 +204,15 @@ After a successful deploy, the CLI prints the deployment URL:
 Deployment URL: https://your-project.vercel.app
 ```
 
-This URL is also saved to your `.env` file. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`) so both can coexist:
+This URL is also saved to your `.env` file. The key depends on the target (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), and a [local run](/docs/cli/start) writes a third, so all three coexist:
 
 ```
 TYPEBASE_APP_URL=https://your-project.vercel.app
 TYPEBASE_APP_URL_DEV=https://your-project-dev.vercel.app
+TYPEBASE_APP_URL_LOCAL=http://127.0.0.1:8080
 ```
 
-Use this URL when setting up your [client](/docs/integrations/nextjs).
+Use these when setting up your [client](/docs/integrations/nextjs), with local at the front of the chain so a local run takes precedence whenever one is running.
 
 ## Managing environment variables
 

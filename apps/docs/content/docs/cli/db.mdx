@@ -11,6 +11,10 @@ Or record your schema changes as [migrations](/docs/database/migrations) and app
   uses `migrate`; every other project is in **push mode** and uses `push`. See [Migrations](/docs/database/migrations).
 </Callout>
 
+You often won't need these by hand. [`deploy`](/docs/cli/deploy) pushes or applies migrations for the target it deploys to, and
+[`start`](/docs/cli/start) does the same for the database your [local run](/docs/work-locally) is using, every time something under `typebase/db/`
+changes.
+
 ## Pushing your schema
 
 ### `db dev push`

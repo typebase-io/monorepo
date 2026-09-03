@@ -427,6 +427,52 @@ For Expo dev builds you'll also need scheme entries like `myapp://` and `exp://*
 
 ## Local development
 
+### `start` says no local database URL was found
+
+```
+No local database URL found. Set DATABASE_URL_LOCAL in .env, or choose another
+database with --database-url, --dev-database or --prod-database.
+```
+
+A [local run](/docs/work-locally) applies the schema changes of a project that has a `db/schema.ts`, so it needs to know which database to apply them to — and it reads exactly one key, with no falling back from one database to another. By default that key is `DATABASE_URL_LOCAL`, which nothing sets for you. (A project with no schema never sees this error; the database step is skipped entirely.)
+
+Either set it to a Postgres you run yourself, or name a different one: `--dev-database` reads `DATABASE_URL_DEV`, `--prod-database` reads `DATABASE_URL`, and `--database-url` takes a connection string directly. See [choosing a database](/docs/cli/start#choosing-a-database).
+
+The same error naming `DATABASE_URL_DEV` or `DATABASE_URL` means you passed the flag but the key is empty — run [`npx typebase-io-cli deploy dev`](/docs/cli/deploy) once to have the CLI write it.
+
+### `Port 8080 is already in use`
+
+Something else is on the port, often a local run you left going in another terminal. Pass a different one:
+
+```npm
+npx typebase-io-cli start --port 8081
+```
+
+The check runs once, before the first start, not on rebuilds — a rebuild stops the old process and waits for it before starting the new one, so it would only race itself.
+
+### My schema change isn't in the database
+
+A local run only touches the database when something under `typebase/db/` changed, so a schema importing from outside that directory doesn't register as a change. Restart the command: the [skip checks](/docs/cli/start#what-gets-skipped-on-a-rebuild) live in memory and start empty, so the first pass of every run does everything.
+
+The same restart fixes a dependency that wasn't installed, which is checked against the generated `package.json` the same way.
+
+### `start` warns that my Node cannot run TypeScript
+
+```
+⚠ The Node version you are using cannot run TypeScript so the server is going to
+  get transpiled before it starts. Node 22.18 or newer skips this step.
+```
+
+Not an error — the run works, it just transpiles on each build instead of running your TypeScript directly. Upgrading Node removes the step. Passing `--output` yourself silences the warning too, since you chose the format rather than having it detected.
+
+Detection reflects the Node running the CLI. If `--command` starts the server on a different Node, use `--output` to say which format that one needs.
+
+### The server isn't restarting on my changes
+
+Changes to `_generated/` are ignored, as is the [server cache](/docs/cli/start#the-server-cache) — generation writes to both, so watching them would make every build trigger the next one. Only files under `typebase/` outside those trigger a rebuild.
+
+If a rebuild is happening but the server stays on old code, look for an install failure in the output: a failed install on a rebuild deliberately skips the restart and leaves your working server alive rather than restarting into half-installed dependencies.
+
 ### `ELIFECYCLE Command failed.` after every reload with `--command`
 
 Not a failure. Stopping the command signals it, and pnpm reports any script that ends on a signal as a failed lifecycle — the same line you get from
@@ -437,26 +483,27 @@ Use `--command "pnpm --silent start"`, or run the server directly with `--comman
 
 ### The local server still says an environment variable is missing
 
-`generate-server` fills `typebase/_server/.env` from your project-root `.env`, but only with keys that are actually there. A key you never set locally
-stays missing. Run [`npx typebase-io-cli deploy dev`](/docs/cli/deploy) once to have the CLI write `DATABASE_URL_DEV` into your project `.env`, or add
-the value to `typebase/_server/.env` yourself.
+Both `start` and `generate-server` fill the server's `.env` from your project-root `.env`, but only with keys that are actually there. A key you never
+set locally stays missing. Run [`npx typebase-io-cli deploy dev`](/docs/cli/deploy) once to have the CLI write `DATABASE_URL_DEV` into your project
+`.env`, or set the value there yourself and let the next pass pick it up.
 
-A key already in `typebase/_server/.env` is never overwritten, so a stale value there wins over your project `.env`. Delete the line and regenerate to
-pick the project value back up.
+With `generate-server`, there's a second cause: a key already in `typebase/_server/.env` is never overwritten, so a stale value there wins over your
+project `.env`. Delete the line and regenerate to pick the project value back up. A [local run](/docs/cli/start) has no equivalent — its `.env` lives in
+the [server cache](/docs/cli/start#the-server-cache), you don't edit it, and `DATABASE_URL` is overwritten on every pass with the database you chose.
 
 ### `generate-server` output is stale
 
 The generated server in `typebase/_server/` is a snapshot of the moment you ran the command. Re-run `npx typebase-io-cli generate-server` and restart the local server after changing anything inside `typebase/`.
 
-To stop doing that by hand, run `npx typebase-io-cli generate-server --watch`: it rebuilds on every change and stops on `x` or Ctrl+C. The rebuilt files still need the server process restarted to take effect. If you find yourself in this loop constantly, deploying to dev is usually smoother. See [Work locally](/docs/work-locally).
+To stop doing that by hand, use [`npx typebase-io-cli start`](/docs/cli/start), which rebuilds _and_ restarts the server on every change. `generate-server --watch` only rebuilds the files; the server process you started from them still needs restarting. See [Work locally](/docs/work-locally).
 
 ### Local server starts but my frontend can't reach it
 
 Three things to check:
 
-1. `TYPEBASE_APP_URL` in your frontend's `.env` points to `http://localhost:8080` (or whichever port your local server uses).
+1. Your client's `url` reads the right key. A [local run](/docs/cli/start) writes `TYPEBASE_APP_URL_LOCAL` to your project-root `.env`, but nothing reads it for you — put it at the front of the chain (`TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL`). Browser code needs your framework's public prefix on top of that. With `generate-server`, no URL is written at all and you set the value yourself.
 2. If you have an `auth.ts`, your frontend's local origin is in `trustedOrigins`.
-3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET` in `typebase/_server/.env`, along with every key you declared in [`env.ts`](/docs/env). A server missing any of them exits at startup with a list of what's wrong rather than serving requests. Note that the generated server reads a plain `DATABASE_URL`, while the CLI writes two separate values into your project-root `.env` (`DATABASE_URL` for the prod branch and `DATABASE_URL_DEV` for the dev branch) so they can coexist. Copy whichever branch you want to run against into `typebase/_server/.env` as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL`. If that returns `ENCRYPTED`, grab the value from the Neon console instead.
+3. Your local server actually has a working `DATABASE_URL` and `BETTER_AUTH_SECRET`, along with every key you declared in [`env.ts`](/docs/env). A server missing any of them exits at startup with a list of what's wrong rather than serving requests. With `start`, add the missing key to your project-root `.env` and the next pass copies it across. With `generate-server`, add it to `typebase/_server/.env` — note that the generated server reads a plain `DATABASE_URL`, while the CLI writes separate values into your project-root `.env` (`DATABASE_URL` for prod, `DATABASE_URL_DEV` for dev, `DATABASE_URL_LOCAL` for a database you run yourself) so they can coexist. Copy whichever one you want to run against in as `DATABASE_URL`. If the value is missing from your project root, fetch it from the provider with `npx typebase-io-cli env dev get DATABASE_URL` or `npx typebase-io-cli env prod get DATABASE_URL`. If that returns `ENCRYPTED`, grab the value from the Neon console instead.
 
 ## Still stuck?
 

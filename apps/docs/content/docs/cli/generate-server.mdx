@@ -9,6 +9,15 @@ The `generate-server` command builds your server files locally instead of deploy
 - **Inspect** the generated code to understand what Typebase produces
 - **Customize** the deployment process beyond what `npx typebase-io-cli deploy` offers
 
+<Callout type="info">
+  **To run your server on your own machine, use [`start`](/docs/cli/start) instead.** It builds, installs, applies your schema changes, and runs the
+  server from one command, rebuilding and restarting on every change. `generate-server` produces an artifact and stops there: it installs nothing,
+  never touches a database, and the server it writes has to be started and restarted by you.
+
+Reach for `generate-server` when the generated files themselves are the point — reading them, hosting them, or building on them — or when you need an adapter or output format other than the ones a local run picks for itself.
+
+</Callout>
+
 ## Quick start
 
 ```npm
@@ -117,7 +126,14 @@ _server/
     publisher.ts      # Publisher runtime config (if applicable)
   package.json        # Dependencies for the server
   tsconfig.json       # TypeScript config
+  pnpm-workspace.yaml # Package-manager config (name depends on your package manager)
 ```
+
+A package-manager config file sits next to `package.json` when your package manager needs one: `.yarnrc.yml` for yarn berry, `bunfig.toml` for bun, and
+`pnpm-workspace.yaml` for pnpm. The pnpm one makes the generated server a workspace root in its own right. Without it, installing inside a generated server
+that sits under a pnpm workspace walks up to your workspace root, installs your own projects instead, and leaves the generated server with no dependencies
+while still reporting success. It also carries `allowBuilds`, which is where pnpm 11 reads the permission for `esbuild` to run its install script; pnpm 10
+reads that from the `pnpm` field in the generated `package.json` instead. npm, yarn classic, and a package manager we cannot identify get no extra file.
 
 `src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
 
@@ -175,6 +191,12 @@ rebuild, so what is running is always the latest build:
 ```npm
 npx typebase-io-cli generate-server --watch --command "pnpm start"
 ```
+
+<Callout type="info">
+  If what you want is a server running on your machine, [`start`](/docs/cli/start) is the shorter path: it does the install for you, applies schema
+  changes on every pass, keeps the build out of your project tree, and starts the server without a package script in between — which is also why it
+  never prints the `ELIFECYCLE` line below.
+</Callout>
 
 The one-time setup is installing dependencies in the generated server, since the command runs there:
 

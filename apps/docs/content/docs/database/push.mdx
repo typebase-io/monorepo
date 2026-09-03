@@ -31,6 +31,8 @@ npx typebase-io-cli db prod push
 
 You don't need to run this manually every time. `npx typebase-io-cli deploy dev` and `npx typebase-io-cli deploy prod` automatically push your schema changes as part of the deployment process. So if you're deploying anyway, your database will always be in sync with your schema without any extra steps.
 
+[`npx typebase-io-cli start`](/docs/cli/start) does the same for a [local run](/docs/work-locally): every time you change something under `typebase/db/`, it pushes to the database you're running against before it restarts the server, so the server you're talking to always matches the schema you just edited.
+
 <Callout type="warn">
   That last part stops being true once a project uses [migrations](/docs/database/migrations). In migrations mode `deploy` applies your pending
   migrations instead of pushing, and refuses to deploy at all when your schema files hold changes no migration records.
@@ -67,6 +69,10 @@ npx typebase-io-cli db dev push --skip-confirmation
 
 ```npm
 npx typebase-io-cli deploy dev --skip-schema-changes-confirmation
+```
+
+```npm
+npx typebase-io-cli start --skip-schema-changes-confirmation
 ```
 
 The warnings are printed either way, so the log still records what was dropped. Nothing stops it, though, so reach for these only on a pipeline where the schema change has already been reviewed.
