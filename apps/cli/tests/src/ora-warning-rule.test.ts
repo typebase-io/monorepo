@@ -5,7 +5,7 @@ describe('the rule ora warns on', () => {
   let warnings: string[];
   let stream: NodeJS.WriteStream;
 
-  const options = () => ({ stream, hideCursor: false, discardStdin: false });
+  const options = () => ({ stream, isEnabled: true, hideCursor: false, discardStdin: false });
 
   beforeEach(() => {
     warnings = [];
