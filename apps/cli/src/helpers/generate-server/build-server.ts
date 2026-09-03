@@ -34,6 +34,7 @@ export const buildServer = async ({
   outDir,
   configuredOutDir,
   port,
+  authBaseURL,
   signal,
   quiet = false,
 }: {
@@ -43,6 +44,7 @@ export const buildServer = async ({
   outDir: string;
   configuredOutDir: string;
   port: number;
+  authBaseURL?: string;
   signal?: AbortSignal;
   quiet?: boolean;
 }) => {
@@ -189,7 +191,12 @@ export const buildServer = async ({
     }
 
     if (includeAuthFile) {
-      await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDirPath, 'src'), useTs: output === 'ts', provider: undefined });
+      await generateAuthFile({
+        authFilePath,
+        authOutputDirPath: path.join(tempServerDirPath, 'src'),
+        useTs: output === 'ts',
+        baseURL: authBaseURL === undefined ? undefined : { url: authBaseURL },
+      });
     }
 
     await generateIndex({

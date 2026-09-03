@@ -203,7 +203,7 @@ export const deploy = new Command('deploy')
       }
 
       if (includeAuthFile) {
-        await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDirPath, 'src'), useTs: false, provider });
+        await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDirPath, 'src'), useTs: false, baseURL: { provider } });
       }
 
       await generateIndex({

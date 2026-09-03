@@ -216,6 +216,7 @@ export const start = new Command('start')
               outDir: serverDirPath,
               configuredOutDir: server.outDir,
               port,
+              authBaseURL: `http://127.0.0.1:${port}`,
               signal: buildSignal,
               quiet: rebuild,
             });

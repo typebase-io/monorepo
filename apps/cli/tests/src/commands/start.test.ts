@@ -1032,6 +1032,44 @@ describe('start command', () => {
       expect(projectEnv().BETTER_AUTH_SECRET).toBeUndefined();
     });
 
+    it('gives the generated auth config the URL the server is about to listen on', async () => {
+      await setupProjectWithAuth();
+
+      await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+      expect(fs.readFileSync(inServer('src/auth.ts'), 'utf8')).toEqualTemplate('start', 'auth-base-url.txt');
+    });
+
+    it('follows --port with the generated auth base URL', async () => {
+      await setupProjectWithAuth();
+
+      await withCwd(tmp.path, () => start.parseAsync(['--port', '4321'], { from: 'user' }));
+
+      expect(fs.readFileSync(inServer('src/auth.ts'), 'utf8')).toEqualTemplate('start', 'auth-base-url-port.txt');
+    });
+
+    it('keeps a baseURL the project set rather than overwriting it with the local one', async () => {
+      await setupProjectWithAuth();
+
+      tmp.write(
+        'typebase/auth.ts',
+        `import { defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth({
+  baseURL: "https://auth.example.com",
+  trustedOrigins: ["http://localhost:3000"],
+  emailAndPassword: {
+    enabled: true,
+  },
+});
+`
+      );
+
+      await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+      expect(fs.readFileSync(inServer('src/auth.ts'), 'utf8')).toEqualTemplate('start', 'auth-base-url-kept.txt');
+    });
+
     it('never generates a secret for a project without auth', async () => {
       await setupProject();
 

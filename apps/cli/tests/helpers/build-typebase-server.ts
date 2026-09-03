@@ -104,7 +104,7 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
   }
 
   if (includeAuthFile) {
-    await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDir, 'src'), useTs: false, provider });
+    await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDir, 'src'), useTs: false, baseURL: { provider } });
   }
 
   await generateIndex({

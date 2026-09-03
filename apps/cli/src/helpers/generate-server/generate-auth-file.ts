@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { IndentationText, Project } from 'ts-morph';
-import { match } from 'ts-pattern';
+import { P, match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
 import { findDefineCalls } from '#helpers/shared/find-define-calls.ts';
@@ -13,20 +13,22 @@ export const generateAuthFile = async ({
   authFilePath,
   authOutputDirPath,
   useTs,
-  provider,
+  baseURL,
 }: {
   authFilePath: string;
   authOutputDirPath: string;
   useTs: boolean;
-  provider: ServerProvider | undefined;
+  baseURL: { provider: ServerProvider } | { url: string } | undefined;
 }) => {
   const project = new Project({ skipAddingFilesFromTsConfig: true, manipulationSettings: { indentationText: IndentationText.TwoSpaces } });
   const sourceFile = project.addSourceFileAtPath(authFilePath);
+  const hostList = (hosts: string[]) => `{ allowedHosts: [${hosts.map((host) => JSON.stringify(host)).join(', ')}] }`;
 
-  const allowedHosts = match(provider)
-    .with('vercel', () => ['*.vercel.app'])
-    .with('deno', () => ['*.deno.dev', '*.deno.net'])
-    .with('cloudflare', () => ['*.workers.dev'])
+  const baseURLInitializer = match(baseURL)
+    .with({ url: P.string }, ({ url }) => JSON.stringify(url))
+    .with({ provider: 'vercel' }, () => hostList(['*.vercel.app']))
+    .with({ provider: 'deno' }, () => hostList(['*.deno.dev', '*.deno.net']))
+    .with({ provider: 'cloudflare' }, () => hostList(['*.workers.dev']))
     .with(undefined, () => undefined)
     .exhaustive();
 
@@ -56,11 +58,8 @@ export const generateAuthFile = async ({
       initializer: `drizzleAdapter(db, { provider: "pg", usePlural: true, schema })`,
     });
 
-    if (!optionsObject.getProperty('baseURL') && allowedHosts) {
-      optionsObject.insertPropertyAssignment(1, {
-        name: 'baseURL',
-        initializer: `{ allowedHosts: [${allowedHosts.map((host) => JSON.stringify(host)).join(', ')}] }`,
-      });
+    if (!optionsObject.getProperty('baseURL') && baseURLInitializer) {
+      optionsObject.insertPropertyAssignment(1, { name: 'baseURL', initializer: baseURLInitializer });
     }
 
     callExpr.getExpression().replaceWithText('betterAuth');

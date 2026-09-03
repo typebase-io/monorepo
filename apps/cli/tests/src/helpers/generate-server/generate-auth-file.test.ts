@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { type ServerProvider } from '#helpers/constants.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
 
 import { type TempDir, createTempDir } from '#tests/helpers/temp-dir.ts';
@@ -24,14 +25,14 @@ describe('generateAuthFile', () => {
     tmp.cleanup();
   });
 
-  const run = (source: string, options: { useTs?: boolean; provider?: 'vercel' | 'deno' | 'cloudflare' } = {}) => {
+  const run = (source: string, options: { useTs?: boolean; baseURL?: { provider: ServerProvider } | { url: string } } = {}) => {
     tmp.write('auth.ts', source);
 
     return generateAuthFile({
       authFilePath: path.join(tmp.path, 'auth.ts'),
       authOutputDirPath: path.join(tmp.path, 'out'),
       useTs: options.useTs ?? true,
-      provider: options.provider,
+      baseURL: options.baseURL,
     });
   };
 
@@ -44,7 +45,7 @@ describe('generateAuthFile', () => {
       authFilePath: path.join(tmp.path, 'auth.ts'),
       authOutputDirPath,
       useTs: true,
-      provider: undefined,
+      baseURL: undefined,
     });
 
     expect(fs.statSync(authOutputDirPath).isDirectory()).toBe(true);
@@ -69,21 +70,27 @@ export const auth = defineAuth({ emailAndPassword: { enabled: flag } });`;
   });
 
   it('adds a vercel baseURL with allowed hosts', async () => {
-    await run(AUTH_SOURCE, { provider: 'vercel' });
+    await run(AUTH_SOURCE, { baseURL: { provider: 'vercel' } });
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'vercel.txt');
   });
 
   it('adds deno allowed hosts', async () => {
-    await run(AUTH_SOURCE, { provider: 'deno' });
+    await run(AUTH_SOURCE, { baseURL: { provider: 'deno' } });
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'deno.txt');
   });
 
   it('adds cloudflare allowed hosts', async () => {
-    await run(AUTH_SOURCE, { provider: 'cloudflare' });
+    await run(AUTH_SOURCE, { baseURL: { provider: 'cloudflare' } });
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'cloudflare.txt');
+  });
+
+  it('adds a literal baseURL when given a url instead of a provider', async () => {
+    await run(AUTH_SOURCE, { baseURL: { url: 'http://127.0.0.1:8080' } });
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'local-url.txt');
   });
 
   it('does not add a baseURL when one is already present', async () => {
@@ -94,7 +101,20 @@ export const auth = defineAuth({
   emailAndPassword: { enabled: true },
 });`;
 
-    await run(source, { provider: 'vercel' });
+    await run(source, { baseURL: { provider: 'vercel' } });
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'existing-baseurl.txt');
+  });
+
+  it('keeps the project baseURL rather than the url it was given', async () => {
+    const source = `import { defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth({
+  baseURL: "https://example.com",
+  emailAndPassword: { enabled: true },
+});`;
+
+    await run(source, { baseURL: { url: 'http://127.0.0.1:8080' } });
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'existing-baseurl.txt');
   });
