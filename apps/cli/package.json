@@ -1,6 +1,6 @@
 {
   "name": "@typebase-io/cli",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "private": false,
   "type": "module",
   "description": "The CLI for Typebase. A type-safe backend you write as TypeScript files inside your existing app.",
