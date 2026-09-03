@@ -189,13 +189,60 @@ Setting up the auth client depends on your frontend framework. Check the integra
 
 Once authentication is set up, you can create protected actions that require a valid session. See the [Middleware](/docs/actions/middleware) page for details on creating authenticated actions.
 
+## The base URL
+
+better-auth needs to know the URL your server is reachable at, so it can build callback URLs, redirects, and the links it puts in emails.
+
+Typebase fills it in for you, differently depending on where the server is going to answer from:
+
+| Command                                        | `baseURL` written into the generated auth config                  |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| [`start`](/docs/cli/start)                     | The URL the local run listens on, such as `http://127.0.0.1:8080` |
+| [`deploy`](/docs/cli/deploy) to Vercel         | `{ allowedHosts: ["*.vercel.app"] }`                              |
+| [`deploy`](/docs/cli/deploy) to Cloudflare     | `{ allowedHosts: ["*.workers.dev"] }`                             |
+| [`deploy`](/docs/cli/deploy) to Deno Deploy    | `{ allowedHosts: ["*.deno.dev", "*.deno.net"] }`                  |
+| [`generate-server`](/docs/cli/generate-server) | Nothing                                                           |
+
+A deploy names hosts rather than a URL because the deployment URL is not known until the upload finishes; better-auth takes the URL from each incoming request and accepts it only if the host matches. A [local run](/docs/work-locally) knows its own URL up front — it picked the port — so it writes that URL directly, and `--port` moves it with you.
+
+<Callout type="info">
+  Your own `baseURL` always wins. Typebase only adds one when your `defineAuth` config does not already have the option, so a value you set is carried
+  through untouched by every command.
+</Callout>
+
+### `generate-server` and the base URL warning
+
+`generate-server` produces an artifact you host yourself, so it cannot know where that will be and writes nothing. better-auth then says so on boot:
+
+```
+WARN [Better Auth]: [better-auth] Base URL could not be determined. Please set a valid
+base URL using the baseURL config option or the BETTER_AUTH_URL environment variable.
+Without this, callbacks and redirects may not work correctly.
+```
+
+It's a warning, not an error, and the server starts. Sign-in and session reads over your own frontend keep working, because those carry the origin on the request. What breaks is anything better-auth has to build a URL for on its own: social provider callbacks, magic links, and email verification links.
+
+Set `BETTER_AUTH_URL` in the generated server's `.env` to wherever it is reachable:
+
+```bash title="typebase/_server/.env"
+BETTER_AUTH_URL=http://localhost:8080
+```
+
+Or set `baseURL` in `typebase/auth.ts` if the value is the same everywhere you run that server.
+
+<Callout type="warn">
+  Do not hardcode a localhost `baseURL` in `typebase/auth.ts` to silence this. Because your own value always wins, it ships on your next deploy and
+  your deployed server builds its callbacks against your laptop. `start` already sets the local URL for you, so there is nothing to hardcode.
+</Callout>
+
 ## Environment variables
 
 Typebase uses these auth-related environment variables:
 
-| Variable             | Description                                                                                                                  |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET` | A secret key used to sign session tokens. If it's missing, Typebase generates it locally the first time auth setup needs it. |
+| Variable             | Description                                                                                                                                               |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET` | A secret key used to sign session tokens. If it's missing, Typebase generates it locally the first time auth setup needs it.                              |
+| `BETTER_AUTH_URL`    | The URL the server is reachable at. Only needed with `generate-server`; `start` and `deploy` write a `baseURL` instead. See [the base URL](#the-base-url) |
 
 A project with an `auth.ts` gets `BETTER_AUTH_SECRET` added to its [env schema](/docs/env) automatically, so it's validated at boot and typed as `env.BETTER_AUTH_SECRET` on the action context. You don't declare it in `env.ts` yourself.
 

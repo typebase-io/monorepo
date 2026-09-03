@@ -415,6 +415,28 @@ The most common cause is a missing or misconfigured proxy. Auth cookies must be 
 
 If you're using Expo, sessions are stored in `SecureStore` instead of cookies. Make sure the `expoClient` plugin is wired up on the client and the `expo()` plugin is in your `auth.ts`.
 
+### "Base URL could not be determined"
+
+```
+WARN [Better Auth]: [better-auth] Base URL could not be determined. Please set a valid
+base URL using the baseURL config option or the BETTER_AUTH_URL environment variable.
+Without this, callbacks and redirects may not work correctly.
+```
+
+Comes from [`generate-server`](/docs/cli/generate-server), which builds an artifact you host yourself and so cannot know where it will answer from. [`start`](/docs/cli/start) writes the URL of the local run into the generated auth config, and [`deploy`](/docs/cli/deploy) writes your provider's hosts, so neither of those warns.
+
+It's a warning and the server starts. Sign-in and session reads keep working, since those carry the origin on the request. Social provider callbacks, magic links, and email verification links are what break, because better-auth has to build those URLs itself.
+
+Set `BETTER_AUTH_URL` in the generated server's `.env` to wherever it is reachable:
+
+```bash title="typebase/_server/.env"
+BETTER_AUTH_URL=http://localhost:8080
+```
+
+If you see this from `start`, your `typebase/auth.ts` has a `baseURL` of its own that resolves to nothing — a bare `process.env.BETTER_AUTH_URL`, say. Your value always wins over the one `start` would write, so either give it a fallback or drop it and let `start` fill it in.
+
+Full detail, including why not to hardcode a localhost `baseURL` in `auth.ts`, is on the [Auth page](/docs/auth#the-base-url).
+
 ### "Origin not trusted" errors
 
 Add the exact origin to `trustedOrigins` in your `auth.ts`:

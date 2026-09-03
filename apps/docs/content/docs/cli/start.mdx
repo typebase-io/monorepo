@@ -213,6 +213,21 @@ Delete the line from `.env` and you are back on dev without touching the client.
 
 If you have an `auth.ts`, add your frontend's local origin to `trustedOrigins` so the local server accepts its requests.
 
+### Auth and the base URL
+
+better-auth needs to know the URL it is answering on, to build callback URLs, redirects, and the links it puts in emails. A local run knows that URL — it picked the port — so it writes it into the generated auth config as `baseURL`, and moves it with you when you pass `--port`:
+
+```ts title="the generated server's auth.ts"
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: 'pg', usePlural: true, schema }),
+  baseURL: 'http://127.0.0.1:8080',
+  trustedOrigins: ['http://localhost:3000'],
+  emailAndPassword: { enabled: true },
+});
+```
+
+Your own `typebase/auth.ts` is untouched, and a `baseURL` you set there is left alone rather than replaced. There is nothing to configure, and no `BETTER_AUTH_URL` to set. See [the base URL](/docs/auth#the-base-url) for what a deploy writes instead.
+
 ## A custom start or install command
 
 `--command` replaces the default start, and runs in the server cache:

@@ -46,6 +46,9 @@ _2026-09-02._
   - `TYPEBASE_APP_URL_LOCAL` is written to your project-root `.env` on every run, so a [client](/docs/client#which-url-to-pass) reading
     `TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL` reaches a local run whenever one is going. Your database URLs are read and
     never written. An auth secret is generated and saved where a later deploy will find it.
+  - A project with an `auth.ts` gets the local URL written into the generated server's auth config as
+    [`baseURL`](/docs/auth#the-base-url), following `--port`, so better-auth can build callbacks and email links without the
+    `Base URL could not be determined` warning. A `baseURL` you set in `typebase/auth.ts` yourself is left alone.
 
 - [Migrations](/docs/database/migrations): an opt-in alternative to pushing, where schema changes are recorded as SQL files you read, edit, commit and
   review, and reach a database only when applied. A project is in migrations mode when `typebase/db/migrations/` exists.
