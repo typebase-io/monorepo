@@ -1,0 +1,1 @@
+pathname === "/api/auth" || pathname.startsWith("/api/auth" + "/")

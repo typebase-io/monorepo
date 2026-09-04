@@ -50,7 +50,9 @@ const TS_AUTH_DB = [
   'src/db/schema.ts',
   'src/env.ts',
   'src/index.ts',
+  'src/server.ts',
   'tsconfig.json',
+  'typebase-server.json',
 ];
 
 const JS_AUTH_DB = TS_AUTH_DB.filter((f) => f !== 'tsconfig.json').map((f) => (f.endsWith('.ts') ? f.replace(/\.ts$/, '.js') : f));
@@ -59,7 +61,13 @@ const TS_BARE = TS_AUTH_DB.filter(
   (f) => !f.startsWith('src/db/') && f !== 'src/auth.ts' && f !== 'src/actions/custom-actions.ts' && f !== 'src/env.ts'
 );
 
+const TS_EMBEDDED_AUTH_DB = TS_AUTH_DB.filter((f) => f !== 'package.json' && f !== 'src/index.ts' && f !== 'tsconfig.json');
+const TS_EMBEDDED_DB_ONLY = TS_DB_ONLY.filter((f) => f !== 'package.json' && f !== 'src/index.ts' && f !== 'tsconfig.json');
+const JS_EMBEDDED_AUTH_DB = JS_AUTH_DB.filter((f) => f !== 'package.json' && f !== 'src/index.js');
+
 const runPrompt = <T>(ask: () => Promise<T>) => ask();
+
+const withoutCliVersion = (contents: string) => contents.replace(/"cliVersion": "[^"]*"/, '"cliVersion": "<version>"');
 
 describe('generate-server command', () => {
   let tmp: TempDir;
@@ -96,6 +104,117 @@ describe('generate-server command', () => {
 
   const started = () => vi.mocked(ora).mock.calls.flat().map(String).join('\n');
 
+  const warned = () => vi.mocked(ora()).warn.mock.calls.flat().map(String).join('\n');
+
+  it('reports the dependencies, environment, cross-origin policy, and mount for an embedded server', async () => {
+    await setupProject({ withAuth: true, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: '^8.0.0' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+    expect(vi.mocked(console.log).mock.calls.flat().join('\n')).toEqualTemplate('generate-server', 'host-requirements', 'node.txt');
+    expect(vi.mocked(ora()).succeed.mock.calls.at(-1)).toEqual(['Server files generated in `typebase/_handler`.']);
+    expect(vi.mocked(ora()).succeed.mock.invocationCallOrder.at(-1)).toBeLessThan(vi.mocked(console.log).mock.invocationCallOrder[0] ?? 0);
+  });
+
+  it.each(['fastify', 'hono', 'bun', 'deno', 'cloudflare'])('reports the mount for an embedded %s server', async (adapter) => {
+    await setupProject({ withAuth: true, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: '^8.0.0' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--adapter', adapter], { from: 'user' }));
+
+    expect(vi.mocked(console.log).mock.calls.flat().join('\n')).toEqualTemplate('generate-server', 'host-requirements', `${adapter}.txt`);
+  });
+
+  it('reports Typebase directory imports missing from a separate host package and custom environment keys', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', zod: '^4.4.0' } }));
+    tmp.write('host/package.json', JSON.stringify({ dependencies: { pg: '^8', 'drizzle-orm': '^1.0.0-beta.22' } }));
+    tmp.write(
+      'typebase/env.ts',
+      `import { defineEnv } from "typebase-io/server";
+import { z } from "zod";
+export const env = defineEnv({ MAIL_API_KEY: z.string() });`
+    );
+    tmp.write('pnpm-lock.yaml', '');
+    tmp.write('host/bun.lock', '');
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', '../host/src/typebase'], { from: 'user' }));
+
+    expect(vi.mocked(console.log).mock.calls.flat().join('\n')).toEqualTemplate('generate-server', 'host-requirements', 'workspace.txt');
+    expect(withoutCliVersion(tmp.read('host/src/typebase/typebase-server.json'))).toEqualTemplate(
+      'generate-server',
+      'host-requirements',
+      'workspace-marker.json.txt'
+    );
+  });
+
+  it('warns when a host dependency excludes the version the embedded server needs', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: '^7.0.0' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+    expect(warned()).toContain('Host dependency `pg@^7.0.0` does not include the generated server requirement `8.20.0`');
+  });
+
+  it.each(['8.20.0', '^8.0.0', '~8.20.0', '8.x', '>=8 <9', '^7 || ^8'])('accepts the host dependency range %s', async (version) => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: version } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+    expect(warned()).not.toContain('`pg@');
+  });
+
+  it.each(['workspace:*', 'file:../pg', 'latest'])('warns without failing when %s cannot be validated as semver', async (version) => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: version } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+    expect(warned()).toContain(`Cannot validate host dependency \`pg@${version}\``);
+  });
+
+  it('requires a host range to opt into a prerelease dependency', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', 'drizzle-orm': '*' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+    expect(warned()).toContain('Host dependency `drizzle-orm@*` does not include the generated server requirement `1.0.0-beta.22`');
+  });
+
+  it('checks the manifest of the application mounting the output, including development and optional dependencies', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('host/package.json', JSON.stringify({ devDependencies: { pg: '^8.0.0' }, optionalDependencies: { 'drizzle-orm': '^1.0.0-beta.22' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', '../host/src/typebase'], { from: 'user' }));
+
+    expect(warned()).not.toContain('`pg@');
+    expect(warned()).not.toContain('`drizzle-orm@');
+    expect(vi.mocked(console.log).mock.calls.flat().join('\n')).toEqualTemplate('generate-server', 'host-requirements', 'external-host.txt');
+  });
+
+  it('does not validate host dependencies for a standalone server', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+    tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: '^7' } }));
+
+    await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+    expect(warned()).toBe('');
+    expect(vi.mocked(console.log).mock.calls).toEqual([]);
+  });
+
+  it('still generates an embedded server when its destination has no host manifest yet', async () => {
+    await setupProject({ withAuth: false, withDb: true });
+
+    await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', '../host/src/typebase'], { from: 'user' }));
+
+    expect(tmp.read('host/src/typebase/src/server.ts')).toEqualTemplate('generate-server', 'embedded-node-db-only', 'src', 'server.ts.txt');
+    expect(warned()).toContain('Cannot validate host dependencies: no package.json was found');
+  });
+
   describe('--watch', () => {
     const typebaseDirPath = () => path.join(tmp.path, 'typebase');
 
@@ -103,6 +222,22 @@ describe('generate-server command', () => {
 
     beforeEach(() => {
       vi.mocked(runUntilStopped).mockImplementation((run) => run(new AbortController().signal, runPrompt));
+    });
+
+    it('reports embedded host requirements and warnings on the first build only', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      tmp.write('typebase/package.json', JSON.stringify({ dependencies: { 'typebase-io': '0.1.0', pg: '^7.0.0' } }));
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--watch'], { from: 'user' }));
+      await withCwd(tmp.path, () => watchOptions()?.build(new AbortController().signal, { rebuild: false }));
+      expect(vi.mocked(console.log).mock.calls.flat().join('\n')).toEqualTemplate('generate-server', 'host-requirements', 'mismatched-host.txt');
+      expect(warned()).toContain('Host dependency `pg@^7.0.0` does not include');
+      vi.mocked(ora()).warn.mockClear();
+      vi.mocked(console.log).mockClear();
+
+      await withCwd(tmp.path, () => watchOptions()?.build(new AbortController().signal, { rebuild: true }));
+
+      expect(warned()).toBe('');
+      expect(vi.mocked(console.log).mock.calls).toEqual([]);
     });
 
     it('does not watch unless asked to', async () => {
@@ -189,7 +324,7 @@ describe('generate-server command', () => {
   });
 
   const expectServer = (outcome: string, files: string[], root = '_server') => {
-    expectProject(tmp, outcome, files, { namespace: 'generate-server', root: `typebase/${root}` });
+    expectProject(tmp, outcome, files, { namespace: 'generate-server', root: `typebase/${root}`, normalise: withoutCliVersion });
   };
 
   describe('generates the expected project for each flag combination', () => {
@@ -201,6 +336,104 @@ describe('generate-server command', () => {
       { name: 'ts-bare', withAuth: false, withDb: false, args: [], files: TS_BARE, root: '_server' },
       { name: 'ts-port', withAuth: true, withDb: true, args: ['--port', '3000'], files: TS_AUTH_DB, root: '_server' },
       { name: 'ts-out-dir', withAuth: true, withDb: true, args: ['--out-dir', 'dist'], files: TS_AUTH_DB, root: 'dist' },
+      { name: 'embedded-node-auth-db', withAuth: true, withDb: true, args: ['--embedded'], files: TS_EMBEDDED_AUTH_DB, root: '_handler' },
+      { name: 'embedded-node-db-only', withAuth: false, withDb: true, args: ['--embedded'], files: TS_EMBEDDED_DB_ONLY, root: '_handler' },
+      {
+        name: 'embedded-bun-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'bun'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-bun-db-only',
+        withAuth: false,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'bun'],
+        files: TS_EMBEDDED_DB_ONLY,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-cloudflare-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'cloudflare'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-cloudflare-db-only',
+        withAuth: false,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'cloudflare'],
+        files: TS_EMBEDDED_DB_ONLY,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-deno-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'deno'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-deno-db-only',
+        withAuth: false,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'deno'],
+        files: TS_EMBEDDED_DB_ONLY,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-fastify-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'fastify'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-fastify-db-only',
+        withAuth: false,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'fastify'],
+        files: TS_EMBEDDED_DB_ONLY,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-hono-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'hono'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-hono-db-only',
+        withAuth: false,
+        withDb: true,
+        args: ['--embedded', '--adapter', 'hono'],
+        files: TS_EMBEDDED_DB_ONLY,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-custom-paths',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--actions-path', '/typebase/rpc', '--auth-path', '/typebase/auth'],
+        files: TS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
+      {
+        name: 'embedded-esm-auth-db',
+        withAuth: true,
+        withDb: true,
+        args: ['--embedded', '--output', 'esm'],
+        files: JS_EMBEDDED_AUTH_DB,
+        root: '_handler',
+      },
       { name: 'adapter-bun', withAuth: true, withDb: true, args: ['--adapter', 'bun'], files: TS_AUTH_DB, root: '_server' },
       { name: 'adapter-cloudflare', withAuth: true, withDb: true, args: ['--adapter', 'cloudflare'], files: TS_AUTH_DB, root: '_server' },
       { name: 'adapter-deno', withAuth: true, withDb: true, args: ['--adapter', 'deno'], files: TS_AUTH_DB, root: '_server' },
@@ -214,6 +447,13 @@ describe('generate-server command', () => {
       await withCwd(tmp.path, () => generateServer.parseAsync(args, { from: 'user' }));
 
       expectServer(name, files, root);
+    });
+
+    it('writes an embedded server to the output directory it was given', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', 'dist'], { from: 'user' }));
+
+      expectServer('embedded-node-db-only', TS_EMBEDDED_DB_ONLY, 'dist');
     });
   });
 
@@ -274,6 +514,54 @@ describe('generate-server command', () => {
       expectServer('ts-out-dir', TS_AUTH_DB, 'dist');
     });
 
+    it('uses the configured mode, and the default output directory that mode brings with it', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: true } }));
+
+      await setupProject({ withAuth: false, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('embedded-node-db-only', TS_EMBEDDED_DB_ONLY, '_handler');
+    });
+
+    it('uses the configured outDir in embedded mode', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: true, outDir: 'dist' } }));
+
+      await setupProject({ withAuth: false, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('embedded-node-db-only', TS_EMBEDDED_DB_ONLY, 'dist');
+    });
+
+    it.each(['', '/', '///'])('uses the configured paths in embedded mode with trailing slashes %j', async (trailingSlashes) => {
+      tmp.write(
+        'typebase.json',
+        JSON.stringify({ server: { embedded: true, actionsPath: `/typebase/rpc${trailingSlashes}`, authPath: `/typebase/auth${trailingSlashes}` } })
+      );
+
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('embedded-custom-paths', TS_EMBEDDED_AUTH_DB, '_handler');
+    });
+
+    it('ignores configured paths in standalone mode instead of refusing to run', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { actionsPath: '/typebase/rpc', authPath: '/typebase/auth' } }));
+
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('ts-auth-db', TS_AUTH_DB);
+    });
+
+    it('ignores a configured port in embedded mode instead of refusing to run', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: true, port: 3000 } }));
+
+      await setupProject({ withAuth: false, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('embedded-node-db-only', TS_EMBEDDED_DB_ONLY, '_handler');
+    });
+
     it('lets command-line flags override the configured values', async () => {
       tmp.write('typebase.json', JSON.stringify({ server: { output: 'cjs' } }));
 
@@ -281,6 +569,15 @@ describe('generate-server command', () => {
       await withCwd(tmp.path, () => generateServer.parseAsync(['--output', 'esm'], { from: 'user' }));
 
       expectServer('esm-auth-db', JS_AUTH_DB);
+    });
+
+    it('lets the embedded flag override a disabled embedded setting', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: false } }));
+
+      await setupProject({ withAuth: true, withDb: true });
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+      expectServer('embedded-node-auth-db', TS_EMBEDDED_AUTH_DB, '_handler');
     });
 
     it('refuses an output dir that contains the typebase directory', async () => {
@@ -320,7 +617,7 @@ describe('generate-server command', () => {
 
       await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
 
-      expect(tmp.read('typebase/_server/src/actions/queries/todos.ts')).toContain('EDITED MARKER');
+      expect(tmp.read('typebase/_server/src/actions/queries/todos.ts')).toEqualTemplate('generate-server', 'edited-action', 'todos.ts.txt');
     });
 
     it('picks up newly added actions', async () => {
@@ -348,6 +645,17 @@ describe('generate-server command', () => {
       expect(serverEnv.VERCEL_TOKEN).toBeUndefined();
       expect(succeeded()).toContain('DATABASE_URL');
       expect(succeeded()).toContain('copied from your project `.env`.');
+    });
+
+    it('seeds no env file into an embedded output directory, so the fragment never becomes a place secrets accumulate', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      tmp.write('.env', ['DATABASE_URL=postgres://project/database', 'BETTER_AUTH_SECRET=already-chosen'].join('\n'));
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+      expect(tmp.exists('typebase/_handler/.env')).toBe(false);
+      expect(succeeded()).not.toContain('copied from your project');
     });
 
     it('says nothing about copying when the project env file holds none of those keys', async () => {
@@ -390,6 +698,101 @@ describe('generate-server command', () => {
       expect(tmp.exists('typebase/_server/src/actions/queries/todos.ts')).toBe(true);
     });
 
+    it.each([
+      { property: 'basePath', fixture: 'developer-base-path' },
+      { property: '"basePath"', fixture: 'developer-base-path-double-quoted' },
+      { property: "'basePath'", fixture: 'developer-base-path-single-quoted' },
+    ])('follows a $property the developer set in their own auth file, and says so', async ({ property, fixture }) => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      const authFile = `import { defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth({
+  ${property}: "/mine",
+  emailAndPassword: { enabled: true },
+});
+`;
+
+      tmp.write('typebase/auth.ts', authFile);
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--auth-path', '/typebase/auth'], { from: 'user' }));
+
+      expect(warned()).toContain('`auth.ts` sets `basePath: "/mine"`');
+      expect(warned()).toContain('rather than at `/typebase/auth`');
+
+      expect(tmp.read('typebase/_handler/src/auth.ts')).toEqualTemplate('generate-server', fixture, 'src', 'auth.ts.txt');
+      expect(tmp.read('typebase/_handler/src/server.ts')).toEqualTemplate('generate-server', 'developer-base-path', 'src', 'server.ts.txt');
+    });
+
+    it.each(['node', 'bun', 'cloudflare', 'deno', 'fastify', 'hono'])(
+      'keeps a dynamic auth base path and the %s route in agreement',
+      async (adapter) => {
+        await setupProject({ withAuth: true, withDb: true });
+        tmp.write(
+          'typebase/auth.ts',
+          `import { defineAuth } from 'typebase-io/server';
+export const auth = defineAuth({ basePath: process.env.AUTH_PATH || '/mine' });`
+        );
+
+        await withCwd(tmp.path, () =>
+          generateServer.parseAsync(['--embedded', '--adapter', adapter, '--auth-path', '/configured'], { from: 'user' })
+        );
+
+        expect(tmp.read('typebase/_handler/src/auth.ts')).toEqualTemplate('generate-server', 'dynamic-auth-path', 'auth.ts.txt');
+        expect(tmp.read('typebase/_handler/src/server.ts')).toEqualTemplate('generate-server', 'dynamic-auth-path', adapter, 'server.ts.txt');
+        expect(warned()).toContain('the generated auth route follows its runtime value');
+      }
+    );
+
+    it('escapes custom paths in the actions prefix and both route registrations', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      await withCwd(tmp.path, () =>
+        generateServer.parseAsync(['--embedded', '--adapter', 'hono', '--actions-path', '/my"actions', '--auth-path', '/my"auth'], {
+          from: 'user',
+        })
+      );
+
+      expect(tmp.read('typebase/_handler/src/server.ts')).toEqualTemplate('generate-server', 'escaped-paths', 'server.ts.txt');
+      expect(tmp.read('typebase/_handler/src/auth.ts')).toEqualTemplate('generate-server', 'escaped-paths', 'auth.ts.txt');
+    });
+
+    it('exposes the default base path when auth options are spread without an explicit path', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      tmp.write(
+        'typebase/auth.ts',
+        `import { defineAuth } from 'typebase-io/server';
+const options = { emailAndPassword: { enabled: true } };
+export const auth = defineAuth({ ...options });`
+      );
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded'], { from: 'user' }));
+
+      expect(tmp.read('typebase/_handler/src/auth.ts')).toEqualTemplate('generate-server', 'spread-auth-default', 'auth.ts.txt');
+      expect(tmp.read('typebase/_handler/src/server.ts')).toEqualTemplate('generate-server', 'dynamic-auth-path', 'node', 'server.ts.txt');
+    });
+
+    it.each([
+      { properties: "['basePath']: '/mine'", fixture: 'computed-auth-literal' },
+      { properties: "[key]: '/mine'", fixture: 'computed-auth-key' },
+      { properties: '...options', fixture: 'spread-auth-override' },
+    ])('follows auth overrides supplied as $properties', async ({ properties, fixture }) => {
+      await setupProject({ withAuth: true, withDb: true });
+      tmp.write(
+        'typebase/auth.ts',
+        `import { defineAuth } from 'typebase-io/server';
+const key = 'basePath';
+const options = { basePath: '/mine' };
+export const auth = defineAuth({ ${properties} });`
+      );
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--auth-path', '/configured'], { from: 'user' }));
+
+      expect(tmp.read('typebase/_handler/src/auth.ts')).toEqualTemplate('generate-server', fixture, 'auth.ts.txt');
+      expect(tmp.read('typebase/_handler/src/server.ts')).toEqualTemplate('generate-server', 'dynamic-auth-path', 'node', 'server.ts.txt');
+      expect(warned()).toContain('the generated auth route follows its runtime value');
+    });
+
     it('adds the auth server file when auth is introduced', async () => {
       await setupProject({ withAuth: false, withDb: true });
 
@@ -409,7 +812,7 @@ export const auth = defineAuth({
       await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
 
       expect(tmp.exists('typebase/_server/src/auth.ts')).toBe(true);
-      expect(tmp.read('typebase/_server/src/index.ts')).toContain('better-auth');
+      expect(tmp.read('typebase/_server/src/server.ts')).toEqualTemplate('generate-server', 'auth-introduced', 'src', 'server.ts.txt');
     });
   });
 
@@ -478,6 +881,69 @@ export const auth = defineAuth({
       expect(tmp.exists('typebase/_server')).toBe(false);
     });
 
+    it.each(['--actions-path', '--auth-path'])('rejects %s passed alongside a standalone server, which serves fixed paths', async (flag) => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync([flag, '/typebase/rpc'], { from: 'user' }))).rejects.toThrow(
+        'a standalone server owns its process and always serves the paths it was built with'
+      );
+
+      expect(tmp.exists('typebase/_server')).toBe(false);
+    });
+
+    it.each([
+      ['--actions-path', '/api/rpc', '--auth-path', '/api'],
+      ['--actions-path', '/rpc', '--auth-path', '/rpc'],
+      ['--actions-path', '/rpc', '--auth-path', '/'],
+    ])('rejects an auth path that would answer every action request: %j', async (...args) => {
+      await setupProject({ withAuth: true, withDb: true });
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', ...args], { from: 'user' }))).rejects.toThrow(
+        'the generated server matches the auth path before your actions'
+      );
+
+      expect(tmp.exists('typebase/_handler')).toBe(false);
+    });
+
+    it.each([
+      ['--embedded', '--port', '3000'],
+      ['--port', '3000', '--embedded'],
+    ])('rejects conflicting embedded and port flags: %j', async (...args) => {
+      vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as never);
+
+      const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(args, { from: 'user' }))).rejects.toThrow('process.exit called');
+
+      expect(stderr.mock.calls.flat().join('')).toBe("error: option '--port <number>' cannot be used with option '--embedded'\n");
+      expect(tmp.exists('typebase/_handler')).toBe(false);
+    });
+
+    it('rejects an explicit port when embedded is enabled in configuration', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: true } }));
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--port', '3000'], { from: 'user' }))).rejects.toThrow(
+        'an embedded server is mounted by your application and never listens'
+      );
+
+      expect(tmp.exists('typebase/_handler')).toBe(false);
+    });
+
+    it.each([
+      { outDir: '.', reason: 'contains your typebase directory' },
+      { outDir: 'actions/handler', reason: 'inside `actions/`' },
+      { outDir: 'db/handler', reason: 'inside `db/`' },
+    ])('refuses an embedded output dir at $outDir', async ({ outDir, reason }) => {
+      await setupProject({ withAuth: false, withDb: true });
+
+      await expect(withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', outDir], { from: 'user' }))).rejects.toThrow(reason);
+
+      expect(tmp.exists('typebase/actions/queries/todos.ts')).toBe(true);
+      expect(tmp.exists('typebase/db/schema.ts')).toBe(true);
+    });
+
     it('rejects an invalid --output choice', async () => {
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
         throw new Error('process.exit called');
@@ -511,7 +977,9 @@ export const auth = defineAuth({
       'src/db/schema.ts',
       'src/env.ts',
       'src/index.ts',
+      'src/server.ts',
       'tsconfig.json',
+      'typebase-server.json',
     ];
 
     const JS_MIGRATIONS = TS_MIGRATIONS.filter((file) => file !== 'tsconfig.json').map((file) =>
@@ -538,7 +1006,11 @@ export const auth = defineAuth({
     ])('generates $outcome with the migrations alongside the schema', async ({ outcome, args, files }) => {
       await withCwd(tmp.path, () => generateServer.parseAsync(args, { from: 'user' }));
 
-      expectProject(tmp, outcome, files, { namespace: 'generate-server', root: 'typebase/_server', normalise: withoutIds });
+      expectProject(tmp, outcome, files, {
+        namespace: 'generate-server',
+        root: 'typebase/_server',
+        normalise: (contents) => withoutCliVersion(withoutIds(contents)),
+      });
     });
   });
 

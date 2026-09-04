@@ -198,6 +198,20 @@ describe('start command', () => {
     expect(fs.existsSync(inServer('package.json'))).toBe(true);
   });
 
+  it('always builds a standalone server when embedded mode is configured', async () => {
+    tmp.write('typebase.json', JSON.stringify({ server: { embedded: true } }));
+
+    await setupProject();
+    await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+    const generatedMarker = JSON.parse(fs.readFileSync(inServer('typebase-server.json'), 'utf8')) as { mode: string };
+
+    expect(generatedMarker.mode).toBe('standalone');
+    expect(fs.existsSync(inServer('src/index.ts'))).toBe(true);
+    expect(fs.existsSync(inServer('package.json'))).toBe(true);
+    expect(fs.existsSync(path.join(tmp.path, 'typebase/_handler'))).toBe(false);
+  });
+
   it('keeps the dependencies an earlier run installed', async () => {
     await setupProject();
 

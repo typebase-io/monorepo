@@ -6,6 +6,12 @@ export const TYPEBASE_CONFIG_FILE_NAME = 'typebase.json';
 
 export const LOCAL_SERVER_CACHE_MARKER_FILE_NAME = 'typebase-server-cache.json';
 
+export const SERVER_MARKER_FILE_NAME = 'typebase-server.json';
+
+export const DEFAULT_ACTIONS_PATH = '/rpc';
+
+export const DEFAULT_AUTH_PATH = '/api/auth';
+
 export const TYPEBASE_CONFIG_SCHEMA_URL =
   'https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json';
 
@@ -15,6 +21,9 @@ export type ServerAdapter = (typeof serverAdapters)[number];
 export const serverOutputs = ['ts', 'esm', 'cjs'] as const;
 export type ServerOutput = (typeof serverOutputs)[number];
 
+export const serverModes = ['standalone', 'embedded'] as const;
+export type ServerMode = (typeof serverModes)[number];
+
 export const serverProviders = ['vercel', 'cloudflare', 'deno'] as const;
 export type ServerProvider = (typeof serverProviders)[number];
 
@@ -23,6 +32,11 @@ export type PublisherProvider = (typeof publisherProviders)[number];
 
 export const envTargets = ['dev', 'prod'] as const;
 export type EnvTarget = (typeof envTargets)[number];
+
+export const DEFAULT_SERVER_OUT_DIRS = {
+  standalone: '_server',
+  embedded: '_handler',
+} as const satisfies Record<ServerMode, string>;
 
 export const DEPS = {
   '@better-auth/drizzle-adapter': {
@@ -131,10 +145,28 @@ export const typebaseConfigSchema = z.object({
             description: 'The server adapter to use.',
           })
         ),
+        embedded: z.optional(
+          z.boolean().meta({
+            title: 'Embedded',
+            description: 'Generate an embedded server for your application to mount. Defaults to false.',
+          })
+        ),
         outDir: z.optional(
           z.string().trim().min(1).meta({
             title: 'Output directory',
             description: 'The output directory for the server build.',
+          })
+        ),
+        actionsPath: z.optional(
+          z.string().trim().min(1).meta({
+            title: 'Actions path',
+            description: 'The path an embedded server serves your actions at.',
+          })
+        ),
+        authPath: z.optional(
+          z.string().trim().min(1).meta({
+            title: 'Auth path',
+            description: 'The path an embedded server serves auth at.',
           })
         ),
         port: z.optional(
@@ -219,3 +251,14 @@ export const typebaseConfigSchema = z.object({
 });
 
 export type TypebaseConfigSchema = z.infer<typeof typebaseConfigSchema>;
+
+export const serverMarkerSchema = z.object({
+  adapter: z.string(),
+  mode: z.string(),
+  cliVersion: z.string(),
+  dependencies: z.record(z.string(), z.string()),
+  devDependencies: z.record(z.string(), z.string()),
+  envKeys: z.array(z.string()),
+});
+
+export type ServerMarkerSchema = z.infer<typeof serverMarkerSchema>;

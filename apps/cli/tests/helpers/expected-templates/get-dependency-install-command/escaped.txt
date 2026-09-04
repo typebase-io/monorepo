@@ -1,0 +1,1 @@
+npm install 'custom@file:../it'\''s a $(command); package'

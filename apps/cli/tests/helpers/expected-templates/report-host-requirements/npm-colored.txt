@@ -1,0 +1,19 @@
+
+<ESC>[1m<ESC>[36mEmbedded server requirements<ESC>[39m<ESC>[22m
+
+<ESC>[1mInstall missing or incompatible dependencies in the host package:<ESC>[22m
+<ESC>[32mnpm install 'zod@^4'<ESC>[39m
+<ESC>[32mnpm install -D 'typescript@5.9.3'<ESC>[39m
+
+<ESC>[1mRequired Environment keys:<ESC>[22m <ESC>[36mDATABASE_URL<ESC>[39m
+<ESC>[2mLoad these in your host before importing the embedded server.<ESC>[22m
+
+<ESC>[33mCross-origin headers are your host application's responsibility. Configure its CORS policy for your clients.<ESC>[39m
+
+<ESC>[1mMount from your project root (adjust the import for your entry point):<ESC>[22m
+<ESC>[32mimport { typebaseHandler } from "./generated/src/server.js";<ESC>[39m
+<ESC>[32m<ESC>[39m
+<ESC>[32m// In your existing Express application:<ESC>[39m
+<ESC>[32mapp.use(typebaseHandler);<ESC>[39m
+
+<ESC>[2mDependency and environment details: generated/typebase-server.json<ESC>[22m

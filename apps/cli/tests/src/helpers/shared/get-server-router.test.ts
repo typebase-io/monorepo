@@ -34,7 +34,6 @@ describe('getServerRouter', () => {
       outputFilePath: path.join(tmp.path, 'server.ts'),
       actionsOutputDirPath: path.join(tmp.path, 'actions'),
       generation: 'ts',
-      exportable: true,
     });
 
     expect(imports).toEqualTemplate('get-server-router', 'multi-imports.txt');
@@ -51,7 +50,6 @@ describe('getServerRouter', () => {
       outputFilePath: path.join(tmp.path, 'server.ts'),
       actionsOutputDirPath: path.join(tmp.path, 'actions'),
       generation: 'esm',
-      exportable: true,
     });
 
     expect(imports).toEqualTemplate('get-server-router', 'esm-imports.txt');
@@ -75,14 +73,13 @@ describe('getServerRouter', () => {
       outputFilePath: path.join(tmp.path, 'server.ts'),
       actionsOutputDirPath: path.join(tmp.path, 'actions'),
       generation: 'ts',
-      exportable: true,
     });
 
     expect(imports).toEqualTemplate('get-server-router', 'single-imports.txt');
     expect(router).toEqualTemplate('get-server-router', 'single-router.txt');
   });
 
-  it('returns an empty, non-exported router when there are no actions', async () => {
+  it('returns an empty router when there are no actions', async () => {
     tmp.write('tsconfig.json', TS_CONFIG);
     tmp.write('actions/not-an-action.ts', 'export const value = 1;');
 
@@ -92,7 +89,6 @@ describe('getServerRouter', () => {
       outputFilePath: path.join(tmp.path, 'server.ts'),
       actionsOutputDirPath: path.join(tmp.path, 'actions'),
       generation: 'ts',
-      exportable: false,
     });
 
     expect(imports).toEqualTemplate('get-server-router', 'empty-imports.txt');

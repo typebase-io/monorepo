@@ -1,0 +1,1 @@
+pathname === (auth.options.basePath || "/api/auth").replace(/\/+$/, "") || pathname.startsWith((auth.options.basePath || "/api/auth").replace(/\/+$/, "") + "/")

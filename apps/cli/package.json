@@ -68,6 +68,7 @@
     "ora": "9.4.0",
     "pg": "8.20.0",
     "preferred-pm": "5.0.0",
+    "semver": "7.7.4",
     "ts-morph": "27.0.2",
     "ts-pattern": "5.9.0",
     "zod": "4.4.3"
@@ -75,6 +76,7 @@
   "devDependencies": {
     "@types/node": "24.1.0",
     "@types/pg": "8.20.0",
+    "@types/semver": "7.8.0",
     "@vitest/coverage-v8": "4.1.9",
     "better-auth": "1.6.11",
     "vitest": "4.1.9"

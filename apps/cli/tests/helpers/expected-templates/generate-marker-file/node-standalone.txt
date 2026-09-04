@@ -1,0 +1,16 @@
+{
+  "adapter": "node",
+  "mode": "standalone",
+  "cliVersion": "1.2.3",
+  "dependencies": {
+    "drizzle-orm": "1.0.0",
+    "typebase-io": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  },
+  "envKeys": [
+    "DATABASE_URL",
+    "BETTER_AUTH_SECRET"
+  ]
+}

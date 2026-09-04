@@ -2,8 +2,8 @@ import { preferredPM } from 'preferred-pm';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn-classic' | 'yarn-berry' | 'bun' | 'unknown';
 
-export const getPackageManager = async (): Promise<PackageManager> => {
-  const usedPackageManager = await preferredPM(process.cwd());
+export const getPackageManager = async (startDir = process.cwd()): Promise<PackageManager> => {
+  const usedPackageManager = await preferredPM(startDir);
 
   if (!usedPackageManager) {
     return 'unknown';

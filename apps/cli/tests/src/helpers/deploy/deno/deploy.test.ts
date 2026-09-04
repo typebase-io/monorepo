@@ -4,6 +4,9 @@ import { deploy } from '#helpers/deploy/deno/deploy.ts';
 
 import { buildTypebaseServer } from '#tests/helpers/build-typebase-server.ts';
 import { generateTypebaseProject } from '#tests/helpers/generate-typebase-project.ts';
+import { linkBetterAuth } from '#tests/helpers/link-better-auth.ts';
+import { linkTypebaseIo } from '#tests/helpers/link-typebase-io.ts';
+import { linkZod } from '#tests/helpers/link-zod.ts';
 import { mockFetch } from '#tests/helpers/mock-fetch.ts';
 import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts';
 
@@ -20,6 +23,10 @@ describe('deno deploy', () => {
 
   beforeEach(async () => {
     tmp = createTempDir();
+
+    linkTypebaseIo(tmp);
+    linkBetterAuth(tmp);
+    linkZod(tmp);
 
     const projectDir = await generateTypebaseProject(tmp);
 
@@ -52,8 +59,9 @@ describe('deno deploy', () => {
     const body = JSON.parse(calls[0]?.body ?? '{}') as DeployBody;
 
     expect(body.assets['src/index.js']?.encoding).toBe('utf-8');
-    expect(body.assets['src/index.js']?.content).toContain('fetch');
-    expect(body.assets['src/index.js']?.content).toContain('RPCHandler');
+    expect(body.assets['src/index.js']?.content).toEqualTemplate('deploy', 'deno-auth-db', 'src', 'index.js.txt');
+    expect(body.assets['src/server.js']?.encoding).toBe('utf-8');
+    expect(body.assets['src/server.js']?.content).toEqualTemplate('deploy', 'deno-auth-db', 'src', 'server.js.txt');
     expect(body.assets['src/actions/queries/todos.js']?.encoding).toBe('utf-8');
     expect(body.assets['src/actions/mutations/todos.js']?.encoding).toBe('utf-8');
     expect(body.assets['image.png']).toEqual({ kind: 'file', content: Buffer.from('PNGDATA').toString('base64'), encoding: 'base64' });

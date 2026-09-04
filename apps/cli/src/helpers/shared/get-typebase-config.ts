@@ -5,7 +5,13 @@ import path from 'node:path';
 import { chalkStderr } from 'chalk';
 import { z } from 'zod';
 
-import { TYPEBASE_CONFIG_FILE_NAME, typebaseConfigSchema } from '#helpers/constants.ts';
+import {
+  DEFAULT_ACTIONS_PATH,
+  DEFAULT_AUTH_PATH,
+  DEFAULT_SERVER_OUT_DIRS,
+  TYPEBASE_CONFIG_FILE_NAME,
+  typebaseConfigSchema,
+} from '#helpers/constants.ts';
 
 export const getTypebaseConfig = async () => {
   const typebaseConfigPath = path.resolve(TYPEBASE_CONFIG_FILE_NAME);
@@ -39,7 +45,11 @@ export const getTypebaseConfig = async () => {
     server: {
       output: config.data.server?.output ?? 'ts',
       adapter: config.data.server?.adapter ?? 'node',
-      outDir: config.data.server?.outDir ?? '_server',
+      embedded: config.data.server?.embedded ?? false,
+      outDir: config.data.server?.outDir ?? DEFAULT_SERVER_OUT_DIRS[config.data.server?.embedded ? 'embedded' : 'standalone'],
+      explicitOutDir: config.data.server?.outDir,
+      actionsPath: config.data.server?.actionsPath ?? DEFAULT_ACTIONS_PATH,
+      authPath: config.data.server?.authPath ?? DEFAULT_AUTH_PATH,
       port: config.data.server?.port ?? 8080,
     },
     vercel: config.data.vercel,

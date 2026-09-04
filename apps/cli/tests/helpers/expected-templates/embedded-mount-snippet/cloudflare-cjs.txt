@@ -1,0 +1,4 @@
+const { typebaseHandler } = require("./typebase/_handler/src/server.js");
+
+// In your Worker entry point:
+module.exports = { fetch: typebaseHandler };

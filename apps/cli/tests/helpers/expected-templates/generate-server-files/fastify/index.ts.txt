@@ -1,0 +1,18 @@
+import 'dotenv/config';
+
+import "./env.ts";
+
+import Fastify from "fastify";
+import { typebaseHandler } from "./server.ts";
+
+const fastify = Fastify();
+
+fastify.addContentTypeParser("*", (_request, _payload, done) => {
+  done(null, undefined);
+});
+
+fastify.register(typebaseHandler);
+
+fastify
+  .listen({ port: 8080 })
+  .then(() => console.log("Listening on 127.0.0.1:8080"));

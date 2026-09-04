@@ -1,12 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { IndentationText, Project } from 'ts-morph';
+import { IndentationText, Project, SyntaxKind } from 'ts-morph';
 import { P, match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
 import { findDefineCalls } from '#helpers/shared/find-define-calls.ts';
 import { fixImportExtensions } from '#helpers/shared/fix-import-extensions.ts';
+import { getAuthBasePathProperty } from '#helpers/shared/get-auth-base-path-property.ts';
+import { hasDynamicAuthOptions } from '#helpers/shared/has-dynamic-auth-options.ts';
 import { resolveDefineOptions } from '#helpers/shared/resolve-define-options.ts';
 
 export const generateAuthFile = async ({
@@ -14,11 +16,13 @@ export const generateAuthFile = async ({
   authOutputDirPath,
   useTs,
   baseURL,
+  basePath,
 }: {
   authFilePath: string;
   authOutputDirPath: string;
   useTs: boolean;
   baseURL: { provider: ServerProvider } | { url: string } | undefined;
+  basePath: string | undefined;
 }) => {
   const project = new Project({ skipAddingFilesFromTsConfig: true, manipulationSettings: { indentationText: IndentationText.TwoSpaces } });
   const sourceFile = project.addSourceFileAtPath(authFilePath);
@@ -58,8 +62,27 @@ export const generateAuthFile = async ({
       initializer: `drizzleAdapter(db, { provider: "pg", usePlural: true, schema })`,
     });
 
+    let insertIndex = 1;
+
     if (!optionsObject.getProperty('baseURL') && baseURLInitializer) {
-      optionsObject.insertPropertyAssignment(1, { name: 'baseURL', initializer: baseURLInitializer });
+      optionsObject.insertPropertyAssignment(insertIndex, { name: 'baseURL', initializer: baseURLInitializer });
+
+      insertIndex += 1;
+    }
+
+    const basePathProperty = getAuthBasePathProperty(optionsObject);
+    const basePathName = basePathProperty?.asKind(SyntaxKind.PropertyAssignment)?.getNameNode();
+
+    if (basePathName?.isKind(SyntaxKind.StringLiteral)) {
+      basePathName.replaceWithText('basePath');
+    }
+
+    if (!basePathProperty && basePath) {
+      if (hasDynamicAuthOptions(optionsObject)) {
+        optionsObject.insertSpreadAssignment(insertIndex, { expression: `{ basePath: ${JSON.stringify(basePath)} }` });
+      } else {
+        optionsObject.insertPropertyAssignment(insertIndex, { name: 'basePath', initializer: JSON.stringify(basePath) });
+      }
     }
 
     callExpr.getExpression().replaceWithText('betterAuth');

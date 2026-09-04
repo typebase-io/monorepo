@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { DEPS, PACKAGE_MANAGER_FIELD_NAMES, PACKAGE_MANAGER_VERSIONS, type ServerAdapter } from '#helpers/constants.ts';
+import { DEPS, PACKAGE_MANAGER_FIELD_NAMES, PACKAGE_MANAGER_VERSIONS, type ServerAdapter, type ServerMode } from '#helpers/constants.ts';
 import { getPackageDeps } from '#helpers/shared/get-package-deps.ts';
 import { getPackageManager } from '#helpers/shared/get-package-manager.ts';
 import { getUserPackageJson } from '#helpers/shared/get-user-package-json.ts';
 
 export const generatePackageJson = async ({
   adapter,
+  mode,
   typebaseDirPath,
   outputDirPath,
   generation,
@@ -17,6 +18,7 @@ export const generatePackageJson = async ({
   hasEnv,
 }: {
   adapter: ServerAdapter;
+  mode: ServerMode;
   typebaseDirPath: string;
   outputDirPath: string;
   generation: 'cjs' | 'esm' | 'ts';
@@ -53,7 +55,7 @@ export const generatePackageJson = async ({
   if (adapter === 'fastify') {
     dependencies[DEPS.fastify.name] = DEPS.fastify.version;
 
-    if (hasAuth) {
+    if (hasAuth && mode === 'standalone') {
       dependencies[DEPS['@fastify/cors'].name] = DEPS['@fastify/cors'].version;
     }
   }
@@ -70,7 +72,7 @@ export const generatePackageJson = async ({
   if (hasEnv) {
     dependencies[DEPS['@t3-oss/env-core'].name] = DEPS['@t3-oss/env-core'].version;
 
-    if (adapter !== 'cloudflare') {
+    if (adapter !== 'cloudflare' && mode === 'standalone') {
       dependencies[DEPS.dotenv.name] = DEPS.dotenv.version;
     }
   }
@@ -83,6 +85,9 @@ export const generatePackageJson = async ({
 
   const packageManager = await getPackageManager();
 
+  const resolvedDependencies = Object.fromEntries(Object.entries({ ...userDependencies, ...dependencies }).sort(([a], [b]) => a.localeCompare(b)));
+  const resolvedDevDependencies = Object.fromEntries(Object.entries(devDependencies).sort(([a], [b]) => a.localeCompare(b)));
+
   const packageJson: Record<string, unknown> = {
     name: '@typebase-io/server',
     type: generation === 'cjs' ? 'commonjs' : 'module',
@@ -91,8 +96,8 @@ export const generatePackageJson = async ({
     scripts: {
       start: generation === 'ts' ? 'node src/index.ts' : 'node src/index.js',
     },
-    dependencies: Object.fromEntries(Object.entries({ ...userDependencies, ...dependencies }).sort(([a], [b]) => a.localeCompare(b))),
-    devDependencies: Object.fromEntries(Object.entries(devDependencies).sort(([a], [b]) => a.localeCompare(b))),
+    dependencies: resolvedDependencies,
+    devDependencies: resolvedDevDependencies,
   };
 
   if (packageManager !== 'unknown') {
@@ -104,4 +109,9 @@ export const generatePackageJson = async ({
   }
 
   await fs.writeFile(path.join(outputDirPath, 'package.json'), `${JSON.stringify(packageJson, null, 2)}\n`);
+
+  return {
+    dependencies: resolvedDependencies,
+    devDependencies: resolvedDevDependencies,
+  };
 };

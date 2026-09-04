@@ -1,0 +1,33 @@
+import type { FastifyInstance } from "fastify";
+import { RPCHandler } from "@orpc/server/fastify";
+import { RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+
+export const router = {};
+
+const rpcHandler = new RPCHandler(router, {
+  plugins: [
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+export const typebaseHandler = async (fastify: FastifyInstance) => {
+  fastify.addContentTypeParser("*", (_request, _payload, done) => {
+    done(null, undefined);
+  });
+
+  fastify.all("/rpc/*", async (req, reply) => {
+    const { matched } = await rpcHandler.handle(req, reply, {
+      prefix: "/rpc",
+    });
+
+    if (!matched) {
+      reply.status(404).send("Not found");
+    }
+  });
+};

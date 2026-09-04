@@ -35,8 +35,9 @@ describe('generatePackageJson', () => {
 
     const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0', zod: '3.2.1' } });
 
-    await generatePackageJson({
+    const dependencyMaps = await generatePackageJson({
       adapter: 'node',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'ts',
@@ -46,6 +47,25 @@ describe('generatePackageJson', () => {
       hasEnv: true,
     });
 
+    expect(dependencyMaps).toEqual({
+      dependencies: {
+        '@better-auth/drizzle-adapter': '1.6.11',
+        '@orpc/server': '1.14.3',
+        '@t3-oss/env-core': '0.13.11',
+        'better-auth': '1.6.11',
+        dotenv: '17.4.2',
+        'drizzle-kit': '1.0.0-beta.22',
+        'drizzle-orm': '1.0.0-beta.22',
+        pg: '8.20.0',
+        'typebase-io': '0.1.0',
+        zod: '3.2.1',
+      },
+      devDependencies: {
+        '@types/node': '24.1.0',
+        '@types/pg': '8.20.0',
+        typescript: '5.9.3',
+      },
+    });
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-ts-auth-pnpm.txt');
   });
 
@@ -56,6 +76,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'cloudflare',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
@@ -75,6 +96,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'fastify',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'cjs',
@@ -87,6 +109,30 @@ describe('generatePackageJson', () => {
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'fastify-cjs-auth-bun.txt');
   });
 
+  it('omits the dependencies an embedded server never loads: it sets no cross-origin headers and loads no environment', async () => {
+    vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+    const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0' } });
+
+    const { dependencies } = await generatePackageJson({
+      adapter: 'fastify',
+      mode: 'embedded',
+      typebaseDirPath,
+      outputDirPath,
+      generation: 'ts',
+      outDir: '_handler',
+      configuredOutDir: '_handler',
+      hasAuth: true,
+      hasEnv: true,
+    });
+
+    expect(dependencies).not.toHaveProperty('@fastify/cors');
+    expect(dependencies).not.toHaveProperty('dotenv');
+    expect(dependencies).toHaveProperty('@t3-oss/env-core');
+    expect(dependencies).toHaveProperty('fastify');
+    expect(dependencies).toHaveProperty('better-auth');
+  });
+
   it('omits @fastify/cors for a fastify server without auth', async () => {
     vi.mocked(getPackageManager).mockResolvedValue('npm');
 
@@ -94,6 +140,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'fastify',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
@@ -113,6 +160,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'node',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
@@ -134,6 +182,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'node',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
@@ -153,6 +202,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'hono',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'ts',
@@ -172,6 +222,7 @@ describe('generatePackageJson', () => {
 
     await generatePackageJson({
       adapter: 'node',
+      mode: 'standalone',
       typebaseDirPath,
       outputDirPath,
       generation: 'esm',
@@ -201,6 +252,7 @@ describe('generatePackageJson', () => {
 
       await generatePackageJson({
         adapter: 'node',
+        mode: 'standalone',
         typebaseDirPath,
         outputDirPath,
         generation: 'esm',
@@ -221,6 +273,7 @@ describe('generatePackageJson', () => {
 
       await generatePackageJson({
         adapter: 'node',
+        mode: 'standalone',
         typebaseDirPath,
         outputDirPath,
         generation: 'esm',

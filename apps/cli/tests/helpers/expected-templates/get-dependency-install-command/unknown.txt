@@ -1,0 +1,2 @@
+npm install 'pg@8.20.0' 'zod@^4 || ^5'
+npm install -D 'typescript@5.9.3'

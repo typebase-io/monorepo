@@ -1,0 +1,16 @@
+
+Embedded server requirements
+
+All required dependencies are declared in the host package.
+
+Required Environment keys: none.
+
+Cross-origin headers are your host application's responsibility. Configure its CORS policy for your clients.
+
+Mount from your project root (adjust the import for your entry point):
+const { typebaseHandler } = require("./.generated/src/server.js");
+
+// In your existing Express application:
+app.use(typebaseHandler);
+
+Dependency and environment details: .generated/typebase-server.json

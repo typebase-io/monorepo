@@ -1,0 +1,4 @@
+const { typebaseHandler } = require("../backend/src/server.js");
+
+// In your existing Express application:
+app.use(typebaseHandler);

@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { SERVER_MARKER_FILE_NAME } from '#helpers/constants.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 
 import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts';
@@ -170,6 +171,48 @@ describe('validateTypes', () => {
         quiet: true,
       });
     }).not.toThrow();
+  });
+
+  it.each(['_handler', 'generated/embedded'])('excludes generated source recognized by its marker in %s', (outputDir) => {
+    tmp.write('tsconfig.json', TS_CONFIG);
+    tmp.write('good.ts', 'export const value: number = 1;');
+    tmp.write(
+      `${outputDir}/${SERVER_MARKER_FILE_NAME}`,
+      JSON.stringify({
+        adapter: 'node',
+        mode: 'embedded',
+        cliVersion: '1.2.3',
+        dependencies: {},
+        devDependencies: {},
+        envKeys: [],
+      })
+    );
+    tmp.write(`${outputDir}/src/server.ts`, 'import { RPCHandler } from "@orpc/server/node"; export const handler = RPCHandler;');
+
+    expect(() => {
+      validateTypes({
+        dirPath: tmp.path,
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        skipErrors: false,
+        quiet: true,
+      });
+    }).not.toThrow();
+  });
+
+  it.each(['{}', 'invalid json'])('keeps checking source with an invalid generated marker: %s', (marker) => {
+    tmp.write('tsconfig.json', TS_CONFIG);
+    tmp.write(`source/${SERVER_MARKER_FILE_NAME}`, marker);
+    tmp.write('source/bad.ts', 'export const value: number = "not a number";');
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(() => {
+      validateTypes({
+        dirPath: tmp.path,
+        tsConfigFilePath: path.join(tmp.path, 'tsconfig.json'),
+        skipErrors: false,
+        quiet: true,
+      });
+    }).toThrow(/Type checking failed/);
   });
 
   it('excludes nested directories that contain their own package.json', () => {

@@ -1,0 +1,19 @@
+
+Embedded server requirements
+
+Install missing or incompatible dependencies in the host package:
+bun add 'zod@^4'
+bun add -D 'typescript@5.9.3'
+
+Required Environment keys: DATABASE_URL
+Load these in your host before importing the embedded server.
+
+Cross-origin headers are your host application's responsibility. Configure its CORS policy for your clients.
+
+Mount from your project root (adjust the import for your entry point):
+import { typebaseHandler } from "./generated/src/server.js";
+
+// In your existing Express application:
+app.use(typebaseHandler);
+
+Dependency and environment details: generated/typebase-server.json

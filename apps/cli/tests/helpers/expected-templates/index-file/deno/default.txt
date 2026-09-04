@@ -1,0 +1,3 @@
+import { typebaseHandler } from "./server.ts";
+
+Deno.serve({ port: 5000 }, typebaseHandler);

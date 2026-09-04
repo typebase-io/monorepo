@@ -4,6 +4,8 @@ import path from 'node:path';
 import ora from 'ora';
 import { Project, ts } from 'ts-morph';
 
+import { getGeneratedServerDirPaths } from '#helpers/shared/get-generated-server-dir-paths.ts';
+
 export const validateTypes = ({
   dirPath,
   tsConfigFilePath,
@@ -27,7 +29,14 @@ export const validateTypes = ({
         .map((entry) => path.join(dirPath, entry.name))
     : [];
 
-  const excludePrefixes = [...excludeDirPaths, ...nestedPackageDirPaths].map((excludeDirPath) => `${excludeDirPath.replaceAll('\\', '/')}/`);
+  const generatedDirPaths = getGeneratedServerDirPaths(
+    dirPath,
+    typeCheckProject.getSourceFiles().map((sourceFile) => sourceFile.getFilePath())
+  );
+
+  const excludePrefixes = [...excludeDirPaths, ...nestedPackageDirPaths, ...generatedDirPaths].map(
+    (excludeDirPath) => `${excludeDirPath.replaceAll('\\', '/')}/`
+  );
 
   for (const sourceFile of typeCheckProject.getSourceFiles()) {
     if (excludePrefixes.some((prefix) => sourceFile.getFilePath().startsWith(prefix))) {

@@ -9,7 +9,7 @@ import ora from 'ora';
 import { match } from 'ts-pattern';
 
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
-import { type ServerAdapter, serverProviders } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, type ServerAdapter, serverProviders } from '#helpers/constants.ts';
 import { applyMigrations } from '#helpers/db/apply-migrations.ts';
 import { detectDrift } from '#helpers/db/detect-drift.ts';
 import { neon } from '#helpers/db/neon/index.ts';
@@ -26,10 +26,10 @@ import { generateActionsFiles } from '#helpers/generate-server/generate-actions-
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
 import { generateDBFiles } from '#helpers/generate-server/generate-db-files.ts';
 import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
-import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
+import { generateServerFiles } from '#helpers/generate-server/generate-server-files.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { streamLogs } from '#helpers/logs/stream-logs.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
@@ -100,11 +100,11 @@ export const deploy = new Command('deploy')
 
     const tempServerDirPath = await fs.mkdtemp(path.join(tmpdir(), 'typebase-server-'));
     const serverDistDirPath = path.resolve(tempServerDirPath, outDir);
+    const srcOutputDirPath = path.join(tempServerDirPath, 'src');
     const tsConfigFileOutputPath = path.join(tempServerDirPath, 'tsconfig.json');
-    const actionsOutputDirPath = path.join(tempServerDirPath, 'src', 'actions');
-    const dbOutputDirPath = path.join(tempServerDirPath, 'src', 'db');
-    const serverOutputDirPath = path.join(tempServerDirPath, 'src', '_generated');
-    const indexFileOutPath = path.join(tempServerDirPath, 'src', 'index.ts');
+    const actionsOutputDirPath = path.join(srcOutputDirPath, 'actions');
+    const dbOutputDirPath = path.join(srcOutputDirPath, 'db');
+    const serverOutputDirPath = path.join(srcOutputDirPath, '_generated');
 
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
@@ -156,6 +156,7 @@ export const deploy = new Command('deploy')
 
       await generatePackageJson({
         adapter,
+        mode: 'standalone',
         typebaseDirPath,
         outputDirPath: tempServerDirPath,
         generation: output,
@@ -170,7 +171,7 @@ export const deploy = new Command('deploy')
       if (includeEnvFile) {
         await generateEnvFile({
           envFilePath,
-          envOutputDirPath: path.join(tempServerDirPath, 'src'),
+          envOutputDirPath: srcOutputDirPath,
           adapter,
           hasDB: includeDBFiles,
           hasAuth: includeAuthFile,
@@ -182,7 +183,7 @@ export const deploy = new Command('deploy')
       if (includePublisherFile) {
         await generatePublisherFile({
           publisherFilePath,
-          publisherOutputDirPath: path.join(tempServerDirPath, 'src'),
+          publisherOutputDirPath: srcOutputDirPath,
           provider: includePublisherFile,
           useTs: false,
         });
@@ -203,19 +204,22 @@ export const deploy = new Command('deploy')
       }
 
       if (includeAuthFile) {
-        await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDirPath, 'src'), useTs: false, baseURL: { provider } });
+        await generateAuthFile({ authFilePath, authOutputDirPath: srcOutputDirPath, useTs: false, baseURL: { provider }, basePath: undefined });
       }
 
-      await generateIndex({
+      await generateServerFiles({
         adapter,
+        mode: 'standalone',
         port: 3000,
         tsConfigFilePath,
         actionsDirPath,
-        outputFilePath: indexFileOutPath,
+        outputDirPath: srcOutputDirPath,
         actionsOutputDirPath,
         generation: output,
         hasAuth: includeAuthFile,
         hasEnv: includeEnvFile,
+        actionsPath: DEFAULT_ACTIONS_PATH,
+        authPath: DEFAULT_AUTH_PATH,
         trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
       });
 

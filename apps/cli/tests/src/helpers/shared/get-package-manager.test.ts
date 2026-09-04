@@ -39,4 +39,10 @@ describe('getPackageManager', () => {
 
     expect(await getPackageManager()).toBe('pnpm');
   });
+
+  it('detects the manager in the directory it was given', async () => {
+    vi.mocked(preferredPM).mockImplementation((dir) => Promise.resolve(dir === '/host' ? { name: 'bun', version: '1.0.0' } : null));
+
+    expect(await getPackageManager('/host')).toBe('bun');
+  });
 });

@@ -1,0 +1,5 @@
+export const packageModule = import("some-package.ts");
+export const jsModule = import("./helper.js");
+export const extensionlessModule = import("./helper");
+export const load = (specifier: string) => import(specifier);
+export type Helper = import("./helper.js").Helper;

@@ -30,9 +30,24 @@
           "enum": ["node", "bun", "cloudflare", "deno", "fastify", "hono"],
           "description": "The server adapter to use."
         },
+        "embedded": {
+          "type": "boolean",
+          "default": false,
+          "description": "Generate an embedded server for your application to mount. Defaults to false."
+        },
         "outDir": {
           "type": "string",
           "description": "The output directory for the server build.",
+          "minLength": 1
+        },
+        "actionsPath": {
+          "type": "string",
+          "description": "The path an embedded server serves your actions at.",
+          "minLength": 1
+        },
+        "authPath": {
+          "type": "string",
+          "description": "The path an embedded server serves auth at.",
           "minLength": 1
         },
         "port": {

@@ -3,9 +3,12 @@ import path from 'node:path';
 import { Command, Option } from '@commander-js/extra-typings';
 import ora from 'ora';
 
-import { serverAdapters, serverOutputs } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, DEFAULT_SERVER_OUT_DIRS, serverAdapters, serverOutputs } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
+import { reportHostRequirements } from '#helpers/generate-server/report-host-requirements.ts';
 import { runServerCommand } from '#helpers/generate-server/run-server-command.ts';
+import { validateServerOptions } from '#helpers/generate-server/validate-server-options.ts';
+import { validateServerPaths } from '#helpers/generate-server/validate-server-paths.ts';
 import { watchServer } from '#helpers/generate-server/watch-server.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { parsePort } from '#helpers/shared/parse-port.ts';
@@ -17,17 +20,30 @@ export const generateServer = new Command('generate-server')
   .allowExcessArguments(false)
   .addOption(new Option('--output <type>', 'Generate TypeScript, CommonJS or ESM server files').choices(serverOutputs))
   .addOption(new Option('--adapter <adapter>', 'HTTP adapter for the server').choices(serverAdapters))
+  .option('--embedded', 'Generate an embedded server for your application to mount')
   .option('--out-dir <path>', 'Output directory for generated server files')
+  .option('--actions-path <path>', 'Path an embedded server serves your actions at')
+  .option('--auth-path <path>', 'Path an embedded server serves auth at')
   .option('--watch', 'Rebuild whenever a file inside the typebase directory changes. Press "x" or Ctrl+C to stop')
   .option('--command <command>', 'Command to run in the generated server directory after it is generated, restarted on every rebuild')
-  .option('--port <number>', 'Port the generated server listens on', parsePort)
+  .addOption(new Option('--port <number>', 'Port the generated server listens on').argParser(parsePort).conflicts('embedded'))
   .action(async (params) => {
     const { projectPath, server } = await getTypebaseConfig();
 
     const output = params.output ?? server.output;
     const adapter = params.adapter ?? server.adapter;
-    const outDir = params.outDir ?? server.outDir;
+    const mode = (params.embedded ?? server.embedded) ? 'embedded' : 'standalone';
+    const outDir = params.outDir ?? server.explicitOutDir ?? DEFAULT_SERVER_OUT_DIRS[mode];
     const port = params.port ?? server.port;
+
+    validateServerOptions({ mode, options: params });
+
+    const actionsPath = mode === 'embedded' ? (params.actionsPath ?? server.actionsPath) : DEFAULT_ACTIONS_PATH;
+    const authPath = mode === 'embedded' ? (params.authPath ?? server.authPath) : DEFAULT_AUTH_PATH;
+
+    if (mode === 'embedded') {
+      validateServerPaths({ actionsPath, authPath });
+    }
 
     const typebaseDirPath = path.resolve(projectPath);
 
@@ -37,13 +53,16 @@ export const generateServer = new Command('generate-server')
       const spinner = rebuild ? ora('Regenerating...').start() : undefined;
 
       try {
-        const { serverDistDirPath, seededEnvKeys } = await buildServer({
+        const { serverDistDirPath, seededEnvKeys, dependencies, devDependencies, envKeys } = await buildServer({
           projectPath,
           output,
           adapter,
+          mode,
           outDir,
           configuredOutDir: server.outDir,
           port,
+          actionsPath,
+          authPath,
           signal,
           quiet: rebuild,
         });
@@ -56,6 +75,10 @@ export const generateServer = new Command('generate-server')
           spinner.succeed('Server regenerated!');
         } else {
           ora().succeed(`Server files generated in \`${path.relative(process.cwd(), serverDistDirPath) || serverDistDirPath}\`.`);
+        }
+
+        if (mode === 'embedded' && !rebuild) {
+          await reportHostRequirements({ serverDistDirPath, adapter, output, dependencies, devDependencies, envKeys });
         }
       } catch (err) {
         spinner?.stop();

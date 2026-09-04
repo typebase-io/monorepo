@@ -71,6 +71,7 @@ const JS_AUTH_DB = [
   'src/db/schema.js',
   'src/env.js',
   'src/index.js',
+  'src/server.js',
 ];
 
 const JS_DB_ONLY = JS_AUTH_DB.filter((f) => f !== 'src/auth.js' && f !== 'src/actions/custom-actions.js');
@@ -660,6 +661,7 @@ export const todos = p.pgTable("todos", {
           'src/db/schema.js',
           'src/env.js',
           'src/index.js',
+          'src/server.js',
         ],
         { namespace: 'deploy', root: 'captured', normalise: withoutIds }
       );

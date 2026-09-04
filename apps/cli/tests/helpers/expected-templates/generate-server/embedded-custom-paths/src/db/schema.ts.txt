@@ -1,0 +1,9 @@
+import { p } from "typebase-io/db";
+
+export const todos = p.pgTable("todos", {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  value: p.varchar({ length: 255 }).notNull(),
+  completed: p.boolean().notNull(),
+  userId: p.text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: p.timestamp().notNull().defaultNow(),
+});

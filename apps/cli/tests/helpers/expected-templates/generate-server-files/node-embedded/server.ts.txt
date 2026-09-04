@@ -1,0 +1,36 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { RPCHandler } from "@orpc/server/node";
+import { RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+
+export const router = {};
+
+const handler = new RPCHandler(router, {
+  plugins: [
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+export const typebaseHandler = async (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => {
+  const { matched } = await handler.handle(req, res, {
+    prefix: "/rpc",
+    context: {},
+  });
+
+  if (matched) {
+    return;
+  }
+
+  if (next) {
+    next();
+    return;
+  }
+
+  res.statusCode = 404;
+  res.end("Not found");
+};

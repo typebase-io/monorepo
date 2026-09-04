@@ -25,7 +25,11 @@ describe('getTypebaseConfig', () => {
       server: {
         output: 'ts',
         adapter: 'node',
+        embedded: false,
         outDir: '_server',
+        explicitOutDir: undefined,
+        actionsPath: '/rpc',
+        authPath: '/api/auth',
         port: 8080,
       },
       vercel: undefined,
@@ -43,13 +47,34 @@ describe('getTypebaseConfig', () => {
     expect(config.projectPath).toBe('src/typebase');
   });
 
+  it.each([
+    { embedded: true, outDir: '_handler' },
+    { embedded: false, outDir: '_server' },
+  ])('defaults to $outDir when embedded is $embedded', async ({ embedded, outDir }) => {
+    tmp.write('typebase.json', JSON.stringify({ server: { embedded } }));
+
+    const config = await withCwd(tmp.path, () => getTypebaseConfig());
+
+    expect(config.server.embedded).toBe(embedded);
+    expect(config.server.outDir).toBe(outDir);
+    expect(config.server.explicitOutDir).toBeUndefined();
+  });
+
   it('reads and applies values from typebase.json', async () => {
     tmp.write(
       'typebase.json',
       JSON.stringify({
         projectPath: 'backend',
         serverProvider: 'vercel',
-        server: { output: 'esm', adapter: 'hono', port: 3000 },
+        server: {
+          output: 'esm',
+          adapter: 'hono',
+          embedded: true,
+          outDir: 'dist',
+          actionsPath: '/typebase/rpc',
+          authPath: '/typebase/auth',
+          port: 3000,
+        },
       })
     );
 
@@ -61,7 +86,11 @@ describe('getTypebaseConfig', () => {
       server: {
         output: 'esm',
         adapter: 'hono',
-        outDir: '_server',
+        embedded: true,
+        outDir: 'dist',
+        explicitOutDir: 'dist',
+        actionsPath: '/typebase/rpc',
+        authPath: '/typebase/auth',
         port: 3000,
       },
       vercel: undefined,

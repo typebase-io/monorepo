@@ -1,0 +1,6 @@
+import { typebaseHandler } from "./server.ts";
+
+Bun.serve({
+  port: 4000,
+  fetch: typebaseHandler,
+});

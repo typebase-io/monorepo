@@ -1,6 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { SERVER_MARKER_FILE_NAME, serverMarkerSchema } from '#helpers/constants.ts';
+import { safeReadJsonFile } from '#helpers/shared/safe-read-json-file.ts';
+
 export const canReplaceServerDir = async (dirPath: string) => {
   const stats = await fs.stat(dirPath).catch(() => null);
 
@@ -18,15 +21,13 @@ export const canReplaceServerDir = async (dirPath: string) => {
     return true;
   }
 
-  const packageJsonContent = await fs.readFile(path.join(dirPath, 'package.json'), 'utf-8').catch(() => null);
+  const marker = await safeReadJsonFile(path.join(dirPath, SERVER_MARKER_FILE_NAME));
 
-  if (packageJsonContent === null) {
-    return false;
+  if (serverMarkerSchema.safeParse(marker).success) {
+    return true;
   }
 
-  try {
-    return (JSON.parse(packageJsonContent) as { name?: string }).name === '@typebase-io/server';
-  } catch {
-    return false;
-  }
+  const packageJson = await safeReadJsonFile(path.join(dirPath, 'package.json'));
+
+  return (packageJson as { name?: string } | null)?.name === '@typebase-io/server';
 };

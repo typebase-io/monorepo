@@ -1,0 +1,19 @@
+
+Embedded server requirements
+
+Install missing or incompatible dependencies in the host package:
+npm install '@better-auth/drizzle-adapter@1.6.11' '@orpc/server@1.14.3' '@t3-oss/env-core@0.13.11' 'better-auth@1.6.11' 'drizzle-kit@1.0.0-beta.22' 'drizzle-orm@1.0.0-beta.22' 'zod@*'
+npm install -D '@types/node@24.1.0' '@types/pg@8.20.0' 'typescript@5.9.3'
+
+Required Environment keys: DATABASE_URL, BETTER_AUTH_SECRET
+Load these in your host before importing the embedded server.
+
+Cross-origin headers are your host application's responsibility. Configure its CORS policy for your clients.
+
+Mount from your project root (adjust the import for your entry point):
+import { typebaseHandler } from "./typebase/_handler/src/server.js";
+
+// Use this fetch handler in your host's Bun.serve configuration:
+Bun.serve({ fetch: typebaseHandler });
+
+Dependency and environment details: typebase/_handler/typebase-server.json

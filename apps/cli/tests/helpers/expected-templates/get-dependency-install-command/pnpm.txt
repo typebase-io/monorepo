@@ -1,0 +1,2 @@
+pnpm add 'pg@8.20.0' 'zod@^4 || ^5'
+pnpm add -D 'typescript@5.9.3'

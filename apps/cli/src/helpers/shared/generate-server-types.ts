@@ -42,7 +42,6 @@ export const generateServerTypes = async ({
     outputFilePath: serverTypesOutputPath,
     actionsOutputDirPath: actionsDirPath,
     generation: 'ts',
-    exportable: true,
   });
 
   await fs.writeFile(serverTypesOutputPath, serverTypesTemplate(includeDB, includeAuth, includeEnv, Boolean(includePublisher), imports, router));

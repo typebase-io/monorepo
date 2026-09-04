@@ -1,0 +1,4 @@
+import { typebaseHandler } from "./typebase/_handler/src/server.js";
+
+// Use this fetch handler in your host's Bun.serve configuration:
+Bun.serve({ fetch: typebaseHandler });

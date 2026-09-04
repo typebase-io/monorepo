@@ -15,14 +15,12 @@ export const getServerRouter = async ({
   outputFilePath,
   actionsOutputDirPath,
   generation,
-  exportable,
 }: {
   tsConfigFilePath: string;
   actionsDirPath: string;
   outputFilePath: string;
   actionsOutputDirPath: string;
   generation: ServerOutput;
-  exportable: boolean;
 }) => {
   const project = new Project({ tsConfigFilePath });
   const actionFiles = await walk(actionsDirPath, { recursive: true, filter: isTsFile });
@@ -81,7 +79,7 @@ export const getServerRouter = async ({
   const importsBlock = (hasAnyAction as boolean) ? `import { filterActions } from "typebase-io/server";\n\n${imports.toSorted().join('\n')}` : '';
   const routerObject = renderRouterObject(routerTree);
   const routerBody = routerObject ? `{\n${routerObject}\n}` : '{}';
-  const routerCode = `${exportable ? 'export ' : ''}const router = ${routerBody};`;
+  const routerCode = `export const router = ${routerBody};`;
 
   return [importsBlock, routerCode] as const;
 };

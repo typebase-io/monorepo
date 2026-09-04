@@ -4,16 +4,18 @@ import path from 'node:path';
 
 import { match } from 'ts-pattern';
 
-import { type ServerAdapter, type ServerProvider } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, type ServerAdapter, type ServerProvider } from '#helpers/constants.ts';
 import { generateAction } from '#helpers/generate-server/generate-action.ts';
 import { generateActionsFiles } from '#helpers/generate-server/generate-actions-files.ts';
 import { generateAuthFile } from '#helpers/generate-server/generate-auth-file.ts';
 import { generateDBFiles } from '#helpers/generate-server/generate-db-files.ts';
 import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
-import { generateIndex } from '#helpers/generate-server/generate-index.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
+import { generateServerFiles } from '#helpers/generate-server/generate-server-files.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
+import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
+import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
@@ -48,13 +50,27 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
 
   const tempServerDir = path.join(tmp.path, 'temp-server');
   const serverDir = path.join(tmp.path, 'server');
+  const generatedDirPath = path.join(projectDir, '_generated');
 
   mkdirSync(path.join(tempServerDir, 'src'), { recursive: true });
+
+  await generateDBTypes({ schemaFilePath, authFilePath, outFilePath: path.join(generatedDirPath, 'db.d.ts') });
+
+  await generateServerTypes({
+    tsConfigFilePath: path.join(projectDir, 'tsconfig.json'),
+    schemaFilePath,
+    authFilePath,
+    envFilePath,
+    publisherFilePath,
+    actionsDirPath: path.join(projectDir, 'actions'),
+    generatedDirPath,
+  });
 
   await generateTsConfig({ path: path.join(tempServerDir, 'tsconfig.json'), addWarning: false });
 
   await generatePackageJson({
     adapter,
+    mode: 'standalone',
     typebaseDirPath: projectDir,
     outputDirPath: tempServerDir,
     generation: output,
@@ -104,17 +120,26 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
   }
 
   if (includeAuthFile) {
-    await generateAuthFile({ authFilePath, authOutputDirPath: path.join(tempServerDir, 'src'), useTs: false, baseURL: { provider } });
+    await generateAuthFile({
+      authFilePath,
+      authOutputDirPath: path.join(tempServerDir, 'src'),
+      useTs: false,
+      baseURL: { provider },
+      basePath: undefined,
+    });
   }
 
-  await generateIndex({
+  await generateServerFiles({
     adapter,
+    mode: 'standalone',
     port: 3000,
     tsConfigFilePath: path.join(projectDir, 'tsconfig.json'),
     actionsDirPath: path.join(projectDir, 'actions'),
-    outputFilePath: path.join(tempServerDir, 'src', 'index.ts'),
+    outputDirPath: path.join(tempServerDir, 'src'),
     actionsOutputDirPath: path.join(tempServerDir, 'src', 'actions'),
     generation: output,
+    actionsPath: DEFAULT_ACTIONS_PATH,
+    authPath: DEFAULT_AUTH_PATH,
     hasAuth: includeAuthFile,
     hasEnv: includeEnvFile,
     trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],

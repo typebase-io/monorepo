@@ -43,7 +43,7 @@ describe('config command', () => {
   });
 
   it('separates values set in the file from the ones left to defaults', async () => {
-    tmp.write('typebase.json', JSON.stringify({ serverProvider: 'cloudflare', server: { adapter: 'hono', port: 9000 } }));
+    tmp.write('typebase.json', JSON.stringify({ serverProvider: 'cloudflare', server: { adapter: 'hono', embedded: true, port: 9000 } }));
 
     expect(await runConfig(tmp)).toEqualTemplate('config', 'explicit-values.json.txt');
   });

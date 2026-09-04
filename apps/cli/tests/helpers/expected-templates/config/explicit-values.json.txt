@@ -54,12 +54,35 @@
             "x-current-value": "hono",
             "x-is-default": false
           },
+          "embedded": {
+            "type": "boolean",
+            "title": "Embedded",
+            "description": "Generate an embedded server for your application to mount. Defaults to false.",
+            "x-current-value": true,
+            "x-is-default": false
+          },
           "outDir": {
             "type": "string",
             "minLength": 1,
             "title": "Output directory",
             "description": "The output directory for the server build.",
-            "x-current-value": "_server",
+            "x-current-value": "_handler",
+            "x-is-default": true
+          },
+          "actionsPath": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Actions path",
+            "description": "The path an embedded server serves your actions at.",
+            "x-current-value": "/rpc",
+            "x-is-default": true
+          },
+          "authPath": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Auth path",
+            "description": "The path an embedded server serves auth at.",
+            "x-current-value": "/api/auth",
             "x-is-default": true
           },
           "port": {

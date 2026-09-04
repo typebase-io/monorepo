@@ -5,7 +5,7 @@ import path from 'node:path';
 import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { type ServerOutput } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, type ServerOutput } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
@@ -33,9 +33,12 @@ describe('buildServer', () => {
         projectPath: path.join(tmp.path, 'typebase'),
         output: 'ts',
         adapter: 'node',
+        mode: 'standalone',
         outDir,
         configuredOutDir: configuredOutDir ?? outDir,
         port: 8080,
+        actionsPath: DEFAULT_ACTIONS_PATH,
+        authPath: DEFAULT_AUTH_PATH,
         signal: undefined,
       })
     );
@@ -46,9 +49,12 @@ describe('buildServer', () => {
         projectPath: path.join(tmp.path, 'typebase'),
         output: 'ts',
         adapter: 'node',
+        mode: 'standalone',
         outDir: '_server',
         configuredOutDir: '_server',
         port: 8080,
+        actionsPath: DEFAULT_ACTIONS_PATH,
+        authPath: DEFAULT_AUTH_PATH,
         signal,
       })
     );
@@ -76,6 +82,36 @@ describe('buildServer', () => {
     vi.restoreAllMocks();
   });
 
+  it.each(['_server', '../local-server-cache'])('builds standalone output at %s after an embedded build', async (outDir) => {
+    fs.rmSync(path.join(tmp.path, 'typebase/db'), { recursive: true });
+    fs.rmSync(path.join(tmp.path, 'typebase/actions'), { recursive: true });
+    tmp.write('typebase/actions/empty.ts', 'export {};');
+
+    const actual = await vi.importActual<{ validateTypes: typeof validateTypes }>('#helpers/shared/validate-types.ts');
+
+    vi.mocked(validateTypes).mockImplementation(actual.validateTypes);
+
+    await withCwd(tmp.path, () =>
+      buildServer({
+        projectPath: path.join(tmp.path, 'typebase'),
+        output: 'ts',
+        adapter: 'node',
+        mode: 'embedded',
+        outDir: '_handler',
+        configuredOutDir: '_server',
+        port: 8080,
+        actionsPath: DEFAULT_ACTIONS_PATH,
+        authPath: DEFAULT_AUTH_PATH,
+        quiet: true,
+      })
+    );
+
+    const { serverDistDirPath } = await buildWith({ outDir, configuredOutDir: '_server' });
+
+    expect(fs.existsSync(path.join(serverDistDirPath, 'src/index.ts'))).toBe(true);
+    expect(tmp.exists('typebase/_handler/src/server.ts')).toBe(true);
+  });
+
   it('generates the server and reports where it went', async () => {
     const before = tempServerDirs();
 
@@ -98,9 +134,12 @@ describe('buildServer', () => {
           projectPath: path.join(tmp.path, 'typebase'),
           output: 'ts',
           adapter: 'node',
+          mode: 'standalone',
           outDir,
           configuredOutDir: outDir,
           port: 8080,
+          actionsPath: DEFAULT_ACTIONS_PATH,
+          authPath: DEFAULT_AUTH_PATH,
           signal: undefined,
         })
       )
@@ -164,9 +203,12 @@ describe('buildServer', () => {
         projectPath: path.join(tmp.path, 'typebase'),
         output: 'ts',
         adapter: 'node',
+        mode: 'standalone',
         outDir: '_server',
         configuredOutDir: '_server',
         port: 8080,
+        actionsPath: DEFAULT_ACTIONS_PATH,
+        authPath: DEFAULT_AUTH_PATH,
         quiet: true,
       })
     );
@@ -239,9 +281,12 @@ describe('buildServer', () => {
           projectPath: path.join(tmp.path, 'typebase'),
           output,
           adapter: 'node',
+          mode: 'standalone',
           outDir: '_server',
           configuredOutDir: '_server',
           port: 8080,
+          actionsPath: DEFAULT_ACTIONS_PATH,
+          authPath: DEFAULT_AUTH_PATH,
           signal: undefined,
         })
       );

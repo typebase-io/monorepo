@@ -1,0 +1,42 @@
+import { RPCHandler } from "@orpc/server/fetch";
+import { RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+import { auth } from "./auth.ts";
+
+export const router = {};
+
+const handler = new RPCHandler(router, {
+  plugins: [
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+export const typebaseHandler = async (
+  request: Request,
+  env: any,
+  ctx: ExecutionContext,
+): Promise<Response> => {
+  const pathname = new URL(request.url).pathname;
+
+  if (pathname === "" || pathname.startsWith("" + "/")) {
+    return auth.handler(request);
+  }
+
+  const { matched, response } = await handler.handle(request, {
+    prefix: "/",
+    context: {},
+  });
+
+  if (matched) {
+    return response;
+  }
+
+  return new Response("Not found", { status: 404 });
+};
+
+export { auth };

@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
-import { serverOutputs } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, serverOutputs } from '#helpers/constants.ts';
 import { applyMigrations } from '#helpers/db/apply-migrations.ts';
 import { buildSchema } from '#helpers/db/build-schema.ts';
 import { detectDrift } from '#helpers/db/detect-drift.ts';
@@ -213,9 +213,12 @@ export const start = new Command('start')
               projectPath,
               output,
               adapter: 'node',
+              mode: 'standalone',
               outDir: serverDirPath,
               configuredOutDir: server.outDir,
               port,
+              actionsPath: DEFAULT_ACTIONS_PATH,
+              authPath: DEFAULT_AUTH_PATH,
               authBaseURL: `http://127.0.0.1:${port}`,
               signal: buildSignal,
               quiet: rebuild,

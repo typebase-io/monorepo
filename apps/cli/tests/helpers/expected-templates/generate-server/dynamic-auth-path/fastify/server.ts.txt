@@ -1,0 +1,71 @@
+import type { FastifyInstance } from "fastify";
+import { RPCHandler } from "@orpc/server/fastify";
+import { RequestHeadersPlugin } from "@orpc/server/plugins";
+import { onError } from "@orpc/server";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "./auth.js";
+
+import { filterActions } from "typebase-io/server";
+
+import * as ActionModule1 from "./actions/mutations/todos.js";
+import * as ActionModule2 from "./actions/queries/todos.js";
+
+export const router = {
+  mutations: {
+    todos: filterActions(ActionModule1),
+  },
+  queries: {
+    todos: filterActions(ActionModule2),
+  },
+};
+
+const rpcHandler = new RPCHandler(router, {
+  plugins: [
+    new RequestHeadersPlugin(),
+  ],
+  interceptors: [
+    onError((error) => {
+      console.error(error);
+    }),
+  ],
+});
+
+export const typebaseHandler = async (fastify: FastifyInstance) => {
+  fastify.addContentTypeParser("*", (_request, _payload, done) => {
+    done(null, undefined);
+  });
+
+  fastify.route({
+    method: ["GET", "POST"],
+    url: (auth.options.basePath || "/api/auth").replace(/\/+$/, "") + "/*",
+    async handler(request, reply) {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      const headers = fromNodeHeaders(request.headers);
+
+      const req = new Request(url.toString(), {
+        method: request.method,
+        headers,
+        ...(request.body ? { body: JSON.stringify(request.body) } : {}),
+      });
+
+      const response = await auth.handler(req);
+
+      reply.status(response.status);
+      response.headers.forEach((value, key) => reply.header(key, value));
+
+      reply.send(response.body ? await response.text() : null);
+    },
+  });
+
+  fastify.all("/rpc/*", async (req, reply) => {
+    const { matched } = await rpcHandler.handle(req, reply, {
+      prefix: "/rpc",
+    });
+
+    if (!matched) {
+      reply.status(404).send("Not found");
+    }
+  });
+};
+
+export { auth };

@@ -25,7 +25,7 @@ describe('generateAuthFile', () => {
     tmp.cleanup();
   });
 
-  const run = (source: string, options: { useTs?: boolean; baseURL?: { provider: ServerProvider } | { url: string } } = {}) => {
+  const run = (source: string, options: { useTs?: boolean; baseURL?: { provider: ServerProvider } | { url: string }; basePath?: string } = {}) => {
     tmp.write('auth.ts', source);
 
     return generateAuthFile({
@@ -33,6 +33,7 @@ describe('generateAuthFile', () => {
       authOutputDirPath: path.join(tmp.path, 'out'),
       useTs: options.useTs ?? true,
       baseURL: options.baseURL,
+      basePath: options.basePath,
     });
   };
 
@@ -46,6 +47,7 @@ describe('generateAuthFile', () => {
       authOutputDirPath,
       useTs: true,
       baseURL: undefined,
+      basePath: undefined,
     });
 
     expect(fs.statSync(authOutputDirPath).isDirectory()).toBe(true);
@@ -117,6 +119,25 @@ export const auth = defineAuth({
     await run(source, { baseURL: { url: 'http://127.0.0.1:8080' } });
 
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'existing-baseurl.txt');
+  });
+
+  it('injects the auth path as the base path, so the framework and the route it is mounted at agree', async () => {
+    await run(AUTH_SOURCE, { basePath: '/typebase/auth' });
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'base-path.txt');
+  });
+
+  it('keeps a base path the developer set themselves', async () => {
+    const source = `import { defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth({
+  basePath: "/mine",
+  emailAndPassword: { enabled: true },
+});`;
+
+    await run(source, { basePath: '/typebase/auth' });
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'existing-base-path.txt');
   });
 
   it('rewrites extensionless relative imports to .js when useTs is false', async () => {

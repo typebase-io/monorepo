@@ -1,0 +1,4 @@
+import { typebaseHandler } from "./typebase/_handler/src/server.js";
+
+// In your Worker entry point:
+export default { fetch: typebaseHandler };

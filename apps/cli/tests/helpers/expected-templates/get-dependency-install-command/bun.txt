@@ -1,0 +1,2 @@
+bun add 'pg@8.20.0' 'zod@^4 || ^5'
+bun add -D 'typescript@5.9.3'
