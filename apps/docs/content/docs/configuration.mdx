@@ -75,8 +75,8 @@ Configuration for `npx typebase-io-cli generate-server`. These are the defaults 
 
 <Callout type="info">
   [`start`](/docs/cli/start) reads only `port` from this block. It picks its own output format from what the running Node can execute, always uses the
-  `node` adapter, and builds into the [server cache](/docs/cli/start#the-server-cache) rather than `outDir`. `--output` and `--port` override on the
-  command line.
+  `node` adapter, always builds a standalone server whatever `embedded` says, and builds into the [server cache](/docs/cli/start#the-server-cache)
+  rather than `outDir`. `--output` and `--port` override on the command line.
 </Callout>
 
 #### `server.output`
@@ -99,13 +99,74 @@ The HTTP adapter for the generated server.
 | -------- | ------------------------------------------------------------------ | -------- |
 | `string` | `"node"`, `"bun"`, `"hono"`, `"fastify"`, `"deno"`, `"cloudflare"` | `"node"` |
 
+#### `server.embedded`
+
+Generate an embedded server for your existing application to mount.
+
+| Type      | Default |
+| --------- | ------- |
+| `boolean` | `false` |
+
+```json
+{
+  "server": {
+    "embedded": true
+  }
+}
+```
+
+Equivalent to `generate-server --embedded`. Set it to `false` or remove it to generate a standalone server. Embedded output defaults to `_handler`; your application provides dependencies, environment loading, and CORS. See [embedded servers](/docs/cli/generate-server#embedded-servers).
+
+`start` always builds a standalone server, regardless of this setting. For how this interacts with `server.port`, see [`server.port`](#serverport).
+
 #### `server.outDir`
 
 The output directory for generated server files, relative to your `typebase/` directory.
 
-| Type     | Default     |
-| -------- | ----------- |
-| `string` | `"_server"` |
+| Type     | Default                                                     |
+| -------- | ----------------------------------------------------------- |
+| `string` | `"_server"`, or `"_handler"` when `server.embedded` is true |
+
+#### `server.actionsPath`
+
+The path an embedded server serves your actions at.
+
+| Type     | Default  |
+| -------- | -------- |
+| `string` | `"/rpc"` |
+
+```json
+{
+  "server": {
+    "embedded": true,
+    "actionsPath": "/typebase/rpc"
+  }
+}
+```
+
+Equivalent to `generate-server --actions-path`, and embedded-only — see [serving paths](/docs/cli/generate-server#serving-paths) for how a standalone build
+treats it. Moving it changes the URL your client points at — see [the server URL](/docs/client#a-custom-actions-path).
+
+#### `server.authPath`
+
+The path an embedded server serves auth at.
+
+| Type     | Default       |
+| -------- | ------------- |
+| `string` | `"/api/auth"` |
+
+```json
+{
+  "server": {
+    "embedded": true,
+    "authPath": "/typebase/auth"
+  }
+}
+```
+
+Equivalent to `generate-server --auth-path`, embedded-only on the same terms as `server.actionsPath`, and independent of it. The value is also written into the
+generated auth config as better-auth's `basePath`, so the framework and the route it is mounted at cannot disagree — unless your own `typebase/auth.ts` sets
+one, which wins. See [the auth path](/docs/auth#the-auth-path-of-an-embedded-server).
 
 #### `server.port`
 
@@ -114,6 +175,8 @@ The port the generated server listens on.
 | Type     | Default |
 | -------- | ------- |
 | `number` | `8080`  |
+
+Embedded generation never listens, so it ignores this key. Passing `generate-server --port` explicitly with `server.embedded` enabled is an error.
 
 ---
 

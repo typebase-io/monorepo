@@ -212,6 +212,29 @@ A path is kept: `https://api.example.com/base` becomes `https://api.example.com/
 
 Anything that isn't a string, a `URL` or a function, is passed straight through untouched, so you keep full control when you need it.
 
+### A custom actions path
+
+An [embedded server](/docs/cli/generate-server#embedded-servers) can serve your actions somewhere other than `/rpc`, with `--actions-path` or
+`server.actionsPath`. The client is unaware of that: it still appends `/rpc` to a string `url` and nothing else. So the base URL you pass is your actions path
+with its final `/rpc` removed.
+
+| Actions path     | Mounted at                             | `url` to pass                      |
+| ---------------- | -------------------------------------- | ---------------------------------- |
+| `/rpc` (default) | `https://app.example.com/rpc`          | `https://app.example.com`          |
+| `/typebase/rpc`  | `https://app.example.com/typebase/rpc` | `https://app.example.com/typebase` |
+
+A path that doesn't end in `/rpc` can't be reached by a string `url` at all, because the client would append a segment your server doesn't serve. Pass a `URL`
+or a resolver function instead — both are passed through untouched, so they have to name the full endpoint themselves:
+
+```ts
+createRouterClient<Router>({ url: new URL('https://app.example.com/typebase/actions') });
+```
+
+<Callout type="info">
+  Mounting Typebase inside the application that serves your frontend usually makes the two same-origin, which is the point: no CORS to configure, and
+  no cross-site cookies. A browser client can then pass `window.location.origin` as its `url`.
+</Callout>
+
 ### Which URL to pass
 
 The CLI writes up to three URLs into your project-root `.env`, under different keys so they coexist:

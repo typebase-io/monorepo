@@ -28,6 +28,194 @@ This generates a complete, runnable server in the `typebase/_server/` directory 
 
 It regenerates `_generated/` first (the same work [`codegen`](/docs/cli/codegen) does), then type-checks your project against those fresh types, then builds.
 
+## Embedded servers
+
+By default `generate-server` writes a **standalone server**: one that owns a process, creates its own HTTP listener, and starts it. `--embedded` writes an
+**embedded server** instead — the same actions, database, and auth, emitted without a bootstrap, for an application that already owns its process to mount:
+
+```npm
+npx typebase-io-cli generate-server --embedded
+```
+
+This writes source and a `typebase-server.json` marker into `typebase/_handler/` (by default), then prints what your application has to provide before it can
+mount them.
+
+Set `{ "server": { "embedded": true } }` in `typebase.json` to make this the default. Set it to `false` or remove it to generate a standalone server again;
+`--embedded` can override a configured `false`.
+
+`--port` conflicts with `--embedded`, and is also rejected when embedded generation is enabled in configuration: an embedded server never listens, so nothing
+would use it. A port stored in `typebase.json` is ignored rather than rejected, so one configuration file can still serve every command.
+[`start`](/docs/cli/start) always builds a standalone server, whatever `server.embedded` says.
+
+### What an embedded build emits
+
+```
+_handler/
+  src/
+    server.ts            # Router, RPC handler, auth wiring, and the mount
+    _generated/
+      server.ts          # Action builder and middleware setup
+    actions/             # Your action files (copied and processed)
+    db/                  # Your schema, relations and migrations (if applicable)
+    auth.ts              # Your auth config (if applicable)
+    env.ts               # Validated environment variables (if applicable)
+    publisher.ts         # Publisher runtime config (if applicable)
+  typebase-server.json   # Adapter, mode, CLI version, dependencies, env keys
+```
+
+`src/server.ts` exports the same three names for every adapter, so switching adapters doesn't touch your integration code:
+
+| Export            | What it is                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typebaseHandler` | The value you mount. Its shape follows the adapter: a Fastify plugin, a Hono app, a Connect-style Node middleware, or a fetch handler for Bun, Deno and Cloudflare. |
+| `router`          | The router the handler serves, so you can build on it beyond what the mount provides.                                                                               |
+| `auth`            | The better-auth instance, when your project has an [`auth.ts`](/docs/auth), so your own routes can read the session.                                                |
+
+There is no `index.ts`, and no `package.json`, `tsconfig.json`, `.env`, or package-manager config file: an embedded server is a fragment of somebody else's
+application rather than an application of its own. TypeScript output uses `.js` import specifiers for its own relative imports, so it compiles under an ordinary
+application `tsconfig.json` under both `nodenext` and `bundler` resolution.
+
+`--output esm` and `--output cjs` are available too, but pick the one your application already uses. A standalone server declares its own `"type"` in the
+`package.json` it ships; an embedded server has no manifest, so its `.js` files are interpreted using **your** application's `"type"` — `esm` output in a
+`"type": "commonjs"` host, or `cjs` output in a `"type": "module"` host, fails at import.
+
+### What your application provides
+
+Three things an embedded server deliberately leaves to its host:
+
+- **Dependencies.** It ships no dependency tree of its own. A nested `package.json` inside your application would mean a second copy of `drizzle-orm`,
+  `better-auth`, or `fastify` loaded in one process, where an `instanceof` check across the two copies fails and the error surfaces nowhere near its cause. The
+  build tells you what to install in your own package instead.
+- **Environment.** It never loads a `.env` file, and no `.env` is written into the output directory, so mounting it cannot change environment your application
+  already configured — and a generated fragment inside your source tree never becomes a place secrets accumulate. `src/env.ts` is still emitted and still
+  validates on import, so the values have to be in `process.env` before your host imports `server.ts`.
+- **Cross-origin policy.** The generated code sets no CORS headers. Same-origin browser requests need none. For cross-origin browser clients, configure your
+  host's CORS middleware before the Typebase routes so it handles preflight requests and response headers for both actions and auth. The generator omits its
+  own CORS plugin rather than install a second policy alongside yours.
+
+The first build reports all three after its success message:
+
+```
+Embedded server requirements
+
+Install missing or incompatible dependencies in the host package:
+npm install '@orpc/server@1.14.3' 'better-auth@1.6.11' 'drizzle-orm@1.0.0-beta.22'
+npm install -D 'typescript@5.9.3'
+
+Required Environment keys: DATABASE_URL, BETTER_AUTH_SECRET
+Load these in your host before importing the embedded server.
+
+Cross-origin headers are your host application's responsibility. Configure its CORS policy for your clients.
+
+Mount from your project root (adjust the import for your entry point):
+import { typebaseHandler } from "./typebase/_handler/src/server.js";
+
+// In your existing Express application:
+app.use(typebaseHandler);
+
+Dependency and environment details: typebase/_handler/typebase-server.json
+```
+
+The install command uses the package manager your project uses, and lists only what your `package.json` doesn't already declare. A dependency you have at a
+version the generated server doesn't support is warned about and included. Everything the report says is also in `typebase-server.json`, so an install step can
+read it instead of you.
+
+The list is what a standalone build would install, plus anything your own code inside `typebase/` imports that the host doesn't declare. In a workspace that
+second group matters: when your `typebase/` directory belongs to a different package from the one mounting the server, the imports your actions rely on are
+declared somewhere the host can't resolve them from.
+
+<Callout type="info">The report is printed on the first build only. With `--watch`, rebuilds stay quiet so a long session stays readable.</Callout>
+
+### Mounting
+
+One line per adapter, against the default `typebase/_handler/` output. See [HTTP adapters](#http-adapters) for choosing one.
+
+```ts title="node — a Connect-style middleware"
+import express from 'express';
+
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+const app = express();
+
+app.use(typebaseHandler);
+```
+
+It calls `next()` when the request wasn't for Typebase, so your other routes still run. Called without a `next` — `createServer(typebaseHandler)` — it answers
+404 instead.
+
+```ts title="fastify — a plugin"
+import Fastify from 'fastify';
+
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+const app = Fastify();
+
+await app.register(typebaseHandler);
+```
+
+Typebase's catch-all content type parser is registered inside the plugin, and Fastify scopes parsers to the plugin they belong to, so your own routes keep the
+body parsing they had.
+
+```ts title="hono — a sub-application"
+import { Hono } from 'hono';
+
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+const app = new Hono();
+
+app.route('/', typebaseHandler);
+```
+
+```ts title="bun — a fetch handler"
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+Bun.serve({ fetch: typebaseHandler });
+```
+
+```ts title="deno — a fetch handler"
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+Deno.serve(typebaseHandler);
+```
+
+```ts title="cloudflare — a Worker fetch handler"
+import { typebaseHandler } from './typebase/_handler/src/server.js';
+
+export default { fetch: typebaseHandler };
+```
+
+In a CommonJS application built with `--output cjs`, the import becomes `const { typebaseHandler } = require('./typebase/_handler/src/server.js')` and the
+Cloudflare mount becomes `module.exports = { fetch: typebaseHandler }`.
+
+### Serving paths
+
+An embedded server is mounted wherever you like, so the paths it serves are configurable, and independently of each other:
+
+| Flag                    | Serves       | Default     |
+| ----------------------- | ------------ | ----------- |
+| `--actions-path <path>` | Your actions | `/rpc`      |
+| `--auth-path <path>`    | Auth         | `/api/auth` |
+
+```npm
+npx typebase-io-cli generate-server --embedded --actions-path /typebase/rpc --auth-path /typebase/auth
+```
+
+Both are also `server.actionsPath` and `server.authPath` in [`typebase.json`](/docs/configuration#serveractionspath). The defaults are the paths a standalone
+server serves, so a build that sets neither is unchanged.
+
+Both options are embedded-only. Passing either with a standalone build is an error, because a standalone server always serves the paths it was built with and
+nothing would use the value. A value inherited from `typebase.json` is ignored instead, for the same reason a configured port is.
+
+Generation refuses when the auth path would swallow the actions path — `--auth-path /typebase` together with `--actions-path /typebase/rpc`, for instance. Auth
+is matched first, so every action request would be answered by auth and never reach your actions. Keeping the two paths independent, rather than deriving both
+from one prefix, is what lets you move either one without the other picking up a duplicated segment.
+
+<Callout type="info">
+  A custom actions path changes the URL your client points at. See [the server URL](/docs/client#a-custom-actions-path). The auth path is also pushed
+  into the generated auth config as better-auth's `basePath`; see [the auth path](/docs/auth#the-auth-path-of-an-embedded-server) for what happens
+  when your own `auth.ts` already sets one.
+</Callout>
+
 ## Output formats
 
 You can choose between three output formats:
@@ -83,14 +271,17 @@ npx typebase-io-cli generate-server --adapter fastify
 
 ## Options
 
-| Flag                  | Description                                                          | Default   |
-| --------------------- | -------------------------------------------------------------------- | --------- |
-| `--output <type>`     | Output format: `ts`, `esm`, or `cjs`                                 | `ts`      |
-| `--adapter <adapter>` | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`    |
-| `--out-dir <path>`    | Output directory for generated files                                 | `_server` |
-| `--watch`             | Rebuild on every change inside your `typebase/` directory            | `false`   |
-| `--command <command>` | Command to run in the generated server after it is generated         | none      |
-| `--port <number>`     | Port the generated server listens on                                 | `8080`    |
+| Flag                    | Description                                                          | Default                                |
+| ----------------------- | -------------------------------------------------------------------- | -------------------------------------- |
+| `--output <type>`       | Output format: `ts`, `esm`, or `cjs`                                 | `ts`                                   |
+| `--adapter <adapter>`   | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`                                 |
+| `--embedded`            | Generate source for your existing application to mount               | `false`                                |
+| `--out-dir <path>`      | Output directory for generated files                                 | `_server`, or `_handler` when embedded |
+| `--actions-path <path>` | Path an embedded server serves your actions at (embedded only)       | `/rpc`                                 |
+| `--auth-path <path>`    | Path an embedded server serves auth at (embedded only)               | `/api/auth`                            |
+| `--watch`               | Rebuild on every change inside your `typebase/` directory            | `false`                                |
+| `--command <command>`   | Command to run in the generated server after it is generated         | none                                   |
+| `--port <number>`       | Port the generated server listens on (standalone only)               | `8080`                                 |
 
 ## Default configuration
 
@@ -111,23 +302,28 @@ See the [Configuration](/docs/configuration) page for all available options.
 
 ## What gets generated
 
-The generated server directory contains:
+A standalone server directory contains:
 
 ```
 _server/
   src/
-    index.ts          # Server entry point (with the chosen adapter)
+    index.ts           # Bootstrap: loads env and starts listening
+    server.ts          # Router, RPC handler, auth wiring, and the mount
     _generated/
-      server.ts       # Action builder and middleware setup
-    actions/          # Your action files (copied and processed)
-    db/               # Your schema, relations and migrations (if applicable)
-    auth.ts           # Your auth config (if applicable)
-    env.ts            # Validated environment variables (if applicable)
-    publisher.ts      # Publisher runtime config (if applicable)
-  package.json        # Dependencies for the server
-  tsconfig.json       # TypeScript config
-  pnpm-workspace.yaml # Package-manager config (name depends on your package manager)
+      server.ts        # Action builder and middleware setup
+    actions/           # Your action files (copied and processed)
+    db/                # Your schema, relations and migrations (if applicable)
+    auth.ts            # Your auth config (if applicable)
+    env.ts             # Validated environment variables (if applicable)
+    publisher.ts       # Publisher runtime config (if applicable)
+  package.json         # Dependencies for the server
+  tsconfig.json        # TypeScript config
+  typebase-server.json # Adapter, mode, CLI version, dependencies, env keys
+  pnpm-workspace.yaml  # Package-manager config (name depends on your package manager)
 ```
+
+`src/server.ts` builds everything a host needs to serve requests and `src/index.ts` starts it listening. Both modes generate the first; only a standalone build
+generates the second, which is why an [embedded server](#embedded-servers) can't drift from the runnable one, the runnable one is built on top of it.
 
 A package-manager config file sits next to `package.json` when your package manager needs one: `.yarnrc.yml` for yarn berry, `bunfig.toml` for bun, and
 `pnpm-workspace.yaml` for pnpm. The pnpm one makes the generated server a workspace root in its own right. Without it, installing inside a generated server
@@ -137,18 +333,18 @@ reads that from the `pnpm` field in the generated `package.json` instead. npm, y
 
 `src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
 
-`.env` in the generated server is filled in from your project-root `.env`, with the keys the server validates: `DATABASE_URL`,
+`.env` in a standalone server is filled in from your project-root `.env`, with the keys the server validates: `DATABASE_URL`,
 `BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env). `DATABASE_URL` comes from your `DATABASE_URL_DEV` when there is one, so a
-server you run locally reaches the dev branch. Keys already in the file are never overwritten, and nothing else from your project `.env` — provider
-tokens especially — is copied. This is a `generate-server` convenience only; [`deploy`](/docs/cli/deploy) syncs variables to the provider instead and
-never puts a `.env` in the bundle.
+server you run locally reaches the dev branch. Keys already in the file are never overwritten, and nothing else from your project `.env` (provider
+tokens especially) is copied. This is a `generate-server` convenience only; [`deploy`](/docs/cli/deploy) syncs variables to the provider instead and
+never puts a `.env` in the bundle. An [embedded server](#embedded-servers) gets no `.env` either: your application loads the environment it runs in.
 
 `src/db/migrations/` is copied across when your project uses [migrations](/docs/database/migrations), for every output format, and the drizzle config
 written next to it points its `out` at them. The generated server is self-contained: you can apply the migrations it shipped with using standard
 drizzle tooling. The server never reads them itself — migrations are applied by the CLI, from your machine or from CI. A project in push mode gets no
 `migrations` folder.
 
-`src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. `dotenv` is added to `package.json`, and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither.
+`src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. In a standalone server, `dotenv` is added to `package.json` and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither. An embedded server never loads environment files at all, since it has no bootstrap and mutating its host's environment is not its business.
 
 ## Watch mode
 
@@ -191,6 +387,11 @@ rebuild, so what is running is always the latest build:
 ```npm
 npx typebase-io-cli generate-server --watch --command "pnpm start"
 ```
+
+The examples on this page assume a standalone server, where that directory is a package with a `start` script. `--command` is unchanged for an
+[embedded server](#embedded-servers), including the directory it runs in, but that directory holds no `package.json`, so a package script like `pnpm start`
+has nothing to run there. Pass something that doesn't depend on the output directory being a package, or pass nothing and let your own application's watcher
+pick up the regenerated source.
 
 <Callout type="info">
   If what you want is a server running on your machine, [`start`](/docs/cli/start) is the shorter path: it does the install for you, applies schema
@@ -252,9 +453,14 @@ Each run rebuilds the server from scratch and replaces the previous output direc
 
 If a generation fails, the previous output is left untouched, so a working server is never destroyed by a failed rebuild.
 
-As a safety measure, the CLI only replaces a directory it recognizes as its own: one that is empty, doesn't exist yet, or contains the generated `@typebase-io/server` package. Pointing `--out-dir` (or `server.outDir`) at any other non-empty directory aborts with an error instead of overwriting it.
+As a safety measure, the CLI only replaces a directory it recognizes as its own: one that is empty, doesn't exist yet, or carries the `typebase-server.json` marker a previous build wrote. Pointing `--out-dir` (or `server.outDir`) at any other non-empty directory aborts with an error instead of overwriting it. A directory generated before markers existed is still recognized by its `@typebase-io/server` `package.json`, so upgrading doesn't make your next build refuse to run.
+
+That check matters most for an [embedded server](#embedded-servers), which has no `package.json` to be recognized by and is often pointed at a directory inside your own source tree, where replacing the wrong one is expensive.
 
 ## Running the generated server
+
+This section is about a standalone server. An [embedded server](#embedded-servers) has no entry point and no dependencies of its own: your application starts
+it by mounting it.
 
 After generating the server, you can run it like any Node.js project:
 

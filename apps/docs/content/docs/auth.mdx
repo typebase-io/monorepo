@@ -235,6 +235,40 @@ Or set `baseURL` in `typebase/auth.ts` if the value is the same everywhere you r
   your deployed server builds its callbacks against your laptop. `start` already sets the local URL for you, so there is nothing to hardcode.
 </Callout>
 
+## The auth path of an embedded server
+
+Auth is served at `/api/auth`, better-auth's own default, and the path every generated server uses unless you say otherwise. An
+[embedded server](/docs/cli/generate-server#embedded-servers) is mounted into an application that already owns its routes, so it can move:
+
+```npm
+npx typebase-io-cli generate-server --embedded --auth-path /typebase/auth
+```
+
+The value goes to two places at once: the route the generated server registers, and `basePath` in the generated auth config. That is deliberate, better-auth
+builds its own URLs from `basePath`, so if the two disagreed, sign-in would post to one path and be served at another.
+
+`--auth-path` is embedded-only, like [`--actions-path`](/docs/cli/generate-server#serving-paths). A standalone build rejects the flag and ignores a
+`server.authPath` in `typebase.json`.
+
+### When your `auth.ts` sets a `basePath`
+
+Your own value always wins, exactly as it does for [`baseURL`](#the-base-url). If `typebase/auth.ts` already sets `basePath`, Typebase writes nothing over it
+and registers the route at **your** path, not the one the flag asked for, so the framework and better-auth still agree. The build warns so you know which one
+took effect:
+
+```
+⚠ `auth.ts` sets `basePath: "/mine"`, so the generated server serves auth there rather than at `/typebase/auth`.
+```
+
+Drop the option, or drop the `basePath` from `auth.ts`, depending on which one you meant.
+
+<Callout type="info">
+  A `basePath` your `auth.ts` computes at runtime — from an environment variable, or through a spread — can't be read at build time, so the build
+  warns that it may override the path you passed. The generated route registration reads `auth.options.basePath` at runtime instead of a baked-in
+  string, so the route and better-auth still can't disagree. Its fallback is `/api/auth`, **not** the `--auth-path` you passed: an expression like
+  `process.env.AUTH_PATH` that resolves to `undefined` serves auth at `/api/auth`, wherever you meant to put it. Give it a default of its own.
+</Callout>
+
 ## Environment variables
 
 Typebase uses these auth-related environment variables:

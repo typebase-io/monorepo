@@ -18,6 +18,60 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.17 [#v0-1-17]
+
+_2026-09-07._
+
+**Added**
+
+- [`generate-server --embedded`](/docs/cli/generate-server#embedded-servers) generates a server for your existing application to mount, rather than one
+  that owns a process of its own. Until now the only way into an existing application was to open the generated entry point, copy the handler
+  construction out of it, and delete the rest — a fork that went stale on the next build, and in watch mode on every keystroke. An embedded build
+  writes what you mount and regenerates it with everything else. `{ "server": { "embedded": true } }` in
+  [`typebase.json`](/docs/configuration#serverembedded) makes it the default; omitting it, or `false`, keeps the standalone server you already run,
+  which behaves exactly as before.
+  - Every adapter exports the same three names — `typebaseHandler`, `router`, and `auth` where the project has auth — so switching adapters doesn't
+    touch your integration code. Only the mount's shape follows the adapter: a Fastify plugin, a Hono sub-application, a Connect-style Node middleware
+    that calls `next()` when the request wasn't Typebase's, and a fetch handler for Bun, Deno, and Cloudflare. The page carries
+    [one example each](/docs/cli/generate-server#mounting).
+  - It emits [loose source](/docs/cli/generate-server#what-an-embedded-build-emits) — no `package.json`, `tsconfig.json`, or `.env` — because a nested
+    package inside your application means a second copy of `drizzle-orm`, `better-auth`, or `fastify` loaded in one process. Your application owns the
+    dependencies, the environment, and the cross-origin policy; the first build
+    [reports what it needs](/docs/cli/generate-server#what-your-application-provides): an install command for your package manager listing only what
+    your `package.json` lacks, warnings where your versions disagree with the generated ones, the environment keys the server reads, that CORS is now
+    yours to configure, and the snippet that mounts it. Watch rebuilds stay quiet.
+  - TypeScript output uses `.js` import specifiers for its own relative imports, so it compiles under an ordinary application `tsconfig.json` under
+    `nodenext` and `bundler` alike. `--output esm` and `--output cjs` are still available, but an embedded build ships no manifest, so its `.js` files
+    are interpreted using the host's `"type"` — match the format to the application you are mounting into.
+  - An embedded Fastify build registers its catch-all content type parser inside the plugin, and Fastify scopes parsers to the plugin they belong to,
+    so mounting Typebase leaves your other routes' body parsing alone — a webhook that verifies a signature over the raw body keeps working. A
+    standalone Fastify server still registers it on the root instance, as it always has; it owns the process, so there is nothing else to affect.
+  - The default output directory is `_handler` rather than `_server`, so a fragment meant for a host application is never confused with a runnable
+    server. `--out-dir` and `server.outDir` still override it.
+
+- [`--actions-path`](/docs/cli/generate-server#serving-paths) and [`--auth-path`](/docs/auth#the-auth-path-of-an-embedded-server), also
+  `server.actionsPath` and `server.authPath`, move where an embedded server serves your actions and your auth. They are independent of each other, and
+  default to `/rpc` and `/api/auth`, so a build that sets neither is unchanged. The auth path is written into the generated auth config as better-auth's
+  `basePath` too, so the framework and the route can't disagree — and a `basePath` you set in your own `auth.ts` wins, with a warning saying so. A
+  custom actions path changes [the URL your client points at](/docs/client#a-custom-actions-path). Both are embedded-only: passing either flag to a
+  standalone build is an error, while a value inherited from `typebase.json` is ignored, so one configuration file still serves every command.
+
+**Changed**
+
+- Every generated server now splits its entry point in two: `src/server.ts` builds the router, the RPC handler, the auth wiring, and the mount, and
+  `src/index.ts` starts it listening. A standalone build emits both and behaves exactly as before, including the `package.json` entry point and start
+  script. An embedded build emits only the first, which is why an embedded server can't drift from the runnable one — the runnable one is built on top
+  of it.
+- Both modes now write a [`typebase-server.json`](/docs/cli/generate-server#what-gets-generated) marker next to the generated source, recording the
+  adapter, the mode, the CLI version, the required dependencies with their versions, and the environment keys the server reads. The
+  [safety check](/docs/cli/generate-server#regeneration) that refuses to replace a directory it doesn't recognize reads it, which is what makes an
+  embedded output directory inside your own source tree safe to regenerate. Directories generated before this release are still recognized by their
+  `@typebase-io/server` `package.json`, so upgrading doesn't make your next build refuse to run. The same file is a machine-readable dependency list
+  you can script an install from.
+- `generate-server --port` and `--embedded` now conflict, in either order, and `--port` is also rejected when `server.embedded` selected an embedded
+  server: nothing would listen on it. A `server.port` inherited from `typebase.json` is ignored instead. [`start`](/docs/cli/start) always builds a
+  standalone server and ignores `server.embedded` entirely.
+
 ## 0.1.16 [#v0-1-16]
 
 _2026-09-02._
