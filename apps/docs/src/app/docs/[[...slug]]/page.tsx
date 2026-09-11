@@ -109,6 +109,8 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
       canonical: page.url,
     },
     openGraph: {
+      siteName: 'Typebase',
+      locale: 'en_US',
       type: 'article',
       title: page.data.title,
       description: page.data.description,

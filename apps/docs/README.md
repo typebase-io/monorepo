@@ -16,9 +16,10 @@ pnpm lint       # mdx build, type-check, prettier, eslint
 ## Structure
 
 - `content/docs/` - all MDX documentation pages
-- `src/app/(home)/` - the landing page
+- `src/app/page.tsx` - homepage metadata and landing section composition
+- `src/components/landing/` - landing sections and their interactive examples
 - `src/app/docs/` - the docs viewer routes
 - `src/app/og/` - OpenGraph image generation
-- `src/components/` - shared UI (home sections, AI search, etc.)
+- `src/components/` - shared UI (AI search, documentation controls, etc.)
 - `src/lib/` - helpers (content source adapter, shared layout options)
 - `source.config.ts` - Fumadocs MDX config (frontmatter schema, etc.)

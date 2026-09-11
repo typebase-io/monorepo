@@ -42,6 +42,18 @@
   background-repeat: no-repeat;
 }
 
+/*
+ * That gradient is strongest at y=0, and fumadocs' docs headers are bg-fd-background/80,
+ * so it shows through them and the bar reads bluer than the browser's theme-color strip
+ * next to it. Make them opaque at the widths where that strip is visible. The landing
+ * header is excluded: it carries its own max-sm background.
+ */
+@media (width < 40rem) {
+  header:not([data-landing-section]) {
+    background-color: var(--color-fd-background);
+  }
+}
+
 /* Keep a lone GitHub action visually ungrouped in the docs sidebar. */
 #nd-sidebar div:has(> [aria-label='GitHub']:only-child) {
   border: 0;
@@ -62,63 +74,50 @@
 }
 
 /*
- * Right-edge scroll shadow for horizontally scrollable content, no JS.
- * The scroller drives a named scroll timeline; the wrapper's ::after is a
- * gradient shadow hinting that there is more content to the right, fading
- * out as the user scrolls to the end. When nothing overflows the timeline
- * is inactive, the keyframes never apply, and the shadow stays hidden.
- * Browsers without scroll-driven animations simply show no shadow.
+ * Default focus rings for the landing page: outset on links, inset on buttons so the ring
+ * isn't clipped by the overflow-hidden cards buttons often sit in. In `base` so a component
+ * that wants a different ring can still say so with a utility — the utilities layer wins.
  */
+@layer base {
+  [data-landing-page='home'] a:focus-visible {
+    outline: 2px solid var(--color-fd-primary);
+    outline-offset: 4px;
+  }
+
+  [data-landing-page='home'] button:focus-visible {
+    outline: 2px solid var(--color-fd-primary);
+    outline-offset: -4px;
+  }
+}
+
+/* Marks a horizontally scrollable box as scrollable. On a dark surface a drop shadow is
+ * invisible, so fade the content into the page colour at the right edge instead, drawn
+ * over the scroller. */
 .scroll-shadows {
   position: relative;
-  timeline-scope: --scroll-shadows;
 }
 
 .scroll-shadows-scroller {
   overflow-x: auto;
   border-radius: inherit;
-  scroll-timeline: --scroll-shadows inline;
 }
 
 .scroll-shadows::after {
   content: '';
   position: absolute;
+  /* Offsets resolve against the padding box, which already excludes the container's
+   * border, so 0 sits flush with the inner edge rather than leaving a sliver. */
   top: 0;
-  bottom: 0;
   right: 0;
-  width: 2.5rem;
+  bottom: 0;
+  width: 3rem;
   pointer-events: none;
-  opacity: 0;
   border-top-right-radius: inherit;
   border-bottom-right-radius: inherit;
-  background: linear-gradient(to left, rgb(0 0 0 / 0.15), transparent);
-  animation-name: scroll-shadows-right;
-  animation-timing-function: linear;
-  animation-fill-mode: both;
-  animation-timeline: --scroll-shadows;
+  background: linear-gradient(to left, rgb(0 0 0 / 0.5) 30%, transparent);
 }
 
-.dark .scroll-shadows::after {
-  background: linear-gradient(to left, rgb(0 0 0 / 0.5), transparent);
-}
-
-@keyframes scroll-shadows-right {
-  0%,
-  85% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-/*
- * A timeline that was active holds its last progress when the overflow
- * disappears (e.g. rotating a phone after scrolling to the end). Hide the
- * shadow at widths where the content fits so it can never go stale.
- * Assumes content min-width ≈ 44rem; adjust if reused for wider content.
- */
+/* Above this width the table fits, so there is nothing to scroll and nothing to hint at. */
 @media (width >= 48rem) {
   .scroll-shadows::after {
     display: none;

@@ -12,32 +12,32 @@ const ACCENT = '#2586c9';
 const logoSvg = readFileSync(join(process.cwd(), 'public/logo.svg'), 'utf-8');
 const logoDataUrl = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
 
-const INTER_TTF = {
+const FONT_TTF = {
   regular: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.ttf',
-  semibold: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-600-normal.ttf',
   bold: 'https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.ttf',
+  display: 'https://cdn.jsdelivr.net/fontsource/fonts/bricolage-grotesque@latest/latin-700-normal.ttf',
 } as const;
 
-interface InterFonts {
+interface OgFonts {
   regular: ArrayBuffer;
-  semibold: ArrayBuffer;
   bold: ArrayBuffer;
+  display: ArrayBuffer;
 }
 
-let interFontsPromise: Promise<InterFonts> | null = null;
+let fontsPromise: Promise<OgFonts> | null = null;
 
-function loadInterFonts(): Promise<InterFonts> {
-  interFontsPromise ??= Promise.all([
-    fetch(INTER_TTF.regular).then((r) => r.arrayBuffer()),
-    fetch(INTER_TTF.semibold).then((r) => r.arrayBuffer()),
-    fetch(INTER_TTF.bold).then((r) => r.arrayBuffer()),
-  ]).then(([regular, semibold, bold]) => ({ regular, semibold, bold }));
+function loadFonts(): Promise<OgFonts> {
+  fontsPromise ??= Promise.all([
+    fetch(FONT_TTF.regular).then((r) => r.arrayBuffer()),
+    fetch(FONT_TTF.bold).then((r) => r.arrayBuffer()),
+    fetch(FONT_TTF.display).then((r) => r.arrayBuffer()),
+  ]).then(([regular, bold, display]) => ({ regular, bold, display }));
 
-  return interFontsPromise;
+  return fontsPromise;
 }
 
 export async function brandedOgImage({ title, titleAccent, description }: { title: string; titleAccent?: string; description?: string }) {
-  const interFonts = await loadInterFonts();
+  const fonts = await loadFonts();
 
   return new ImageResponse(
     <div
@@ -55,16 +55,18 @@ export async function brandedOgImage({ title, titleAccent, description }: { titl
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoDataUrl} width={36} height={49} alt="" />
+        <img src={logoDataUrl} width={33} height={44} alt="" />
         <div
           style={{
             display: 'flex',
+            fontFamily: 'Bricolage Grotesque',
             fontSize: 32,
-            fontWeight: 600,
-            color: FG,
+            fontWeight: 700,
+            letterSpacing: -0.8,
           }}
         >
-          Typebase
+          <div style={{ display: 'flex', color: FG }}>Typebase</div>
+          <div style={{ display: 'flex', color: PRIMARY }}>.</div>
         </div>
       </div>
 
@@ -125,9 +127,9 @@ export async function brandedOgImage({ title, titleAccent, description }: { titl
       height: 630,
       headers: { 'X-Robots-Tag': 'noindex' },
       fonts: [
-        { name: 'Inter', data: interFonts.regular, weight: 400, style: 'normal' },
-        { name: 'Inter', data: interFonts.semibold, weight: 600, style: 'normal' },
-        { name: 'Inter', data: interFonts.bold, weight: 700, style: 'normal' },
+        { name: 'Inter', data: fonts.regular, weight: 400, style: 'normal' },
+        { name: 'Inter', data: fonts.bold, weight: 700, style: 'normal' },
+        { name: 'Bricolage Grotesque', data: fonts.display, weight: 700, style: 'normal' },
       ],
     }
   );

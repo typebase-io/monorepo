@@ -78,15 +78,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a111c',
+  themeColor: '#09111b',
   colorScheme: 'dark',
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={`${inter.className} dark`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.className} dark`}>
       <body className="flex flex-col min-h-screen">
-        <RootProvider theme={{ forcedTheme: 'dark' }}>{children}</RootProvider>
+        <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
         <Analytics />
       </body>
     </html>
