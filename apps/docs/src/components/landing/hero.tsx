@@ -2,6 +2,7 @@ import { Play } from 'lucide-react';
 
 import { HeroCode } from '#components/landing/hero-code.tsx';
 import { HeroTagline } from '#components/landing/hero-tagline.tsx';
+import { InstallCommand } from '#components/landing/install-command.tsx';
 import { PrimaryLink } from '#components/landing/primary-link.tsx';
 
 export function Hero() {
@@ -24,6 +25,15 @@ export function Hero() {
             Add a <span className="font-mono text-[0.92em] text-fd-foreground">typebase/</span> folder to your repo: database, server functions, and
             auth, all in TypeScript. Your frontend calls them like local functions.
           </p>
+          <InstallCommand
+            command="npx typebase-io-cli init"
+            eventName="init"
+            hint={
+              <>
+                Then <code className="font-mono text-[0.92em] text-fd-foreground">npx typebase-io-cli start</code> and it’s running on your machine.
+              </>
+            }
+          />
           <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
             <PrimaryLink>Build your first backend</PrimaryLink>
             <a

@@ -1,14 +1,22 @@
 'use client';
 
 import { Check, Copy } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { copyText } from '#lib/copy-text.ts';
 import { trackLanding } from '#lib/track-landing.ts';
 
-const command = 'npm i typebase-io && npm i -D typebase-io-cli';
+const defaultCommand = 'npm i typebase-io && npm i -D typebase-io-cli';
 
-export function InstallCommand() {
+export function InstallCommand({
+  command = defaultCommand,
+  eventName = 'install',
+  hint = 'Install in your existing JavaScript or TypeScript project.',
+}: {
+  command?: string;
+  eventName?: string;
+  hint?: ReactNode;
+}) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -25,7 +33,7 @@ export function InstallCommand() {
     try {
       await copyText(command);
       setStatus('copied');
-      trackLanding('landing_copy', { command: 'install' });
+      trackLanding('landing_copy', { command: eventName });
 
       timeout.current = setTimeout(() => {
         setStatus('idle');
@@ -45,7 +53,7 @@ export function InstallCommand() {
         <button
           type="button"
           onClick={() => void copy()}
-          aria-label={status === 'copied' ? 'Copied install command' : 'Copy install command'}
+          aria-label={status === 'copied' ? `Copied ${eventName} command` : `Copy ${eventName} command`}
           className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded border border-fd-border text-fd-primary transition-colors hover:bg-fd-primary/10"
         >
           {status === 'copied' ? <Check className="size-4" /> : <Copy className="size-4" />}
@@ -56,7 +64,7 @@ export function InstallCommand() {
           ? 'Copied. Your terminal is next.'
           : status === 'error'
             ? 'Couldn’t access your clipboard. Select and copy the command above.'
-            : 'Install in your existing JavaScript or TypeScript project.'}
+            : hint}
       </p>
     </div>
   );
