@@ -1,14 +1,14 @@
 'use client';
 
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { copyText } from '#lib/copy-text.ts';
 import { trackLanding } from '#lib/track-landing.ts';
 
-const command = 'npm i typebase-io && npm i -D typebase-io-cli';
+const defaultCommand = 'npm i typebase-io && npm i -D typebase-io-cli';
 
-export function InstallCommand() {
+export function InstallCommand({ command = defaultCommand, eventName = 'install' }: { command?: string; eventName?: string }) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -25,15 +25,22 @@ export function InstallCommand() {
     try {
       await copyText(command);
       setStatus('copied');
-      trackLanding('landing_copy', { command: 'install' });
-
-      timeout.current = setTimeout(() => {
-        setStatus('idle');
-      }, 2500);
+      trackLanding('landing_copy', { command: eventName });
     } catch {
       setStatus('error');
     }
+
+    timeout.current = setTimeout(() => {
+      setStatus('idle');
+    }, 2500);
   }
+
+  const feedback =
+    status === 'copied'
+      ? `Copied ${eventName} command`
+      : status === 'error'
+        ? 'Copy failed. Select and copy the command manually, or try again.'
+        : '';
 
   return (
     <div className="mt-6 max-w-xl">
@@ -45,19 +52,22 @@ export function InstallCommand() {
         <button
           type="button"
           onClick={() => void copy()}
-          aria-label={status === 'copied' ? 'Copied install command' : 'Copy install command'}
+          aria-label={feedback || `Copy ${eventName} command`}
+          title={feedback || `Copy ${eventName} command`}
           className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded border border-fd-border text-fd-primary transition-colors hover:bg-fd-primary/10"
         >
-          {status === 'copied' ? <Check className="size-4" /> : <Copy className="size-4" />}
+          {status === 'copied' ? (
+            <Check aria-hidden className="size-4" />
+          ) : status === 'error' ? (
+            <X aria-hidden className="size-4" />
+          ) : (
+            <Copy aria-hidden className="size-4" />
+          )}
         </button>
       </div>
-      <p role="status" className="mt-2 min-h-5 text-xs text-fd-muted-foreground">
-        {status === 'copied'
-          ? 'Copied. Your terminal is next.'
-          : status === 'error'
-            ? 'Couldn’t access your clipboard. Select and copy the command above.'
-            : 'Install in your existing JavaScript or TypeScript project.'}
-      </p>
+      <span role="status" className="sr-only">
+        {feedback}
+      </span>
     </div>
   );
 }
