@@ -24,7 +24,7 @@ apps/
   core/         — the core library (typebase-io)
   docs/         — the documentation website (typebase.io)
   examples/     — integrations for Next.js, SvelteKit, Nuxt, and Expo
-  build-apps/   — internal build tooling shared by cli and core
+  tools/        — internal tooling
 ```
 
 ## License

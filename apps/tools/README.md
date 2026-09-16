@@ -1,6 +1,6 @@
-# @typebase-io/build-apps
+# @typebase-io/tools
 
-Internal build tooling for the monorepo. Not published to npm.
+Internal tooling for the monorepo. Not published to npm.
 
 ## What it does
 
@@ -11,7 +11,7 @@ Exposes two commands:
 
 ### `build`
 
-Apps are discovered from the directories inside `apps/` (everything except `build-apps`). In practice the publishable ones are `cli` and `core`. When
+Apps are discovered from the directories inside `apps/` (everything except `tools`). In practice the publishable ones are `cli` and `core`. When
 `--app` is omitted the command asks which app to build.
 
 For each build it:

@@ -1,5 +1,5 @@
 {
-  "name": "@typebase-io/build-apps",
+  "name": "@typebase-io/tools",
   "version": "0.0.1",
   "private": true,
   "type": "module",

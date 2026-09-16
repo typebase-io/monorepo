@@ -9,7 +9,7 @@ import { build } from '#commands/build.ts';
 const main = async () => {
   const program = new Command();
 
-  program.name('build-apps').usage('<command> [options]').addCommand(build).addCommand(buildLibrary);
+  program.name('tools').usage('<command> [options]').addCommand(build).addCommand(buildLibrary);
 
   try {
     await program.parseAsync(process.argv);

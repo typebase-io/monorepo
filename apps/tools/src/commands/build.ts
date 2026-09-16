@@ -20,7 +20,7 @@ export const build = new Command('build')
     const appsDir = path.join(monorepoRoot, 'apps');
 
     const entries = await readdir(appsDir, { withFileTypes: true });
-    const apps = entries.filter((e) => e.isDirectory() && e.name !== 'build-apps').map((e) => e.name);
+    const apps = entries.filter((e) => e.isDirectory() && e.name !== 'tools').map((e) => e.name);
 
     if (apps.length === 0) {
       console.error(chalk.red('No apps found in apps/'));
