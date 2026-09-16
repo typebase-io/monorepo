@@ -1,5 +1,7 @@
 import { File as BaseFile, Files as BaseFiles, Folder as BaseFolder } from 'fumadocs-ui/components/files';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+
+import { cn } from '#lib/cn.ts';
 
 function annotate(name: string, comment?: string): string {
   if (!comment) return name;
@@ -13,7 +15,7 @@ function annotate(name: string, comment?: string): string {
 }
 
 export function File({ name, comment }: { name: string; comment?: string }) {
-  return <BaseFile name={annotate(name, comment)} className="hover:bg-transparent hover:text-current" />;
+  return <BaseFile name={annotate(name, comment)} className="whitespace-nowrap hover:bg-transparent hover:text-current" />;
 }
 
 export function Folder({ name, comment, defaultOpen, children }: { name: string; comment?: string; defaultOpen?: boolean; children?: ReactNode }) {
@@ -22,11 +24,17 @@ export function Folder({ name, comment, defaultOpen, children }: { name: string;
       name={annotate(name, comment)}
       defaultOpen={defaultOpen}
       disabled
-      className="[&>button]:hover:bg-transparent [&>button]:hover:text-current"
+      className="[&>[data-state=open]]:overflow-visible [&>button]:whitespace-nowrap [&>button]:hover:bg-transparent [&>button]:hover:text-current"
     >
       {children}
     </BaseFolder>
   );
 }
 
-export { BaseFiles as Files };
+export function Files({ className, children, ...props }: ComponentProps<typeof BaseFiles>) {
+  return (
+    <BaseFiles className={cn('overflow-x-auto', className)} {...props}>
+      <div className="w-max min-w-full">{children}</div>
+    </BaseFiles>
+  );
+}
