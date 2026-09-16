@@ -5,11 +5,12 @@ import { chalkStderr } from 'chalk';
 
 import { buildApp } from '#commands/build-app.ts';
 import { buildLibrary } from '#commands/build-library.ts';
+import { compareDocs } from '#commands/compare-docs.ts';
 
 const main = async () => {
   const program = new Command();
 
-  program.name('tools').usage('<command> [options]').addCommand(buildApp).addCommand(buildLibrary);
+  program.name('tools').usage('<command> [options]').addCommand(buildApp).addCommand(buildLibrary).addCommand(compareDocs);
 
   try {
     await program.parseAsync(process.argv);
