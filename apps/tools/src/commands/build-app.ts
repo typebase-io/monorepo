@@ -6,16 +6,16 @@ import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 
-import { buildTypes } from '#helpers/shared/build-type.ts';
+import { getPublishableName } from '#helpers/build-app/get-publishable-name.ts';
+import { buildTypes } from '#helpers/shared/build-types.ts';
 import { findMonorepoRoot } from '#helpers/shared/find-monorepo-root.ts';
-import { getPublishableName } from '#helpers/shared/get-publishable-name.ts';
 import { transpile } from '#helpers/shared/transpile.ts';
 
-export const build = new Command('build')
+export const buildApp = new Command('build-app')
   .summary('Builds an app of the monorepo')
   .allowExcessArguments(false)
-  .option('--app <name>', 'App to build')
-  .action(async ({ app }) => {
+  .argument('[app]', 'App to build')
+  .action(async (app) => {
     const monorepoRoot = await findMonorepoRoot(process.cwd());
     const appsDir = path.join(monorepoRoot, 'apps');
 

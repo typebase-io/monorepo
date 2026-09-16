@@ -1,7 +1,7 @@
 import { cp, mkdir, readFile } from 'node:fs/promises';
 import path from 'path';
 
-import { buildTypes } from '#helpers/shared/build-type.ts';
+import { buildTypes } from '#helpers/shared/build-types.ts';
 import { transpile } from '#helpers/shared/transpile.ts';
 
 export const buildCore = async ({ monorepoRoot, tempDir }: { monorepoRoot: string; tempDir: string }) => {

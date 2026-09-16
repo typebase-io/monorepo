@@ -6,13 +6,13 @@ Internal tooling for the monorepo. Not published to npm.
 
 Exposes two commands:
 
-- `build [--app <name>]` — build **one** app for distribution (ESM + CJS + type declarations) and stage it in `publish/<app>/`
+- `build-app [app]` — build **one** app for distribution (ESM + CJS + type declarations) and stage it in `publish/<app>/`
 - `build-library -v <version>` — assemble the unified publishable `typebase` package into `publish/library/`
 
-### `build`
+### `build-app`
 
-Apps are discovered from the directories inside `apps/` (everything except `tools`). In practice the publishable ones are `cli` and `core`. When
-`--app` is omitted the command asks which app to build.
+Apps are discovered from the directories inside `apps/` (everything except `tools`). In practice the publishable ones are `cli` and `core`. The app
+is passed as a positional argument (`build-app core`); when it is omitted the command asks which app to build.
 
 For each build it:
 
