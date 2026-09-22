@@ -87,9 +87,6 @@ export function FolderIllustration() {
         Go on, open it.
         <ArrowUpRight className="size-4.5" />
       </span>
-      <span className="absolute bottom-4 left-5 font-mono text-[7px] tracking-widest text-fd-muted-foreground sm:bottom-5 sm:left-6 sm:text-[8px]">
-        TYPEBASE/ — OPEN FOR INSPECTION
-      </span>
     </ScrollTo>
   );
 }

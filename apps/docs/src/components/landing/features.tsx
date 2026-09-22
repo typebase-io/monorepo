@@ -1,8 +1,6 @@
 import { ArrowRight, ArrowUpRight, Braces, Database, FileCode2, LockKeyhole } from 'lucide-react';
 import Link from 'next/link';
 
-import { SectionLabel } from '#components/landing/section-label.tsx';
-
 const features = [
   {
     number: '01',
@@ -36,8 +34,7 @@ export function Features() {
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:px-12">
         <div className="grid gap-8 lg:grid-cols-[1fr_2fr] lg:gap-20">
           <div>
-            <SectionLabel number="03">The useful stuff, connected</SectionLabel>
-            <h2 id="features-heading" className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+            <h2 id="features-heading" className="text-3xl font-semibold leading-[1.1] tracking-[-0.035em] sm:text-4xl">
               Batteries included.
               <br />
               <span className="text-fd-primary">Wiring removed.</span>

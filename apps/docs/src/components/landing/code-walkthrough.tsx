@@ -6,9 +6,10 @@ import { type KeyboardEvent, useRef, useState } from 'react';
 
 import { HighlightedCode } from '#components/landing/highlighted-code.tsx';
 import { steps } from '#components/landing/walkthrough-steps.ts';
+import type { CodeLine } from '#lib/highlight-code.ts';
 import { trackLanding } from '#lib/track-landing.ts';
 
-export function CodeWalkthrough() {
+export function CodeWalkthrough({ highlighted }: { highlighted: CodeLine[][] }) {
   const [activeStep, setActiveStep] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -77,7 +78,7 @@ export function CodeWalkthrough() {
                 </span>
               </div>
               <div className="flex-1 md:min-h-77">
-                <HighlightedCode code={item.code} />
+                <HighlightedCode lines={highlighted[index] ?? []} />
               </div>
               <p className="border-t border-fd-border px-4 py-4 text-xs leading-5 text-fd-muted-foreground sm:px-6">{item.note}</p>
             </div>
@@ -85,9 +86,7 @@ export function CodeWalkthrough() {
         </div>
       </div>
       <div className="flex flex-col border-t border-fd-primary/25 bg-fd-muted/60 p-6 sm:p-8 lg:border-t-0 lg:border-l">
-        <div className="mb-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-fd-primary">
-          <span className="size-1.5 rounded-full bg-fd-primary" /> Follow the types
-        </div>
+        <div className="mb-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-fd-primary">Follow the types</div>
         <div className="grid min-w-0">
           {steps.map((item, index) => (
             <div

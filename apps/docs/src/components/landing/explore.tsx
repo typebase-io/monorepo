@@ -1,15 +1,19 @@
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
+import { backendFiles } from '#components/landing/backend-files.ts';
 import { FolderIllustration } from '#components/landing/folder-illustration.tsx';
 import { FolderTree } from '#components/landing/folder-tree.tsx';
-import { SectionLabel } from '#components/landing/section-label.tsx';
+import { highlightCode } from '#lib/highlight-code.ts';
 import { gitConfig } from '#lib/layout.shared.tsx';
 
 const githubUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
 const path = 'font-mono text-[0.92em] text-fd-foreground';
 
-export function Explore() {
+export async function Explore() {
+  const entries = await Promise.all(backendFiles.map(async (file) => [file.id, await highlightCode(file.code)] as const));
+  const highlighted = Object.fromEntries(entries);
+
   return (
     <section id="explore" aria-labelledby="explore-heading" data-landing-section="explore" className="scroll-mt-20 border-b border-fd-border">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:px-12">
@@ -18,11 +22,8 @@ export function Explore() {
             <FolderIllustration />
           </div>
           <div className="order-1 lg:order-2">
-            <SectionLabel number="06">Open the folder</SectionLabel>
-            <h2 id="explore-heading" className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
-              Explore Typebase.
-              <br />
-              <span className="text-fd-primary">This is the whole backend.</span>
+            <h2 id="explore-heading" className="max-w-xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+              Explore Typebase. This is the <span className="text-fd-primary underline decoration-2 underline-offset-[6px]">whole</span> backend.
             </h2>
             <p className="mt-5 max-w-md text-sm leading-6 text-fd-muted-foreground">
               Each file has one job. <span className={path}>db/</span> defines your tables, anything you export from{' '}
@@ -55,7 +56,7 @@ export function Explore() {
             </div>
           </div>
         </div>
-        <FolderTree />
+        <FolderTree highlighted={highlighted} />
       </div>
     </section>
   );

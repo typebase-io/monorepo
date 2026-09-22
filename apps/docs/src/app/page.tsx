@@ -26,14 +26,14 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Typebase',
     locale: 'en_US',
-    title: 'Typebase — Make your backend a folder.',
+    title: 'Typebase: make your backend a folder.',
     description,
     url: '/',
     images: [{ url: '/og/site', width: 1200, height: 630, alt: 'Typebase: your backend is a folder of TypeScript.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Typebase — Make your backend a folder.',
+    title: 'Typebase: make your backend a folder.',
     description,
     images: ['/og/site'],
   },
@@ -43,7 +43,7 @@ export default function HomePage() {
   return (
     <div
       data-landing-page="home"
-      className={`${display.className} min-h-screen bg-fd-background bg-[radial-gradient(ellipse_75%_36rem_at_48%_0,#2586c924,transparent)] text-fd-foreground selection:bg-fd-primary selection:text-fd-primary-foreground`}
+      className={`${display.className} min-h-dvh bg-fd-background bg-[radial-gradient(ellipse_75%_36rem_at_48%_0,#2586c924,transparent)] text-fd-foreground selection:bg-fd-primary selection:text-fd-primary-foreground`}
     >
       <LandingAnalytics />
       <StructuredData />

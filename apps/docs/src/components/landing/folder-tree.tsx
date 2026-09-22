@@ -5,9 +5,10 @@ import { useId, useState } from 'react';
 
 import { backendFiles, treeRows } from '#components/landing/backend-files.ts';
 import { HighlightedCode } from '#components/landing/highlighted-code.tsx';
+import type { CodeLine } from '#lib/highlight-code.ts';
 import { trackLanding } from '#lib/track-landing.ts';
 
-export function FolderTree() {
+export function FolderTree({ highlighted }: { highlighted: Record<string, CodeLine[]> }) {
   const [selected, setSelected] = useState('queries');
   const panelId = useId();
   const file = backendFiles.find((item) => item.id === selected) ?? backendFiles[0];
@@ -67,7 +68,7 @@ export function FolderTree() {
               className={`col-start-1 row-start-1 flex min-w-0 flex-col ${selected === item.id ? '' : 'invisible max-md:hidden'}`}
             >
               <div className="flex-1">
-                <HighlightedCode code={item.code} />
+                <HighlightedCode lines={highlighted[item.id] ?? []} />
               </div>
               <p className="border-t border-fd-border px-4 py-4 text-xs leading-5 text-fd-muted-foreground sm:px-6">{item.description}</p>
             </div>

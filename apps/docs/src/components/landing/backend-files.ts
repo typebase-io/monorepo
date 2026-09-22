@@ -1,5 +1,3 @@
-import { steps } from '#components/landing/walkthrough-steps.ts';
-
 export interface BackendFile {
   id: string;
   path: string;
@@ -39,27 +37,57 @@ export const create = action
     id: 'queries',
     path: 'typebase/actions/queries/todos.ts',
     chip: 'read',
-    description: 'Read data through a server function. Its return type reaches your frontend.',
-    code: steps[1].code,
+    description: 'Validate the input, filter the read, and the return type reaches your frontend.',
+    code: `import { z } from 'zod';
+import { action } from '../../_generated/server';
+
+export const getByStatus = action
+  .input(z.object({ completed: z.boolean() }))
+  .handler(async ({ db, input }) => {
+    return db.query.todos.findMany({
+      where: { completed: input.completed },
+    });
+  });`,
   },
   {
     id: 'relations',
     path: 'typebase/db/relations.ts',
     chip: 'queries',
-    description: 'Register the tables available to your typed queries.',
+    description: 'Register each table, and describe how they join for typed queries.',
     code: `import { q } from 'typebase-io/db';
 import * as schema from './schema';
 
-export const relations = q.defineRelations(schema, () => ({
-  todos: {},
+export const relations = q.defineRelations(schema, (r) => ({
+  todos: {
+    user: r.one.users({
+      from: r.todos.userId,
+      to: r.users.id,
+    }),
+  },
+  users: {
+    todos: r.many.todos(),
+  },
 }));`,
   },
   {
     id: 'schema',
     path: 'typebase/db/schema.ts',
     chip: 'tables',
-    description: 'Your Postgres tables, defined with Drizzle.',
-    code: steps[0].code,
+    description: 'Every table lives in one file. references() is what creates the foreign key in Postgres.',
+    code: `import { p } from 'typebase-io/db';
+
+export const users = p.pgTable('users', {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: p.varchar({ length: 255 }).notNull(),
+  email: p.varchar({ length: 255 }).notNull().unique(),
+});
+
+export const todos = p.pgTable('todos', {
+  id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
+  value: p.varchar({ length: 255 }).notNull(),
+  completed: p.boolean().notNull(),
+  userId: p.integer().notNull().references(() => users.id),
+});`,
   },
   {
     id: 'auth',

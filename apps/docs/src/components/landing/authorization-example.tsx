@@ -1,6 +1,7 @@
 import { FileCode2 } from 'lucide-react';
 
 import { HighlightedCode } from '#components/landing/highlighted-code.tsx';
+import { highlightCode } from '#lib/highlight-code.ts';
 
 const code = `import { authedAction } from '../custom-actions';
 
@@ -11,7 +12,9 @@ export const getMine = authedAction
     });
   });`;
 
-export function AuthorizationExample() {
+export async function AuthorizationExample() {
+  const lines = await highlightCode(code);
+
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-fd-primary/25 bg-fd-muted/30">
       <div className="flex items-center justify-between gap-3 border-b border-fd-border px-4 py-3 sm:px-5">
@@ -31,7 +34,7 @@ export function AuthorizationExample() {
       </div>
 
       <div className="flex-1">
-        <HighlightedCode code={code} highlight={6} />
+        <HighlightedCode lines={lines} highlight={6} />
       </div>
 
       <p className="border-t border-fd-border px-4 py-4 text-xs leading-5 text-fd-muted-foreground sm:px-5">

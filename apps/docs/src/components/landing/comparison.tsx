@@ -1,8 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-import { SectionLabel } from '#components/landing/section-label.tsx';
-
 const rows = [
   {
     label: 'Backend logic',
@@ -51,16 +49,15 @@ export function Comparison() {
       className="scroll-mt-20 border-b border-fd-border"
     >
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:px-12">
-        <SectionLabel number="05">Choose your tradeoffs</SectionLabel>
-        <h2 id="comparison-heading" className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
-          The DX of Convex.
+        <h2 id="comparison-heading" className="max-w-3xl text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+          The DX of <span className="text-fd-primary">Convex</span>.
           <br />
-          <span className="text-fd-primary">The openness of Supabase.</span>
+          The openness of <span className="text-fd-primary">Supabase</span>.
         </h2>
         <p className="mt-5 max-w-2xl text-sm leading-6 text-fd-muted-foreground">
           A dashboard setting never shows up in a pull request. There’s no diff to review and no commit to revert, so your repo and your backend drift
-          apart and, a toggle someone flips on Tuesday can break production without a line of code changing. Your agent can’t see it either; it only
-          reads the repo. In Typebase your schema, auth, and permission checks are files, reviewed like the rest of your app.
+          apart. A toggle someone flips on Tuesday can break production without a line of code changing. Your agent can’t see it either; it only reads
+          the repo. In Typebase your schema, auth, and permission checks are files, reviewed like the rest of your app.
         </p>
         <div className="scroll-shadows mt-8 rounded-lg border border-fd-primary/25">
           <div tabIndex={0} role="region" aria-label="Backend comparison, scroll horizontally on smaller screens" className="scroll-shadows-scroller">

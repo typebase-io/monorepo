@@ -40,6 +40,12 @@ export function HeroTagline({ align = 'center', className }: { align?: 'center' 
   function scrambleTo(target: string) {
     if (timerRef.current) clearInterval(timerRef.current);
 
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setText(target);
+
+      return;
+    }
+
     let frame = 0;
 
     timerRef.current = setInterval(() => {

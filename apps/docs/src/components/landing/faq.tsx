@@ -3,16 +3,16 @@ import Link from 'next/link';
 
 import { FaqItem } from '#components/landing/faq-item.tsx';
 import { ScrollTo } from '#components/landing/scroll-to.tsx';
-import { SectionLabel } from '#components/landing/section-label.tsx';
 
 export function Faq() {
   return (
     <section aria-labelledby="faq-heading" data-landing-section="faq" className="border-b border-fd-border">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 sm:py-20 lg:grid-cols-[1fr_2fr] lg:gap-20 lg:px-12">
         <div>
-          <SectionLabel number="08">Before you make a folder</SectionLabel>
-          <h2 id="faq-heading" className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
-            Fair questions.
+          <h2 id="faq-heading" className="text-3xl font-semibold leading-[1.1] tracking-[-0.035em] sm:text-4xl">
+            Fair questions,
+            <br />
+            straight <span className="text-fd-primary">answers</span>.
           </h2>
           <a
             href="https://youtu.be/pvL5LOt567g"

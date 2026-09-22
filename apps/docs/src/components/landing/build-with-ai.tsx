@@ -2,18 +2,16 @@ import { ArrowRight, Check } from 'lucide-react';
 import Link from 'next/link';
 
 import { AgentPrompt } from '#components/landing/agent-prompt.tsx';
-import { SectionLabel } from '#components/landing/section-label.tsx';
 
 export function BuildWithAI() {
   return (
     <section id="build-with-ai" aria-labelledby="agent-heading" data-landing-section="agent" className="scroll-mt-20 border-b border-fd-border">
       <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 sm:py-20 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-20 lg:px-12">
         <div>
-          <SectionLabel number="02">AI already speaks TypeScript</SectionLabel>
-          <h2 id="agent-heading" className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+          <h2 id="agent-heading" className="text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
             Your agent’s
             <br />
-            <span className="text-fd-primary">kind of backend.</span>
+            kind of <span className="text-fd-primary">backend</span>.
           </h2>
           <p className="mt-5 max-w-md text-sm leading-6 text-fd-muted-foreground">
             Your schema, auth, and server functions live in the repo your agent is already working in. It can follow the code from a database table

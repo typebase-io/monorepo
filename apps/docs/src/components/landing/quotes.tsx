@@ -1,5 +1,3 @@
-import { SectionLabel } from '#components/landing/section-label.tsx';
-
 const quotes = [
   {
     text: 'I deleted 40,000 lines of REST plumbing last quarter. My tech lead cried. I think they were happy tears. I have stopped asking.',
@@ -40,22 +38,15 @@ export function Quotes() {
   return (
     <section aria-labelledby="quotes-heading" className="border-b border-fd-border bg-fd-muted/25">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-20 lg:px-12">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <SectionLabel number="07">Extremely fictional social proof</SectionLabel>
-            <h2 id="quotes-heading" className="mt-5 text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
-              Real backend.
-              <br />
-              Imaginary fan club.
-            </h2>
-          </div>
-          <p className="md:max-w-60 text-sm leading-6 text-fd-muted-foreground">
-            None of these people exist.
-            <br />
-            Their taste in backend tooling is excellent tho.
-          </p>
-        </div>
-        <div className="mt-10 grid border-fd-primary/25 md:mt-10 md:grid-cols-3 md:border-t">
+        <h2 id="quotes-heading" className="text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl">
+          Real backend.
+          <br />
+          Imaginary fan club.
+        </h2>
+        <p className="mt-5 max-w-md text-sm leading-6 text-fd-muted-foreground">
+          None of these people exist. Their taste in backend tooling is excellent tho.
+        </p>
+        <div className="mt-10 grid border-fd-primary/25 md:grid-cols-3 md:border-t">
           {quotes.map((quote, index) => (
             <figure key={quote.name} className={cell}>
               <span aria-hidden="true" className="font-serif text-5xl leading-none text-fd-primary">

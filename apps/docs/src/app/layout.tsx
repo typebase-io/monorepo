@@ -85,7 +85,7 @@ export const viewport: Viewport = {
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={`${inter.className} dark`}>
-      <body className="flex flex-col min-h-screen">
+      <body className="flex min-h-dvh flex-col">
         <RootProvider theme={{ enabled: false }}>{children}</RootProvider>
         <Analytics />
       </body>
