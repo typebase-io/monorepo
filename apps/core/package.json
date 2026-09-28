@@ -1,6 +1,6 @@
 {
   "name": "@typebase-io/core",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "private": false,
   "type": "module",
   "description": "A type-safe backend you write as TypeScript files inside your existing app.",
@@ -110,6 +110,11 @@
       "types": "./dist/types/src/server/auth/plugins.d.ts",
       "import": "./dist/esm/src/server/auth/plugins.js",
       "require": "./dist/cjs/src/server/auth/plugins.js"
+    },
+    "./server/local-storage": {
+      "types": "./dist/types/src/server/storage/local-storage/index.d.ts",
+      "import": "./dist/esm/src/server/storage/local-storage/index.js",
+      "require": "./dist/cjs/src/server/storage/local-storage/index.js"
     }
   },
   "dependencies": {
@@ -119,8 +124,10 @@
     "@orpc/tanstack-query": "1.14.3",
     "@t3-oss/env-core": "0.13.11",
     "@types/pg": "8.20.0",
+    "@vercel/blob": "2.8.0",
     "better-auth": "1.6.11",
-    "drizzle-orm": "1.0.0-beta.22"
+    "drizzle-orm": "1.0.0-beta.22",
+    "files-sdk": "2.6.0"
   },
   "devDependencies": {
     "@types/node": "24.1.0",

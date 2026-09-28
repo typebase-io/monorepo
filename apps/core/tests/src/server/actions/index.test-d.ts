@@ -9,6 +9,7 @@ import { type DB } from '#server/actions/types.ts';
 import { defineAuth } from '#server/auth/index.ts';
 import { defineEnv } from '#server/env/index.ts';
 import { type PublisherInstance, definePublisher } from '#server/publisher/define-publisher.ts';
+import { type StorageInstance, defineStorage } from '#server/storage/define-storage.ts';
 
 const todos = p.pgTable('todos', { id: p.integer().primaryKey(), userId: p.text().notNull() });
 const users = p.pgTable('users', { id: p.text().primaryKey() });
@@ -26,10 +27,13 @@ const _publisher = definePublisher({
   events: { 'post.created': z.object({ id: z.number() }) },
 });
 
+const _storage = defineStorage({ provider: 'filesystem', buckets: { avatars: {} } });
+
 type Relations = typeof _relations;
 type Auth = typeof _auth;
 type Env = typeof _env;
 type Publisher = typeof _publisher;
+type Storage = typeof _storage;
 
 type Context<TBuilder> = TBuilder extends { handler: (fn: (context: infer TContext) => never) => unknown } ? TContext : never;
 
@@ -216,6 +220,53 @@ describe('ActionBuilder', () => {
 
     it('behaves the same when the absent publisher is spelled out', () => {
       expectTypeOf<Context<ActionBuilder<Relations, Auth, Env, never>>>().toEqualTypeOf<Context<ActionBuilder<Relations, Auth, Env>>>();
+    });
+  });
+
+  describe('with storage', () => {
+    type Ctx = Context<ActionBuilder<never, never, never, never, Storage>>;
+
+    it('provides the storage the project declared', () => {
+      expectTypeOf<Ctx['storage']>().toEqualTypeOf<StorageInstance<Storage>>();
+    });
+
+    it('selects only the declared buckets', () => {
+      expectTypeOf<Ctx['storage']['bucket']>().parameter(0).toEqualTypeOf<'avatars'>();
+    });
+
+    it('provides no db, auth, publisher, or env, since nothing needs one', () => {
+      expectTypeOf<Ctx>().not.toHaveProperty('db');
+      expectTypeOf<Ctx>().not.toHaveProperty('auth');
+      expectTypeOf<Ctx>().not.toHaveProperty('publisher');
+      expectTypeOf<Ctx>().not.toHaveProperty('env');
+    });
+
+    it('still provides the request headers', () => {
+      expectTypeOf<Ctx>().toExtend<RequestHeadersPluginContext>();
+    });
+  });
+
+  describe('with a db, auth, env, a publisher and storage', () => {
+    type Ctx = Context<ActionBuilder<Relations, Auth, Env, Publisher, Storage>>;
+
+    it('provides everything at once', () => {
+      expectTypeOf<Ctx['db']>().toEqualTypeOf<DB<Relations>>();
+      expectTypeOf<Ctx['auth']>().toEqualTypeOf<Auth>();
+      expectTypeOf<Ctx['publisher']>().toEqualTypeOf<PublisherInstance<Publisher>>();
+      expectTypeOf<Ctx['storage']>().toEqualTypeOf<StorageInstance<Storage>>();
+      expectTypeOf<Ctx['env']>().toEqualTypeOf<{ STRIPE_KEY: string; DATABASE_URL: string; BETTER_AUTH_SECRET: string }>();
+    });
+  });
+
+  describe('without storage', () => {
+    it('keeps it off the context of a project that has everything else', () => {
+      expectTypeOf<Context<ActionBuilder<Relations, Auth, Env, Publisher>>>().not.toHaveProperty('storage');
+    });
+
+    it('behaves the same when the absent storage is spelled out', () => {
+      expectTypeOf<Context<ActionBuilder<Relations, Auth, Env, Publisher, never>>>().toEqualTypeOf<
+        Context<ActionBuilder<Relations, Auth, Env, Publisher>>
+      >();
     });
   });
 });

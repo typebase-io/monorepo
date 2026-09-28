@@ -4,3 +4,4 @@ export * from '#server/db/index.ts';
 export * from '#server/env/index.ts';
 export * from '#server/error/index.ts';
 export * from '#server/publisher/index.ts';
+export * from '#server/storage/index.ts';
