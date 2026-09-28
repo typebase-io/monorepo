@@ -1,3 +1,4 @@
+import "hono";
 import { typebaseHandler } from "./server.ts";
 
 export default typebaseHandler;

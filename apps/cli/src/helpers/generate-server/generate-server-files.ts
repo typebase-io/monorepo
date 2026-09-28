@@ -75,7 +75,7 @@ export const generateServerFiles = async ({
     .exhaustive();
 
   const envImports = [
-    hasEnv && adapter !== 'cloudflare' ? `import 'dotenv/config';\n\n` : '',
+    hasEnv && adapter !== 'cloudflare' ? `import "dotenv/config";\n\n` : '',
     hasEnv ? `import "${generation === 'ts' ? './env.ts' : './env.js'}";\n\n` : '',
   ].join('');
 

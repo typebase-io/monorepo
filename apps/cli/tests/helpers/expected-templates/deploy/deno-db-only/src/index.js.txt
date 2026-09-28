@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import "./env.js";
 import { typebaseHandler } from "./server.js";
 Deno.serve({ port: 3000 }, typebaseHandler);

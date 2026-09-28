@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 import "./env.js";
 import { createServer } from "node:http";
 import { typebaseHandler } from "./server.js";

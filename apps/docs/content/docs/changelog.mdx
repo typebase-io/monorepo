@@ -18,6 +18,19 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.19 [#v0-1-19]
+
+_2026-09-28._
+
+**Fixed**
+
+- [`deploy`](/docs/cli/deploy) to Vercel serves your server again. Since 0.1.17 split the generated entry point into `src/index.js` and
+  `src/server.js`, every Vercel deploy failed at boot with `Invalid export found in module "/var/task/src/server.js". The default export must be a
+function or server.` Vercel's Hono preset only accepts an entry file that imports `hono` by name, and checks `src/index` before `src/server`;
+  `src/index.js` no longer imported it, so Vercel skipped it and loaded `src/server.js`, which has no default export. The Hono entry file now imports
+  `hono` itself, so Vercel picks `src/index.js`. `package.json`'s `main` didn't help, because Vercel only falls back to it when no file matches.
+- The generated entry point imports `"dotenv/config"` with double quotes, like every other import in the generated server.
+
 ## 0.1.18 [#v0-1-18]
 
 _2026-09-28._

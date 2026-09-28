@@ -1,7 +1,8 @@
-import 'dotenv/config';
+import "dotenv/config";
 
 import "./env.ts";
 
+import "hono";
 import { typebaseHandler } from "./server.ts";
 
 export default typebaseHandler;

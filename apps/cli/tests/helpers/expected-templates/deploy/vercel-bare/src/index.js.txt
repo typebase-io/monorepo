@@ -1,2 +1,3 @@
+import "hono";
 import { typebaseHandler } from "./server.js";
 export default typebaseHandler;

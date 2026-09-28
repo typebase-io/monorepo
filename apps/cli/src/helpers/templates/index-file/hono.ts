@@ -1,4 +1,5 @@
-export const honoIndexFileTemplate = `import { typebaseHandler } from "./server.ts";
+export const honoIndexFileTemplate = `import "hono";
+import { typebaseHandler } from "./server.ts";
 
 export default typebaseHandler;
 `;
