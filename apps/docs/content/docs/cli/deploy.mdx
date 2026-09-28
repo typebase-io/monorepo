@@ -120,9 +120,13 @@ npx typebase-io-cli deploy prod
 
 When you deploy to Vercel for the first time:
 
-1. The CLI asks you to log in to Vercel (opens a browser).
+1. The CLI asks you to paste a Vercel access token, created at [vercel.com/account/tokens](https://vercel.com/account/tokens).
 2. You select an existing Vercel project or create a new one.
 3. Your server is deployed as a Vercel Serverless Function using [Hono](https://hono.dev/) as the HTTP adapter.
+
+A token scoped to your team is enough to deploy. If your project has a [`storage.ts`](/docs/storage) on the `vercel` provider, create the token with the
+**Full Account** scope instead: bucket sync reads each Blob store's token, and Vercel only allows that from a Full Account token. See
+[Vercel needs a Full Account token](/docs/storage#vercel-needs-a-full-account-token).
 
 The deployment URL looks like: `https://your-project.vercel.app`
 

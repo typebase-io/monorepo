@@ -293,6 +293,21 @@ Bucket sync signs in with the same Vercel or Cloudflare login [`deploy`](/docs/c
 or Cloudflare account should hold your buckets, and saves the answer to `typebase.json` as `storage.vercel.orgId` or `storage.cloudflare.accountId`. It
 never asks for a server project, so storage on one platform works with a server on another, or with no server deployed at all.
 
+### Vercel needs a Full Account token
+
+On Vercel, bucket sync reads each Blob store's read/write token so it can hand it to your server. Vercel only returns that token to an access token
+scoped to **Full Account**. A token scoped to a single team or project can create the store, but reading its token fails:
+
+```
+Unexpected Error: Error: {"error":{"code":"challenge_required","message":"You don't have permission to update the user.","action":"update","resource":"userSudo"}}
+```
+
+Create a token with the **Full Account** scope at [vercel.com/account/tokens](https://vercel.com/account/tokens), replace `VERCEL_TOKEN` in your
+project-root `.env` with it, and sync or deploy again. A store the failed run already created is adopted rather than created twice.
+
+A team-scoped token is enough to deploy a server, so this usually shows up the first time a project that already deploys to Vercel adds a
+`storage.ts`. The token stays in your `.env` for the CLI either way; your server only ever receives the per-store tokens.
+
 ## Credentials
 
 Your server needs credentials to reach its buckets. Bucket sync creates them, writes them to your project-root `.env`, and `deploy` sets them on your

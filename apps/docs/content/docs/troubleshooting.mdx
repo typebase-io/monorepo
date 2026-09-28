@@ -240,6 +240,19 @@ The CLI reads the storage config statically, to know which buckets to create bef
 `provider` as a plain string such as `'vercel'`, write the `buckets` object inline, and give every bucket on `vercel` or `cloudflare` an `access`. The
 shape on the [Storage](/docs/storage) page is the one to copy.
 
+### `challenge_required` / `userSudo` during a sync or deploy
+
+```
+Unexpected Error: Error: {"error":{"code":"challenge_required","message":"You don't have permission to update the user.","action":"update","resource":"userSudo"}}
+```
+
+Your `VERCEL_TOKEN` is scoped to a team or a project. That is enough to deploy a server and to create Blob stores, but Vercel only returns a store's
+read/write token to a token scoped to **Full Account**, and bucket sync needs that token to give your server access to the store.
+
+Create a **Full Account** token at [vercel.com/account/tokens](https://vercel.com/account/tokens), replace `VERCEL_TOKEN` in your project-root `.env`,
+and run the sync or deploy again. The stores the failed run created are adopted, not duplicated. See
+[Vercel needs a Full Account token](/docs/storage#vercel-needs-a-full-account-token).
+
 ### "already exists ... as private" (or public) during a sync
 
 ```

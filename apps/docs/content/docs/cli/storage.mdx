@@ -43,8 +43,15 @@ With the `filesystem` provider there is nothing to create, and the command says 
 
 ### Signing in
 
-It signs in with the same token [`deploy`](/docs/cli/deploy#provider-setup) uses: `VERCEL_TOKEN` or `CLOUDFLARE_API_TOKEN` in your project-root `.env`, or
-a browser login when there is none. That token stays in `.env` for the CLI. It is never written to the storage keys or sent to your server.
+It signs in with the same token [`deploy`](/docs/cli/deploy#provider-setup) uses: `VERCEL_TOKEN` or `CLOUDFLARE_API_TOKEN` in your project-root `.env`. When
+there is none, it asks you to paste one and saves it there. That token stays in `.env` for the CLI. It is never written to the storage keys or sent to
+your server.
+
+<Callout type="warn">
+  On Vercel, the token must be scoped to **Full Account**. A team- or project-scoped token creates the Blob store and then fails with
+  `challenge_required` when the sync reads the store's token. See [Vercel needs a Full Account
+  token](/docs/storage#vercel-needs-a-full-account-token).
+</Callout>
 
 ### Running it from deploy
 
