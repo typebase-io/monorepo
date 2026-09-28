@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Braces, Database, FileCode2, LockKeyhole } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Braces, Database, FileCode2, HardDrive, LockKeyhole } from 'lucide-react';
 import Link from 'next/link';
 
 const features = [
@@ -20,6 +20,14 @@ const features = [
   },
   {
     number: '03',
+    icon: HardDrive,
+    title: 'Files, in buckets you declared.',
+    body: 'Public and private buckets on Vercel Blob or Cloudflare R2, created for dev and prod by the CLI. Upload and hand out signed URLs from your actions.',
+    file: 'storage.ts',
+    href: '/docs/storage',
+  },
+  {
+    number: '04',
     icon: Braces,
     title: 'Types that go the whole way.',
     body: 'From your database to your server to your frontend. Change a return value and your editor knows about it.',
@@ -40,7 +48,7 @@ export function Features() {
               <span className="text-fd-primary">Wiring removed.</span>
             </h2>
             <p className="mt-5 max-w-xs text-sm leading-6 text-fd-muted-foreground">
-              Built on Drizzle, better-auth, and oRPC. Familiar tools, working together in one folder.
+              Built on Drizzle, better-auth, oRPC, and files-sdk. Familiar tools, working together in one folder.
             </p>
             <Link href="/docs" className="mt-6 inline-flex items-center gap-2 text-sm text-fd-primary underline-offset-4 hover:underline">
               Meet the toolkit

@@ -18,6 +18,50 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.18 [#v0-1-18]
+
+_2026-09-28._
+
+**Added**
+
+- [`defineStorage`](/docs/storage): declare a storage provider and named buckets in `typebase/storage.ts`, and every action gets a typed `storage`.
+  Until now, files meant leaving Typebase: picking a storage service, creating one bucket per environment by hand, copying credentials between
+  dashboards, and wiring an SDK into every action that needed one.
+  - The provider is `vercel` (Blob), `cloudflare` (R2), or `filesystem`, chosen independently of your server provider, so a Worker can keep its
+    files in Vercel Blob and a Deno Deploy server can use either.
+  - Each bucket is `public` or `private`. `storage.bucket(name)` only accepts a declared name, `publicUrl` exists only on public buckets and
+    `signedUrl` only on private ones, so a misspelled bucket or a permanent link to a private file is a type error. Every bucket also has
+    `signedUploadUrl`, for browser uploads that never pass through your server, and files-sdk's `upload`, `download`, `head`, `exists`, `delete`,
+    `copy`, `move`, `list`, `listAll`, and `search`. Per-bucket `prefix`, `plugins`, and `hooks` are passed to files-sdk unchanged.
+  - Every bucket exists once per target, named `<project>-<bucket>-<target>`. The project part is chosen on the first sync and frozen in
+    [`typebase.json`](/docs/configuration#storage), so renaming your server project or switching server providers never points your code at a fresh
+    set of empty buckets.
+
+- [`storage sync <target>`](/docs/cli/storage) creates every declared bucket missing for the target, adopts the ones that exist, warns about buckets you
+  no longer declare, and writes their credentials to your project-root `.env`. It never deletes or empties a bucket, and it stops without changing
+  anything when an existing bucket's access differs from the declaration. On Cloudflare, public buckets get their r2.dev domain and each target gets
+  one R2-only token scoped to its buckets, widened in place as buckets are added.
+
+- A [local run](/docs/cli/start#choosing-storage) keeps a `vercel` or `cloudflare` storage in local storage: the same buckets, on disk in the server
+  cache, with public, signed, and signed upload URLs served and verified by the local server, so browser upload flows work locally. `--dev-storage` and
+  `--prod-storage` run against the real buckets instead, independently of the database flags.
+
+- [`generate-server --local-storage`](/docs/cli/generate-server#--local-storage) builds a server that uses local storage and serves its files, at
+  `/storage` or, for an embedded server, at [`--storage-path`](/docs/cli/generate-server#serving-paths) (`server.storagePath`). Without the flag, a
+  generated server reads the same storage variables a deployed one does.
+
+- [`init --with-storage`](/docs/cli/init#--with-storage) scaffolds a storage file with a public `avatars` and a private `documents` bucket, plus
+  `getAvatarUploadUrl` and `getDocumentUrl` actions that use them.
+
+**Changed**
+
+- [`deploy`](/docs/cli/deploy#storage-provisioning) runs bucket sync for its target before it builds, then sets the storage credentials on your server
+  provider next to `DATABASE_URL`, so a deploy never ships against a bucket that doesn't exist. Your own Vercel or Cloudflare login token is never
+  put on the server.
+- `codegen` now also has to be rerun when `storage.ts` is added or removed, the same as `publisher.ts`. Editing an existing one doesn't.
+- `generate-server` seeds the storage credentials into a standalone server's `.env`, preferring their `_DEV` values, the same way it does for
+  `DATABASE_URL`.
+
 ## 0.1.17 [#v0-1-17]
 
 _2026-09-07._

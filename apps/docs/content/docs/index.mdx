@@ -5,7 +5,7 @@ description: What Typebase is and how it works.
 
 **Typebase** is a library you add to your existing app to get a fully typed backend. No separate project, no external services.
 
-You write actions, a database schema, auth, validated environment variables, and optional realtime events as TypeScript files in a `typebase/` folder inside your project. The CLI generates types, pushes schema changes, and deploys that folder as a server. Your frontend, in the same repo, calls your actions like local functions, fully typed.
+You write actions, a database schema, auth, validated environment variables, optional realtime events, and file storage as TypeScript files in a `typebase/` folder inside your project. The CLI generates types, pushes schema changes, and deploys that folder as a server. Your frontend, in the same repo, calls your actions like local functions, fully typed.
 
 ## The mental model
 
@@ -26,6 +26,7 @@ Your project has two parts:
       <File name="auth.ts" comment="authentication" />
       <File name="env.ts" comment="environment variables" />
       <File name="publisher.ts" comment="typed realtime events" />
+      <File name="storage.ts" comment="file storage buckets" />
     </Folder>
   </Folder>
 </Files>
@@ -57,17 +58,21 @@ You can put any server-side code you want inside `typebase/`. The CLI looks for 
 
 **`publisher.ts`**: declares the typed events actions can [publish and subscribe to](/docs/publisher). When it exists, actions receive `publisher` on their context. The database publisher stores events in your own Postgres table and lets reconnecting streams resume from the last event a client received.
 
+**`storage.ts`**: declares a [storage provider and its buckets](/docs/storage). When it exists, actions receive `storage` on their context, and pick a bucket by a name the compiler checks. Files live in Vercel Blob, Cloudflare R2, or on disk, whichever server provider you deploy to.
+
 Everything else is up to you. You can add utilities, helpers, shared types, or any other server-side code alongside these files.
 
 ## Built on
 
-Typebase is built on top of three well-established open-source libraries. If you ever need something that isn't covered in these docs, their documentation is a great place to look.
+Typebase is built on top of well-established open-source libraries. If you ever need something that isn't covered in these docs, their documentation is a great place to look.
 
 **[oRPC](https://orpc.dev)** handles the type-safe RPC layer. It takes your action definitions and generates a fully typed client so your frontend calls are validated at compile time, with no manual type declarations and no drift between server and client.
 
 **[Drizzle ORM](https://orm.drizzle.team/)** is used for the database layer. It gives you a SQL-like query API in TypeScript, with full type inference for your schema. If you need to write complex queries or use Drizzle features not covered here, their docs apply directly.
 
 **[better-auth](https://www.better-auth.com/)** powers authentication. It supports email/password, social providers (Google, GitHub, and more), sessions, and a plugin system for advanced use cases. The `defineAuth` function in Typebase is a thin wrapper around it, so the better-auth docs are the full reference.
+
+**[files-sdk](https://github.com/haydenbleasel/files-sdk)** handles [storage](/docs/storage). Typebase creates the buckets and delivers their credentials, and a bucket in your actions exposes files-sdk's file operations almost unchanged.
 
 ## Works with any JS/TS project
 

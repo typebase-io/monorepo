@@ -23,6 +23,9 @@ DATABASE_URL_LOCAL=postgres://localhost:5432/mydb
 
 Or name a different one with a [flag](#choosing-a-database). A project with no schema needs no database at all.
 
+A project with a [`storage.ts`](/docs/storage) needs nothing extra: its files are kept on disk in [local storage](#choosing-storage) unless you ask for
+your real buckets.
+
 ## What happens during a run
 
 Every pass, including the first:
@@ -42,18 +45,21 @@ Then it watches `typebase/` and does all six again on every change. Steps 4 and 
 
 ## Options
 
-| Flag                                 | Description                                                                           | Default              |
-| ------------------------------------ | ------------------------------------------------------------------------------------- | -------------------- |
-| `--database-url <url>`               | Connection string of the database to run against                                      | `DATABASE_URL_LOCAL` |
-| `--dev-database`                     | Run against `DATABASE_URL_DEV`, your dev branch                                       | off                  |
-| `--prod-database`                    | Run against `DATABASE_URL`, your production branch                                    | off                  |
-| `--port <number>`                    | Port the server listens on                                                            | `server.port` (8080) |
-| `--output <type>`                    | Output format to run: `ts`, `esm`, or `cjs`                                           | detected             |
-| `--command <command>`                | Command to start the server with, run in the server cache                             | none                 |
-| `--install-command <command>`        | Command to install the server's dependencies with                                     | your package manager |
-| `--skip-schema-changes-confirmation` | Apply destructive **database schema** changes without asking. They are still reported | off                  |
+| Flag                                 | Description                                                                             | Default              |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | -------------------- |
+| `--database-url <url>`               | Connection string of the database to run against                                        | `DATABASE_URL_LOCAL` |
+| `--dev-database`                     | Run against `DATABASE_URL_DEV`, your dev branch                                         | off                  |
+| `--prod-database`                    | Run against `DATABASE_URL`, your production branch                                      | off                  |
+| `--dev-storage`                      | Run against your dev buckets, using the storage keys in your project-root `.env`        | off                  |
+| `--prod-storage`                     | Run against your production buckets, using the storage keys in your project-root `.env` | off                  |
+| `--port <number>`                    | Port the server listens on                                                              | `server.port` (8080) |
+| `--output <type>`                    | Output format to run: `ts`, `esm`, or `cjs`                                             | detected             |
+| `--command <command>`                | Command to start the server with, run in the server cache                               | none                 |
+| `--install-command <command>`        | Command to install the server's dependencies with                                       | your package manager |
+| `--skip-schema-changes-confirmation` | Apply destructive **database schema** changes without asking. They are still reported   | off                  |
 
-The three database flags conflict with each other. Passing more than one is an error.
+The three database flags conflict with each other, and so do the two storage flags. Passing more than one of either is an error. A database flag and a
+storage flag combine freely.
 
 ## Choosing a database
 
@@ -111,6 +117,33 @@ up to the last recorded migration only.
 
 This is where `start` differs from [`deploy`](/docs/cli/deploy#deploying-with-migrations), which refuses. Deploy is right to refuse, since shipping types that describe columns the database lacks is a production failure. A watch loop that stopped dead on every unrecorded edit would be unusable. It matches [`db <target> migrate`](/docs/cli/db#db-dev-migrate) instead.
 
+## Choosing storage
+
+When your project has a [`storage.ts`](/docs/storage) on the `vercel` or `cloudflare` provider, a local run keeps its files in **local storage** by
+default: the same buckets, on disk in the [server cache](#the-server-cache), served and signed by the local server itself under `/storage`. Uploading to a
+signed upload URL, reading a signed URL, and opening a public URL all work in a browser, the way they will in production. See
+[local storage](/docs/storage#local-storage).
+
+| How              | Storage                                                                    |
+| ---------------- | -------------------------------------------------------------------------- |
+| No flag          | Local storage, in the server cache                                         |
+| `--dev-storage`  | Your dev buckets, with the `_DEV` storage keys in your project-root `.env` |
+| `--prod-storage` | Your production buckets, with the unsuffixed storage keys                  |
+
+The default is local for the same reason the database default is: a test upload should never reach a bucket someone else reads from without you asking.
+
+The two flags read the keys [bucket sync](/docs/storage#bucket-sync) writes, such as `TYPEBASE_STORAGE_VERCEL_TOKENS_DEV`. A missing key stops the run and
+names what to do:
+
+```
+No storage keys found in TYPEBASE_STORAGE_VERCEL_TOKENS_DEV. Run `npx typebase-io-cli storage sync dev` to create the dev
+buckets and write their keys to .env.
+```
+
+The keys are read once, when the command starts. After a sync, restart the run to pick up the new ones.
+
+A declared `filesystem` provider is used as it is, in its own `root`, and the two flags have no effect on it beyond a warning saying so.
+
 ## The server cache
 
 The generated server is not written into your project. It goes into a per-project directory under your user cache directory:
@@ -118,6 +151,7 @@ The generated server is not written into your project. It goes into a per-projec
 ```
 ~/.cache/typebase/<project-name>-<fingerprint>/
   server/                        # the generated server and its node_modules
+  storage/                       # local storage: one directory per bucket
   typebase-server-cache.json     # the project this cache belongs to
 ```
 
@@ -192,7 +226,7 @@ Two keys are ever written to your **project-root `.env`**:
 
 Your database URLs are read and never written, so a local run cannot repoint your other tooling.
 
-The `.env` inside the server cache is filled by the same seeding [`generate-server`](/docs/cli/generate-server#what-gets-generated) uses, with one difference: `DATABASE_URL` is always overwritten with the database you chose. Without that, a URL passed with `--database-url` would be migrated while the server queried a stale one, with nothing on screen to suggest it. Every other key keeps the never-overwrite rule, and provider tokens are still never copied.
+The `.env` inside the server cache is filled by the same seeding [`generate-server`](/docs/cli/generate-server#what-gets-generated) uses, with one difference: `DATABASE_URL` is always overwritten with the database you chose. Without that, a URL passed with `--database-url` would be migrated while the server queried a stale one, with nothing on screen to suggest it. With `--dev-storage` or `--prod-storage`, the storage keys are overwritten the same way, with the values of the target you chose. Every other key keeps the never-overwrite rule, and provider tokens are still never copied.
 
 <Callout type="info">
   You never edit that file. It is machine-managed and refilled on every pass, so a variable the server says is missing is missing from your

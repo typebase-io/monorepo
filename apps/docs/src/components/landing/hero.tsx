@@ -22,8 +22,8 @@ export function Hero() {
             <span className="text-fd-primary">Make it a folder.</span>
           </h1>
           <p className="mt-5 max-w-md text-base leading-7 text-fd-muted-foreground sm:text-lg sm:leading-8">
-            Add a <span className="font-mono text-[0.92em] text-fd-foreground">typebase/</span> folder to your repo: database, server functions, and
-            auth, all in TypeScript. Your frontend calls them like local functions.
+            Add a <span className="font-mono text-[0.92em] text-fd-foreground">typebase/</span> folder to your repo: database, server functions, auth,
+            and file storage, all in TypeScript. Your frontend calls them like local functions.
           </p>
           <InstallCommand command="npx typebase-io-cli init" eventName="init" />
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">

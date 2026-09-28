@@ -1,11 +1,11 @@
 ---
 name: typebase
-description: Build, run, deploy, and consume a Typebase backend using typed actions and streams, middleware, Drizzle PostgreSQL schema and relations, better-auth, validated environment variables, and typed publishers. Use when a project contains typebase-io, typebase-io-cli, typebase.json, or a Typebase project directory, or when the user mentions Typebase, the action builder, defineAuth, defineEnv, definePublisher, codegen, db push/pull/migrate, migrations, deploy, logs, start, a local run, generate-server, or mounting an embedded Typebase server inside an existing application.
+description: Build, run, deploy, and consume a Typebase backend using typed actions and streams, middleware, Drizzle PostgreSQL schema and relations, better-auth, validated environment variables, typed publishers, and storage buckets. Use when a project contains typebase-io, typebase-io-cli, typebase.json, or a Typebase project directory, or when the user mentions Typebase, the action builder, defineAuth, defineEnv, definePublisher, defineStorage, buckets, file uploads, storage sync, codegen, db push/pull/migrate, migrations, deploy, logs, start, a local run, generate-server, or mounting an embedded Typebase server inside an existing application.
 ---
 
 # Typebase
 
-Typebase turns a directory of TypeScript files into a deployed, type-safe HTTP server. It uses oRPC for RPC, Drizzle for PostgreSQL, better-auth for authentication, Neon for managed databases, and Vercel, Cloudflare Workers, or Deno Deploy for hosting.
+Typebase turns a directory of TypeScript files into a deployed, type-safe HTTP server. It uses oRPC for RPC, Drizzle for PostgreSQL, better-auth for authentication, files-sdk for storage, Neon for managed databases, Vercel Blob or Cloudflare R2 for files, and Vercel, Cloudflare Workers, or Deno Deploy for hosting.
 
 ## Start by resolving the project
 
@@ -18,7 +18,7 @@ Before reading or writing backend files:
 5. Treat that directory as `<tb>` throughout this skill. Never assume the backend is literally at root-level `typebase/` and never create a second backend tree.
 6. Inspect existing conventions before editing. Preserve the user's package manager, validation library, action organization, auth configuration, and formatting.
 
-For a new setup, initialize only after installation with `npx typebase-io-cli init`. Before running it, inspect every scaffold target: a partial backend without `<tb>/tsconfig.json` may have same-named files overwritten even without `-f`, so obtain explicit overwrite authorization if any target already exists. Add `--with-auth`, `--with-db-publisher`, or both when requested. `--skip-example` conflicts with either feature flag; it omits example actions, schema content, and `env.ts`, but keeps the base `db/schema.ts` and `db/relations.ts` files.
+For a new setup, initialize only after installation with `npx typebase-io-cli init`. Before running it, inspect every scaffold target: a partial backend without `<tb>/tsconfig.json` may have same-named files overwritten even without `-f`, so obtain explicit overwrite authorization if any target already exists. Add `--with-auth`, `--with-db-publisher`, `--with-storage`, or any combination when requested. `--skip-example` conflicts with every feature flag; it omits example actions, schema content, and `env.ts`, but keeps the base `db/schema.ts` and `db/relations.ts` files.
 
 ## Project model and hard rules
 
@@ -32,6 +32,7 @@ For a new setup, initialize only after installation with `npx typebase-io-cli in
 ├── auth.ts              # optional better-auth config
 ├── env.ts               # optional env declarations and parsing
 ├── publisher.ts         # optional typed events
+├── storage.ts           # optional storage provider and buckets
 └── tsconfig.json
 ```
 
@@ -41,6 +42,7 @@ For a new setup, initialize only after installation with `npx typebase-io-cli in
 - When `db/schema.ts` exists, `db/relations.ts` is required. Register every exported table, using `{}` for a table without relations.
 - `auth.ts` requires `db/schema.ts`; Typebase cannot build/codegen/deploy auth without a database schema.
 - `publisher.ts` with `provider: 'db'` requires `db/schema.ts`, the canonical exported `events` table, and `events: {}` in relations.
+- `storage.ts` needs no database. Its provider is independent of the server provider.
 - Preserve end-to-end types. Do not use `any`, unsafe `as` casts, `@ts-ignore`, or `@ts-expect-error` to hide mismatches. Fix schema nullability, relations, action output, or stale generated types instead. `as const` is fine.
 
 ## Actions
@@ -82,6 +84,7 @@ The terminal handler or stream receives only the values enabled by its chain and
 | `auth`            | `auth.ts` exists                              | better-auth instance; it does not authenticate automatically.                 |
 | `env`             | `env.ts`, `db/schema.ts`, or `auth.ts` exists | Parsed custom env outputs plus automatic database/auth keys.                  |
 | `publisher`       | `publisher.ts` exists                         | Publisher typed from declared event names and schemas.                        |
+| `storage`         | `storage.ts` exists                           | `storage.bucket(name)`, typed from the declared bucket names and access.      |
 | `reqHeaders`      | Every action                                  | Incoming `Headers \| undefined`; guard it before APIs that require headers.   |
 | Middleware values | Earlier `.use()` returns them                 | Fully typed values merged into downstream middleware and the terminal method. |
 
@@ -214,6 +217,66 @@ Also register `events: {}` in relations and push the schema. `init --with-db-pub
 
 Typebase realtime is explicit event publishing plus SSE streams. It is not automatic table-change subscription, a reactive-query system, broadcast channels, or presence.
 
+## Storage
+
+Declare a storage provider and named buckets in `<tb>/storage.ts`:
+
+```ts
+import { defineStorage } from 'typebase-io/server';
+
+export const storage = defineStorage({
+  provider: 'vercel', // 'vercel' | 'cloudflare' | 'filesystem'
+  buckets: {
+    avatars: { access: 'public' },
+    documents: { access: 'private' },
+  },
+});
+```
+
+- Optional `options`: `region` (vercel), `locationHint` (cloudflare: `wnam`, `enam`, `weur`, `eeur`, `apac`, `oc`), `root` (filesystem; defaults to `typebase-storage` under the OS temp dir). Region and location hint only apply when a bucket is created.
+- The storage provider is independent of the server provider: a Cloudflare Worker can use Vercel Blob, and Deno Deploy can use either.
+- On `vercel` and `cloudflare`, every bucket needs `access: 'public' | 'private'`; bucket sync rejects a bucket without one. On `filesystem`, `access` is a type error. Buckets also accept files-sdk's `prefix`, `plugins`, and `hooks`, passed through unchanged.
+- Bucket names: lowercase letters, digits, and hyphens, start/end alphanumeric, at most 32 characters.
+- The CLI reads `defineStorage` statically. Write `provider` as a plain string and the `buckets` object inline.
+- `init --with-storage` scaffolds a `vercel` storage with public `avatars` and private `documents`, plus `actions/queries/storage.ts` (`getAvatarUploadUrl`, `getDocumentUrl`).
+
+In actions, `storage.bucket(name)` accepts only declared names and returns a bucket with files-sdk's `upload`, `download`, `head`, `exists`, `delete`, `copy`, `move`, `list`, `listAll`, and `search`. URL methods depend on access and are checked at compile time:
+
+| Method                          | Exists on        | Returns                                                                      |
+| ------------------------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `publicUrl(key)`                | public buckets   | Permanent URL.                                                               |
+| `signedUrl(key, { expiresIn })` | private buckets  | Expiring URL. `responseContentDisposition` is optional; Vercel throws on it. |
+| `signedUploadUrl(key, opts)`    | public + private | `{ method: 'PUT', url, headers? }` or `{ method: 'POST', url, fields }`.     |
+
+None of the three exist on `filesystem`, whose files have no HTTP route unless the user writes one. Do not cast around a missing URL method; it means the bucket has the other access or the provider is `filesystem`.
+
+For browser uploads, return `signedUploadUrl(key, { expiresIn, contentType, maxSize })` from an action, let the client send the file directly (handling both `PUT` and `POST` shapes), and store the `key`. Always pass `maxSize` for user uploads; without it the URL accepts any size until it expires. Pass `responseContentDisposition: 'attachment'` when serving user-uploaded files from private buckets on providers that support it.
+
+### Buckets on the provider
+
+- Each declared bucket exists once per target, named `<project>-<bucket>-<target>`. `<project>` is derived on the first sync (server project name, else `package.json` name) and frozen in `typebase.json` as `storage.project`. Never edit or regenerate it casually: a new value points the code at a fresh set of empty buckets.
+- `storage sync <dev|prod>` creates missing buckets, adopts existing ones, warns about orphans (never deletes or empties anything), ensures credentials, and writes them to the project-root `.env`. It is an external state change: dev by default, prod only on explicit request.
+- The first sync asks which Vercel team or Cloudflare account holds the buckets and saves `storage.vercel.orgId` or `storage.cloudflare.accountId`. It uses `VERCEL_TOKEN`/`CLOUDFLARE_API_TOKEN` like deploy, and never asks for a server project.
+- A sync stops without changing anything when an existing bucket's access differs from the declaration. Surface it; do not flip the declaration or delete the bucket without the user deciding which access is correct — deleting a bucket deletes its files.
+- `deploy <target>` runs the same sync before building and sets the storage keys on the server provider. The user's own provider token is never put on the server.
+- A `prod` sync with public R2 buckets warns that r2.dev is rate-limited; that needs a custom domain the CLI does not configure.
+- With `filesystem`, sync and deploy create nothing.
+
+### Storage environment
+
+Credentials are managed by the CLI; never set them by hand with `env add` and never declare them in `env.ts`. They are validated at boot but are not on `env`.
+
+- Vercel: `TYPEBASE_STORAGE_VERCEL_TOKENS`, a JSON object from bucket name to Blob store token.
+- Cloudflare: `TYPEBASE_STORAGE_R2_ACCOUNT_ID`, `TYPEBASE_STORAGE_R2_ACCESS_KEY_ID`, `TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY`, `TYPEBASE_STORAGE_R2_BUCKETS`, and `TYPEBASE_STORAGE_R2_PUBLIC_URL_<BUCKET>` per public bucket.
+- Project `.env` uses a `_DEV` suffix for dev and none for prod, like `DATABASE_URL_DEV`/`DATABASE_URL`. A missing key, or a bucket missing from the JSON, means a bucket was added after the last sync: run `storage sync <target>` (or deploy).
+
+### Local storage
+
+- `start` replaces a `vercel`/`cloudflare` provider with **local storage** by default: the same buckets on disk in the server cache (`<cache>/storage`), with public, signed, and signed upload URLs served and HMAC-verified by the local server under `/storage`. No sync, credentials, or network needed. Signing secret is automatic.
+- `--dev-storage`/`--prod-storage` use the real buckets with the `.env` keys for that target. They conflict with each other and are independent of the database flags. Keys are read once at startup; restart after a sync. `--prod-storage` writes to production files: only on explicit request.
+- A declared `filesystem` provider is never replaced.
+- `generate-server` uses the declared provider and reads the storage env vars; `--local-storage` opts into local storage (files in `.local-storage` relative to the server's working directory, kept on regeneration). It is not a fallback. `--local-storage` is rejected with `--adapter cloudflare`; `--storage-path` (embedded only, default `/storage`, also `server.storagePath`) requires `--local-storage` and must not overlap the auth or actions paths. The route is part of `typebaseHandler`, so the mount is unchanged.
+
 ## Authentication
 
 `defineAuth` accepts better-auth options except `database`, which Typebase owns:
@@ -267,36 +330,37 @@ Never edit `<tb>/_generated/`.
 Run codegen after:
 
 - adding, deleting, or renaming an action file;
-- adding or removing `auth.ts`, `env.ts`, `publisher.ts`, `db/schema.ts`, or `db/relations.ts`;
+- adding or removing `auth.ts`, `env.ts`, `publisher.ts`, `storage.ts`, `db/schema.ts`, or `db/relations.ts`;
 - upgrading `typebase-io` or `typebase-io-cli`.
 
-Editing the contents of an existing file does not require codegen: this includes schema columns, env keys, publisher events, action exports inside an existing file, or changing `.handler()` to `.stream()`. Deploy and generate-server run fresh codegen before type-checking/building.
+Editing the contents of an existing file does not require codegen: this includes schema columns, env keys, publisher events, storage buckets, action exports inside an existing file, or changing `.handler()` to `.stream()`. Deploy and generate-server run fresh codegen before type-checking/building.
 
 ## CLI reference
 
 Prefer the locally installed binary (`npx typebase-io-cli ...` or the project's script). Main commands:
 
-| Command                                                                              | Agent guidance                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `init [-f] [--with-auth] [--with-db-publisher] [--with-migrations] [--skip-example]` | Scaffold only after inspecting every target. A partial backend can be overwritten without `-f`; never run it over existing targets without explicit authorization.                                                                                                              |
-| `codegen`                                                                            | Refresh generated router/context types according to the rules above.                                                                                                                                                                                                            |
-| `auth generate`                                                                      | Generate auth schema/relations/secret/types; it requires auth and DB schema files. In migrations mode it also records a migration for the tables it adds.                                                                                                                       |
-| `db dev push` / `db prod push` `[--skip-confirmation]`                               | Push mode only. Push schema to the separate Neon branch. Stop on destructive confirmation. Hard-errors in migrations mode.                                                                                                                                                      |
-| `db local push [--url <conn>] [--skip-confirmation]`                                 | Push to any directly connected PostgreSQL; falls back to `DATABASE_URL`.                                                                                                                                                                                                        |
-| `db migrations generate [--name <n>] [--custom] [--ignore-conflicts]`                | Migrations mode only. Offline; writes a migration and touches no database. Always pass `--name`. Read the emitted SQL before applying it.                                                                                                                                       |
-| `db dev migrate` / `db prod migrate`                                                 | Apply pending migrations to that target. Safe to re-run; each migration runs once per target. Run prod only when production was explicitly requested.                                                                                                                           |
-| `db local migrate [--url <conn>]`                                                    | Apply pending migrations to a directly connected PostgreSQL; falls back to `DATABASE_URL`.                                                                                                                                                                                      |
-| `db migrations init`                                                                 | Adopt migrations on a push-mode project. Writes to every existing target's bookkeeping table; needs explicit user authorization. Never provisions a target that has no database.                                                                                                |
-| `db pull [--url <conn>] [-f]`                                                        | Destructively replaces local schema and relations from the DB, then codegens. It reads `public`; cross-schema references may need cleanup. Warn first and avoid `-f` without explicit approval. In migrations mode it refuses without `-f` and rebaselines history when forced. |
-| `deploy dev` / `deploy prod` `[--skip-schema-changes-confirmation]`                  | Codegen, validate, build, transpile, push applicable schema, deploy, sync automatic DB/auth variables, and write deployment URL/local connection values.                                                                                                                        |
-| `start [options]`                                                                    | Run the server locally: build, install, sync the database, start, and repeat on every change. Long-running. Never deploys or provisions. See below.                                                                                                                             |
-| `generate-server [options]`                                                          | Build a safe, replaceable snapshot in `<tb>/_server`; rerun after backend changes or use `--watch`. `--command "<cmd>"` runs a command inside the generated server after each build, restarting it on every rebuild; long-running like `--watch`.                               |
-| `generate-server --embedded [--actions-path <p>] [--auth-path <p>]`                  | Build an embedded server in `<tb>/_handler` for an app that already owns its process. Use this instead of copying code out of a generated entry point. Conflicts with `--port`; the path flags are embedded-only. See below.                                                    |
-| `env <dev\|prod> get\|add ...`                                                       | Read/upload provider values after the provider project exists. Encrypted secrets may read as `ENCRYPTED`.                                                                                                                                                                       |
-| `logs <dev\|prod>`                                                                   | Long-running provider log stream; stop with `x`/Ctrl+C on a TTY or SIGINT otherwise.                                                                                                                                                                                            |
-| `config`                                                                             | Read-only `{ projectRoot, configPath, schema }` config snapshot; the only command not requiring `typebase-io`.                                                                                                                                                                  |
+| Command                                                                                               | Agent guidance                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init [-f] [--with-auth] [--with-db-publisher] [--with-storage] [--with-migrations] [--skip-example]` | Scaffold only after inspecting every target. A partial backend can be overwritten without `-f`; never run it over existing targets without explicit authorization.                                                                                                              |
+| `codegen`                                                                                             | Refresh generated router/context types according to the rules above.                                                                                                                                                                                                            |
+| `auth generate`                                                                                       | Generate auth schema/relations/secret/types; it requires auth and DB schema files. In migrations mode it also records a migration for the tables it adds.                                                                                                                       |
+| `db dev push` / `db prod push` `[--skip-confirmation]`                                                | Push mode only. Push schema to the separate Neon branch. Stop on destructive confirmation. Hard-errors in migrations mode.                                                                                                                                                      |
+| `db local push [--url <conn>] [--skip-confirmation]`                                                  | Push to any directly connected PostgreSQL; falls back to `DATABASE_URL`.                                                                                                                                                                                                        |
+| `db migrations generate [--name <n>] [--custom] [--ignore-conflicts]`                                 | Migrations mode only. Offline; writes a migration and touches no database. Always pass `--name`. Read the emitted SQL before applying it.                                                                                                                                       |
+| `db dev migrate` / `db prod migrate`                                                                  | Apply pending migrations to that target. Safe to re-run; each migration runs once per target. Run prod only when production was explicitly requested.                                                                                                                           |
+| `db local migrate [--url <conn>]`                                                                     | Apply pending migrations to a directly connected PostgreSQL; falls back to `DATABASE_URL`.                                                                                                                                                                                      |
+| `db migrations init`                                                                                  | Adopt migrations on a push-mode project. Writes to every existing target's bookkeeping table; needs explicit user authorization. Never provisions a target that has no database.                                                                                                |
+| `db pull [--url <conn>] [-f]`                                                                         | Destructively replaces local schema and relations from the DB, then codegens. It reads `public`; cross-schema references may need cleanup. Warn first and avoid `-f` without explicit approval. In migrations mode it refuses without `-f` and rebaselines history when forced. |
+| `deploy dev` / `deploy prod` `[--skip-schema-changes-confirmation]`                                   | Codegen, validate, sync storage buckets, build, transpile, push applicable schema, deploy, sync automatic DB/auth/storage variables, and write deployment URL/local connection values.                                                                                          |
+| `start [options]`                                                                                     | Run the server locally: build, install, sync the database, start, and repeat on every change. Long-running. Never deploys or provisions. See below.                                                                                                                             |
+| `generate-server [options]`                                                                           | Build a safe, replaceable snapshot in `<tb>/_server`; rerun after backend changes or use `--watch`. `--command "<cmd>"` runs a command inside the generated server after each build, restarting it on every rebuild; long-running like `--watch`.                               |
+| `generate-server --embedded [--actions-path <p>] [--auth-path <p>]`                                   | Build an embedded server in `<tb>/_handler` for an app that already owns its process. Use this instead of copying code out of a generated entry point. Conflicts with `--port`; the path flags are embedded-only. See below.                                                    |
+| `storage sync <dev\|prod>`                                                                            | Create missing storage buckets for the target and write their keys to `.env`. External state change; never deletes. See the storage section.                                                                                                                                    |
+| `env <dev\|prod> get\|add ...`                                                                        | Read/upload provider values after the provider project exists. Encrypted secrets may read as `ENCRYPTED`.                                                                                                                                                                       |
+| `logs <dev\|prod>`                                                                                    | Long-running provider log stream; stop with `x`/Ctrl+C on a TTY or SIGINT otherwise.                                                                                                                                                                                            |
+| `config`                                                                                              | Read-only `{ projectRoot, configPath, schema }` config snapshot; the only command not requiring `typebase-io`.                                                                                                                                                                  |
 
-`typebase.json` stores `$schema`, `projectPath`, server output/adapter/port/output directory, the `embedded` flag with its `actionsPath`/`authPath`, provider choice, and provider IDs. Let deploy write real provider IDs; never invent them.
+`typebase.json` stores `$schema`, `projectPath`, server output/adapter/port/output directory, the `embedded` flag with its `actionsPath`/`authPath`/`storagePath`, provider choice, provider IDs, and the `storage` block (`project` plus the storage account). Let deploy and storage sync write real IDs and the storage project; never invent them.
 
 ### Deploy safety
 
@@ -318,31 +382,32 @@ Keep draining stdout and do not pipe the CLI through a slow filter. A cold deplo
 
 Selections use the first choice when Enter is pressed, while `confirm()` defaults to yes unless the command passes `default: false`. Defaults that create resources or weaken/delete state are documented here so an agent can recognize them, not so it can accept them blindly.
 
-| Prompt                     | When it appears / Enter behavior                                                                         | Safe bypass or handling                                                                                              |
-| -------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Select deploy provider     | No saved `serverProvider` and no flag; first choice is `vercel`.                                         | Use the user-authorized `--provider vercel\|cloudflare\|deno`, or an existing saved provider.                        |
-| Provider token/API key     | Credential is absent; required input with no default.                                                    | Supply `VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, or `DENO_DEPLOY_TOKEN` through the process environment.               |
-| Neon API key               | Only for a project with `db/schema.ts`; required input with no default.                                  | Supply `NEON_API_KEY` through the process environment.                                                               |
-| Select Neon organization   | Only when the token has multiple organizations; one is selected automatically, zero exits.               | Select the authorized organization; never invent `neon.orgId`.                                                       |
-| Select Neon project        | With existing projects, first choice is `+ Create a new Neon project`; with none, creation is automatic. | Select the authorized existing project or explicitly authorize creation; an existing saved `neon` block skips setup. |
-| Neon project name          | Creating a project; defaults to `basename(cwd)`.                                                         | Confirm or provide the intended name.                                                                                |
-| Neon region                | Creating a project; first choice is `US East (Ohio)` (`aws-us-east-2`).                                  | Select the intended data region explicitly.                                                                          |
-| Select Vercel project      | With existing projects, first choice is `+ Create a new project`; with none, creation is automatic.      | Select/authorize the target; a saved `vercel` block skips setup.                                                     |
-| Vercel project name        | Creating a project; defaults to `basename(cwd)`.                                                         | Confirm or provide the intended name.                                                                                |
-| Disable Vercel protections | Only for an existing protected project; Enter means **yes**.                                             | Stop unless disabling protection was explicitly authorized.                                                          |
-| Select Cloudflare account  | Only with multiple accounts; Enter selects the first.                                                    | Select the authorized account; a saved `cloudflare` block skips setup.                                               |
-| Select Cloudflare Worker   | With existing Workers, first choice is `+ Create a new worker`; with none, creation is automatic.        | Select/authorize the target Worker.                                                                                  |
-| Cloudflare Worker name     | Creating a Worker; defaults to `basename(cwd)`.                                                          | Confirm or provide the intended name.                                                                                |
-| Deno organization slug     | Always needed during unsaved Deno setup; required input with no default.                                 | Read the exact slug from the Deno dashboard.                                                                         |
-| Select Deno app            | With existing apps, first choice is `+ Create a new app`; with none, creation is automatic.              | Select/authorize the target app; a saved `deno` block skips setup.                                                   |
-| Deno app name              | Creating an app; defaults to `basename(cwd)`.                                                            | Confirm or provide the intended name.                                                                                |
-| Apply schema changes?      | Only when Drizzle returns warnings; Enter means **yes**.                                                 | Show the warnings and require explicit authorization. Never accept automatically.                                    |
+| Prompt                      | When it appears / Enter behavior                                                                                       | Safe bypass or handling                                                                                              |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Select deploy provider      | No saved `serverProvider` and no flag; first choice is `vercel`.                                                       | Use the user-authorized `--provider vercel\|cloudflare\|deno`, or an existing saved provider.                        |
+| Provider token/API key      | Credential is absent; required input with no default.                                                                  | Supply `VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, or `DENO_DEPLOY_TOKEN` through the process environment.               |
+| Neon API key                | Only for a project with `db/schema.ts`; required input with no default.                                                | Supply `NEON_API_KEY` through the process environment.                                                               |
+| Select Neon organization    | Only when the token has multiple organizations; one is selected automatically, zero exits.                             | Select the authorized organization; never invent `neon.orgId`.                                                       |
+| Select Neon project         | With existing projects, first choice is `+ Create a new Neon project`; with none, creation is automatic.               | Select the authorized existing project or explicitly authorize creation; an existing saved `neon` block skips setup. |
+| Neon project name           | Creating a project; defaults to `basename(cwd)`.                                                                       | Confirm or provide the intended name.                                                                                |
+| Neon region                 | Creating a project; first choice is `US East (Ohio)` (`aws-us-east-2`).                                                | Select the intended data region explicitly.                                                                          |
+| Select Vercel project       | With existing projects, first choice is `+ Create a new project`; with none, creation is automatic.                    | Select/authorize the target; a saved `vercel` block skips setup.                                                     |
+| Vercel project name         | Creating a project; defaults to `basename(cwd)`.                                                                       | Confirm or provide the intended name.                                                                                |
+| Disable Vercel protections  | Only for an existing protected project; Enter means **yes**.                                                           | Stop unless disabling protection was explicitly authorized.                                                          |
+| Select Cloudflare account   | Only with multiple accounts; Enter selects the first.                                                                  | Select the authorized account; a saved `cloudflare` block skips setup.                                               |
+| Select Cloudflare Worker    | With existing Workers, first choice is `+ Create a new worker`; with none, creation is automatic.                      | Select/authorize the target Worker.                                                                                  |
+| Cloudflare Worker name      | Creating a Worker; defaults to `basename(cwd)`.                                                                        | Confirm or provide the intended name.                                                                                |
+| Deno organization slug      | Always needed during unsaved Deno setup; required input with no default.                                               | Read the exact slug from the Deno dashboard.                                                                         |
+| Select Deno app             | With existing apps, first choice is `+ Create a new app`; with none, creation is automatic.                            | Select/authorize the target app; a saved `deno` block skips setup.                                                   |
+| Deno app name               | Creating an app; defaults to `basename(cwd)`.                                                                          | Confirm or provide the intended name.                                                                                |
+| Select storage team/account | Only for a `vercel`/`cloudflare` storage with no saved `storage.vercel`/`storage.cloudflare`; Enter selects the first. | Select the authorized team/account; it may differ from the server account.                                           |
+| Apply schema changes?       | Only when Drizzle returns warnings; Enter means **yes**.                                                               | Show the warnings and require explicit authorization. Never accept automatically.                                    |
 
 After successful setup, the CLI persists `serverProvider` and real provider/Neon IDs in `typebase.json`; later runs skip those selectors. Do not hand-write or guess IDs. Credential expiry, missing configuration, or warned schema changes can still make later runs interactive.
 
 Only projects with `db/schema.ts` need Neon/`DATABASE_URL`; only auth projects need `BETTER_AUTH_SECRET`. Custom keys in `env.ts` are not synced by deploy; required keys without schema defaults must already be set unless validation is intentionally skipped. Schema push occurs before new server code goes live, so stage destructive production changes additively across releases.
 
-Dev and prod have separate deployment URLs, provider env vars, and Neon branches. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. A local run adds `TYPEBASE_APP_URL_LOCAL`/`DATABASE_URL_LOCAL` as a third pair. Nothing resolves those keys automatically: the client's `url` is written by hand, so put local first — `TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL`. Browser code instead needs framework-public variables.
+Dev and prod have separate deployment URLs, provider env vars, Neon branches, and storage buckets. Project `.env` uses `TYPEBASE_APP_URL_DEV`/`DATABASE_URL_DEV` for dev and `TYPEBASE_APP_URL`/`DATABASE_URL` for prod. A local run adds `TYPEBASE_APP_URL_LOCAL`/`DATABASE_URL_LOCAL` as a third pair. Nothing resolves those keys automatically: the client's `url` is written by hand, so put local first — `TYPEBASE_APP_URL_LOCAL || TYPEBASE_APP_URL_DEV || TYPEBASE_APP_URL`. Browser code instead needs framework-public variables.
 
 ### `start` (local run)
 
@@ -375,7 +440,7 @@ Prefer `start` over `generate-server --watch --command` when the user wants to r
 
 ### Generated server environment
 
-A **standalone** `generate-server` build fills `<tb>/<outDir>/.env` from the project-root `.env`, copying only the keys the generated server validates (`DATABASE_URL`, `BETTER_AUTH_SECRET`, and the `defineEnv` keys). `DATABASE_URL` is taken from `DATABASE_URL_DEV` when present so a standalone server you run yourself hits dev, not prod. Keys already in the file are never overwritten, and provider tokens are never copied. This is standalone `generate-server` only: `deploy` syncs variables to the provider and never puts a `.env` in the bundle, and an embedded build writes no `.env` at all — its host loads the environment. Do not hand-copy the project `.env` into the generated server; if a value is missing there, it is missing from the project `.env` too.
+A **standalone** `generate-server` build fills `<tb>/<outDir>/.env` from the project-root `.env`, copying only the keys the generated server validates (`DATABASE_URL`, `BETTER_AUTH_SECRET`, storage credentials, and the `defineEnv` keys). `DATABASE_URL` and storage keys are taken from their `_DEV` values when present so a standalone server you run yourself hits dev, not prod. Keys already in the file are never overwritten, and provider tokens are never copied. This is standalone `generate-server` only: `deploy` syncs variables to the provider and never puts a `.env` in the bundle, and an embedded build writes no `.env` at all — its host loads the environment. Do not hand-copy the project `.env` into the generated server; if a value is missing there, it is missing from the project `.env` too.
 
 ### `generate-server --command`
 
@@ -487,9 +552,12 @@ Keep `app.json` scheme, plugin scheme/storage prefix, and trusted origins aligne
 
 ## Common failure modes
 
-- Missing `db`, `auth`, `env`, or `publisher` context: resolve `<tb>`, check the enabling file, and rerun codegen if its presence changed.
+- Missing `db`, `auth`, `env`, `publisher`, or `storage` context: resolve `<tb>`, check the enabling file, and rerun codegen if its presence changed.
 - `db.query.X` missing or “no relations found”: register the table in `db/relations.ts`, even as `{}`.
 - “relation does not exist”: schema code changed but the target database was not pushed.
+- Storage sync/build failure: make `defineStorage` statically resolvable (plain-string `provider`, inline `buckets`, `access` on every cloud bucket). An access-mismatch error needs the user's decision, not a workaround.
+- Boot-time `TYPEBASE_STORAGE_*` failure: run `storage sync <target>` or redeploy; for `generate-server` either sync and refresh `_server/.env` or use `--local-storage`.
+- Local storage 403: signature missing, tampered, or expired, or the upload `Content-Type` differs from the signed one. Request a fresh URL and send the returned headers.
 - Publisher build failure: add the canonical `events` table/relations, or make `definePublisher` statically resolvable.
 - Boot-time invalid env: declare the right schema and set the value in the correct provider target or local generated-server `.env`. Under `start`, set it in the project-root `.env` instead — the server cache's `.env` is machine-managed and refilled each pass. Respect `skipValidation` if intentionally configured.
 - `start` says no local database URL was found: it reads one key and never falls back. Set `DATABASE_URL_LOCAL`, or name a different database with `--dev-database`/`--prod-database`/`--database-url`. Do not silently switch the user to a shared database to make the command run.
@@ -504,11 +572,12 @@ Keep `app.json` scheme, plugin scheme/storage prefix, and trusted origins aligne
 
 ## Capability boundaries
 
-Do not invent Typebase APIs for storage, mailers, custom domains per environment, migration files, custom oRPC server plugins, automatic database subscriptions, broadcast, or presence. Use a normal server-side TypeScript library from an action when appropriate, or explain the current limitation.
+Do not invent Typebase APIs for mailers, custom domains per environment, migration files, custom oRPC server plugins, automatic database subscriptions, broadcast, or presence. Use a normal server-side TypeScript library from an action when appropriate, or explain the current limitation.
 
-When this skill lacks an edge case, use the current official Typebase docs as the authority, then the underlying oRPC, Drizzle, and better-auth docs:
+When this skill lacks an edge case, use the current official Typebase docs as the authority, then the underlying oRPC, Drizzle, better-auth, and files-sdk docs:
 
 - <https://typebase.io>
 - <https://orpc.dev>
 - <https://orm.drizzle.team>
 - <https://www.better-auth.com>
+- <https://github.com/haydenbleasel/files-sdk>

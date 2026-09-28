@@ -24,10 +24,11 @@ Reach for a local run when:
 - **You want a debugger.** It is a Node process on your machine, so `--command "node --inspect src/index.ts"` attaches one.
 - **You are offline, or the network is slow.** Nothing is uploaded and nothing is fetched from a provider.
 - **You do not want to touch a shared database.** A local run defaults to a Postgres you run yourself rather than your dev branch.
+- **You do not want test files in real buckets.** A local run keeps [storage](/docs/storage) on your own disk unless you ask for your dev buckets.
 
 <Callout type="info">
-  A local run never deploys. It does not pick a provider, upload anything, write provider environment variables, or provision a database. It connects
-  to the database you give it and runs the server on your machine.
+  A local run never deploys. It does not pick a provider, upload anything, write provider environment variables, provision a database, or create a
+  bucket. It connects to the database you give it and runs the server on your machine.
 </Callout>
 
 ## Starting a local run
@@ -78,6 +79,26 @@ Each one reads exactly one key, and none falls back to another. The run names th
 
 If the key you chose is empty, the run stops and tells you which one to set. A project with no `db/schema.ts` skips all of this and needs no database at
 all.
+
+## Storage
+
+A project with a [`storage.ts`](/docs/storage) on `vercel` or `cloudflare` needs no buckets, credentials, or network for a local run. Its files are kept in
+[local storage](/docs/storage#local-storage): the same buckets, on disk in the [server cache](/docs/cli/start#the-server-cache), so they survive every
+restart and never appear in your project.
+
+The local server serves and signs their URLs itself, under `/storage`. An upload flow built on `signedUploadUrl` works in the browser against
+`http://127.0.0.1:8080/storage/...` exactly as it will against the real provider, signed URLs expire when they should, and a tampered or expired one is
+refused.
+
+To reproduce something with real files, run against your dev or production buckets:
+
+```npm
+npx typebase-io-cli start --dev-storage
+```
+
+That reads the credentials [`storage sync dev`](/docs/cli/storage) wrote to your project-root `.env`, so run the sync once first if you have never
+deployed. The storage flags are independent of the database flags: `--dev-database` with local storage, or a local database with `--dev-storage`, are
+both fine.
 
 ## Editing your schema
 
@@ -149,7 +170,8 @@ running locally first does not invalidate every session afterwards. It also writ
 The server's `.env` lives in the [server cache](/docs/cli/start#the-server-cache) and is filled from your project-root `.env` on every pass. You do not
 edit it and you do not copy anything across.
 
-Only the keys the server validates are copied: `DATABASE_URL`, `BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env). Provider tokens
+Only the keys the server validates are copied: `DATABASE_URL`, `BETTER_AUTH_SECRET`, whatever you declared in [`env.ts`](/docs/env), and your
+[storage credentials](/docs/storage#credentials) when you pass `--dev-storage` or `--prod-storage`. Provider tokens
 like `NEON_API_KEY` stay in your project root, where they belong to the CLI rather than the server.
 
 So a variable the server says is missing is missing from your project root too:

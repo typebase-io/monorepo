@@ -35,7 +35,7 @@ export const progress = action
   });
 ```
 
-Everything you know from `.handler()` carries over: `.input()` validates what comes in, errors are thrown the same way, and you get the whole [handler context](/docs/actions#handler-context): `db`, `env`, `auth`, `publisher`, `input`, `reqHeaders`. A stream adds two values a handler has no use for:
+Everything you know from `.handler()` carries over: `.input()` validates what comes in, errors are thrown the same way, and you get the whole [handler context](/docs/actions#handler-context): `db`, `env`, `auth`, `publisher`, `storage`, `input`, `reqHeaders`. A stream adds two values a handler has no use for:
 
 | Value         | Description                                                                                                               |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------- |

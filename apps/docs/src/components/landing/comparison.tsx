@@ -33,6 +33,12 @@ const rows = [
     convex: 'Third-party providers',
   },
   {
+    label: 'Storage',
+    typebase: 'Vercel Blob or Cloudflare R2, declared in one file',
+    supabase: 'Built in, managed in the dashboard',
+    convex: 'Built in',
+  },
+  {
     label: 'Hosting',
     typebase: 'Your providers, or a generated server',
     supabase: 'Supabase Cloud or self-hosted',
@@ -63,7 +69,7 @@ export function Comparison() {
           <div tabIndex={0} role="region" aria-label="Backend comparison, scroll horizontally on smaller screens" className="scroll-shadows-scroller">
             <table className="w-full min-w-170 border-collapse text-left text-sm leading-6">
               <caption className="sr-only">
-                Typebase, Supabase, and Convex: backend logic, database, type safety, realtime, auth, hosting, and application dependencies
+                Typebase, Supabase, and Convex: backend logic, database, type safety, realtime, auth, storage, hosting, and application dependencies
               </caption>
               <thead>
                 <tr className="border-b border-fd-primary/25">

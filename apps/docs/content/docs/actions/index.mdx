@@ -252,6 +252,7 @@ The parameter object passed to `.handler()` is inferred from the action chain an
 | `auth`                | `auth.ts` exists.                                                      | The better-auth server instance. It does not authenticate the request automatically; use it with `reqHeaders`, usually from [middleware](/docs/actions/middleware), to read the session.                                                   |
 | `env`                 | `env.ts`, `db/schema.ts`, or `auth.ts` exists.                         | The parsed values declared in [`env.ts`](/docs/env), plus `DATABASE_URL` for database projects and `BETTER_AUTH_SECRET` for auth projects. The automatic keys are required strings unless you override their schemas in `env.ts`.            |
 | `publisher`           | `publisher.ts` exists.                                                 | A typed [publisher](/docs/publisher). Its event names and payload types come from the `events` object declared in that file.                                                                                                             |
+| `storage`             | `storage.ts` exists.                                                   | Your [storage](/docs/storage). `storage.bucket(name)` returns a bucket; the names come from the `buckets` object declared in that file.                                                                                                  |
 | `reqHeaders`          | Every action. The value itself can be `undefined`.                     | The incoming request headers as a `Headers` object. Guard against `undefined` before passing them to APIs that require headers.                                                                                                          |
 | Middleware values     | An earlier [`.use()` middleware](/docs/actions/middleware) returns them. | Any properties returned by middleware, fully typed and available to later middleware and the final handler. For example, authentication middleware can add a `user` value. `input` is added only for the final handler, not for middleware. |
 
@@ -336,7 +337,7 @@ This same structure is what your client uses to call actions from the frontend. 
 
 ## Regenerating types
 
-Run `codegen` whenever you create, delete, or rename a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `publisher.ts`, `db/schema.ts`, or `db/relations.ts`:
+Run `codegen` whenever you create, delete, or rename a file inside `actions/`, or when you add or remove `auth.ts`, `env.ts`, `publisher.ts`, `storage.ts`, `db/schema.ts`, or `db/relations.ts`:
 
 ```npm
 npx typebase-io-cli codegen
@@ -348,4 +349,5 @@ This updates `_generated/server.ts` with the new router structure so your client
 
 - Learn how to add [middleware](/docs/actions/middleware) to your actions for authentication and shared logic.
 - Push more than one response with [streaming actions](/docs/actions/streaming), and connect mutations to streams with a [publisher](/docs/publisher).
+- Keep files in typed buckets with [storage](/docs/storage).
 - Read the [Client](/docs/client) overview to see how to call your actions from the frontend.

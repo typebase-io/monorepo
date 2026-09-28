@@ -110,6 +110,7 @@ The `_generated/` folder is a snapshot taken the last time you ran `npx typebase
 - `auth.ts`
 - `env.ts`
 - `publisher.ts`
+- `storage.ts`
 - `db/schema.ts` or `db/relations.ts`
 
 ```npm
@@ -140,7 +141,7 @@ Two things to check:
 1. You have a `typebase/db/schema.ts` file. The `db` client is only injected when one exists.
 2. You ran `npx typebase-io-cli codegen` after creating it. The action builder is regenerated based on what files exist.
 
-The same applies to `auth` and `publisher`. Each requires its matching top-level config file plus a fresh codegen run after that file is created.
+The same applies to `auth`, `publisher`, and `storage`. Each requires its matching top-level config file plus a fresh codegen run after that file is created.
 
 ### "Found `publisher.ts` but no database schema" or no `events` table
 
@@ -153,6 +154,14 @@ Also add an `events: {}` entry to `typebase/db/relations.ts`, following the gene
 ### `publisher` is missing from the action context
 
 Confirm `typebase/publisher.ts` exists and exports a `publisher` created with `definePublisher`, then run `npx typebase-io-cli codegen`. Adding or removing the file changes the generated action context; editing event definitions inside an existing file does not require codegen.
+
+### `storage` is missing from the action context, or a bucket name is a type error
+
+Confirm `typebase/storage.ts` exists and exports a `storage` created with `defineStorage`, then run `npx typebase-io-cli codegen`. Adding or removing the
+file changes the generated action context; adding a bucket to an existing file does not need codegen.
+
+If `storage.bucket('name')` is a type error, the name isn't a key of `buckets`. If `publicUrl` or `signedUrl` is, the bucket has the other access: public
+buckets have `publicUrl`, private ones have `signedUrl`. On the `filesystem` provider neither exists. See [URLs](/docs/storage#urls).
 
 ### A key I declared in `env.ts` isn't on `env`
 
@@ -224,6 +233,41 @@ If you don't need any variables of your own, keep the empty call that `init` sca
 ### `generate-server` or `deploy` cannot read `publisher.ts`
 
 The CLI reads the publisher config statically so it can generate the server around the selected provider. Keep a visible `definePublisher(...)` call in `publisher.ts`, pass it an object the CLI can resolve, write `provider` as a plain string such as `'db'`, and include an `events` property. The simplest supported shape is the one on the [Publisher](/docs/publisher) page.
+
+### `storage sync` or `deploy` cannot read `storage.ts`
+
+The CLI reads the storage config statically, to know which buckets to create before anything runs. Keep a visible `defineStorage(...)` call, write
+`provider` as a plain string such as `'vercel'`, write the `buckets` object inline, and give every bucket on `vercel` or `cloudflare` an `access`. The
+shape on the [Storage](/docs/storage) page is the one to copy.
+
+### "already exists ... as private" (or public) during a sync
+
+```
+The bucket `avatars` is declared public, but `my-app-avatars-dev` already exists on vercel as private.
+```
+
+A bucket's access is fixed once the bucket exists, and bucket sync won't guess which of the two you meant, so it stops before changing anything. Either
+change the declaration in `storage.ts` to match the bucket, or delete the bucket in the provider's dashboard (along with its files) and sync again to
+recreate it with the access you declared.
+
+### The server exits at boot over a `TYPEBASE_STORAGE_` variable
+
+```
+✗ Typebase server failed to start.
+
+  Invalid environment variables:
+    TYPEBASE_STORAGE_VERCEL_TOKENS  Required
+```
+
+The server has a `storage.ts` on `vercel` or `cloudflare`, but not the credentials for its buckets. Those are created by [bucket sync](/docs/storage#bucket-sync):
+
+- **Deployed**: run `npx typebase-io-cli deploy <target>` again. It syncs the buckets and sets their keys on the provider.
+- **`start --dev-storage` or `--prod-storage`**: run `npx typebase-io-cli storage sync <target>`, then restart the run.
+- **`generate-server`**: run `storage sync dev`, then delete the stale storage lines from `typebase/_server/.env` and regenerate, or pass
+  `--local-storage` to keep files on disk instead.
+
+An error that the variable "has no token for the bucket" or "has no R2 bucket for the bucket" means the same thing for one bucket: it was added to
+`storage.ts` after the credentials were last synced.
 
 ### Deploy fails partway through
 
@@ -512,6 +556,14 @@ set locally stays missing. Run [`npx typebase-io-cli deploy dev`](/docs/cli/depl
 With `generate-server`, there's a second cause: a key already in `typebase/_server/.env` is never overwritten, so a stale value there wins over your
 project `.env`. Delete the line and regenerate to pick the project value back up. A [local run](/docs/cli/start) has no equivalent — its `.env` lives in
 the [server cache](/docs/cli/start#the-server-cache), you don't edit it, and `DATABASE_URL` is overwritten on every pass with the database you chose.
+
+### A local upload URL returns 403
+
+A local run and `generate-server --local-storage` sign their own URLs, and refuse a request whose signature is missing, tampered with, or expired. Ask
+the action for a fresh URL rather than reusing one. A signed upload URL that asked for a `contentType` also refuses any other `Content-Type` header,
+so send the headers the `upload` object gives you.
+
+Reading a file from a private bucket without a signature is refused the same way; use `signedUrl`, not the bare file path.
 
 ### `generate-server` output is stale
 

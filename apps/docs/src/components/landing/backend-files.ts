@@ -132,6 +132,21 @@ export const publisher = definePublisher({
   },
 });`,
   },
+  {
+    id: 'storage',
+    path: 'typebase/storage.ts',
+    chip: 'files',
+    description: 'Declare public and private buckets. The CLI creates them for dev and prod, and bucket names are type-checked.',
+    code: `import { defineStorage } from 'typebase-io/server';
+
+export const storage = defineStorage({
+  provider: 'vercel',
+  buckets: {
+    avatars: { access: 'public' },
+    documents: { access: 'private' },
+  },
+});`,
+  },
 ];
 
 export const treeRows: TreeRow[] = [
@@ -147,4 +162,5 @@ export const treeRows: TreeRow[] = [
   { depth: 1, label: 'auth.ts', id: 'auth' },
   { depth: 1, label: 'env.ts', id: 'env' },
   { depth: 1, label: 'publisher.ts', id: 'publisher' },
+  { depth: 1, label: 'storage.ts', id: 'storage' },
 ];

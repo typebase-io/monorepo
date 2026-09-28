@@ -14,6 +14,7 @@ import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs
 import type { auth as authConfig } from '../auth.ts';
 import type { env as envSchema } from '../env.ts';
 import type { publisher as publisherConfig } from '../publisher.ts';
+import type { storage as storageConfig } from '../storage.ts';
 import type { relations } from '../db/relations.ts';
 
 import { filterActions } from 'typebase-io/server';
@@ -33,11 +34,11 @@ export type Router = typeof router;
 export type RouterInputs = InferRouterInputs<typeof router>;
 export type RouterOutputs = InferRouterOutputs<typeof router>;
 
-export declare const action: ActionBuilder<typeof relations, typeof authConfig, typeof envSchema, typeof publisherConfig>;
+export declare const action: ActionBuilder<typeof relations, typeof authConfig, typeof envSchema, typeof publisherConfig, typeof storageConfig>;
 export declare const getDB: GetDBBuilder<typeof relations>;
 ```
 
-The imports and the type arguments track what your project actually has. Every slot your project doesn't have is `never`, and its import is left out: no `db/schema.ts` gives `never` in the first slot, no `auth.ts` in the second, no `env.ts` in the third, and no `publisher.ts` in the fourth. Each `never` slot also drops the matching key from the action context.
+The imports and the type arguments track what your project actually has. Every slot your project doesn't have is `never`, and its import is left out: no `db/schema.ts` gives `never` in the first slot, no `auth.ts` in the second, no `env.ts` in the third, no `publisher.ts` in the fourth, and no `storage.ts` in the fifth. Each `never` slot also drops the matching key from the action context.
 
 **`router`**: an object that mirrors your `actions/` folder structure. Every file becomes a namespace, every exported action becomes a method. Non-action exports from the same file are not added to the router. This is what your client imports as `Router` to get full type safety.
 
@@ -59,7 +60,7 @@ import type { RouterOutputs } from '../typebase/_generated/server';
 type Todos = InferStreamEvent<RouterOutputs['queries']['todos']['getMany']>; // one event of the stream
 ```
 
-**`action`**: the builder you import in every action file to define a handler or stream. It's typed with your schema relations, auth config, [env schema](/docs/env), and [publisher config](/docs/publisher), so the context object in `.handler()` and `.stream()` is always accurate. `DATABASE_URL` and `BETTER_AUTH_SECRET` are added to `env` by the builder itself whenever your project has a database or auth, so they're typed without appearing in your `env.ts`.
+**`action`**: the builder you import in every action file to define a handler or stream. It's typed with your schema relations, auth config, [env schema](/docs/env), [publisher config](/docs/publisher), and [storage config](/docs/storage), so the context object in `.handler()` and `.stream()` is always accurate. `DATABASE_URL` and `BETTER_AUTH_SECRET` are added to `env` by the builder itself whenever your project has a database or auth, so they're typed without appearing in your `env.ts`.
 
 **`getDB`**: a function that returns the Drizzle database instance. Use it when you need database access from code that runs outside of an action handler or stream, such as a shared utility module:
 

@@ -1,0 +1,374 @@
+---
+title: Storage
+description: Keep files in named, typed buckets on Vercel Blob, Cloudflare R2, or the filesystem with typebase/storage.ts.
+---
+
+Storage is where your server keeps files: avatars, invoices, anything your users upload. You declare a provider and a set of named buckets, and every
+action gets a `storage` object to upload, download, list, and hand out URLs from.
+
+You declare it in `typebase/storage.ts`:
+
+```ts title="typebase/storage.ts"
+import { defineStorage } from 'typebase-io/server';
+
+export const storage = defineStorage({
+  provider: 'vercel',
+  buckets: {
+    avatars: { access: 'public' },
+    documents: { access: 'private' },
+  },
+});
+```
+
+Three things go in the object:
+
+| Key        | Description                                                                      |
+| ---------- | -------------------------------------------------------------------------------- |
+| `provider` | Where files are kept: `vercel`, `cloudflare`, or `filesystem`.                   |
+| `buckets`  | The buckets you use, by name, and the options for each. See [Buckets](#buckets). |
+| `options`  | Optional settings for the provider. See [Providers](#providers).                 |
+
+Bucket names are checked at compile time, and so is which URL a bucket can hand out, so a misspelled bucket or a public URL asked of a private bucket is a
+type error rather than a failure in production.
+
+Scaffold a storage file and two example actions with:
+
+```npm
+npx typebase-io-cli init --with-storage
+```
+
+<Callout type="info">
+  Storage is built on [files-sdk](https://github.com/haydenbleasel/files-sdk). Typebase does the part files-sdk leaves to you (picking the adapter,
+  creating the buckets, and getting credentials to your server) and passes files-sdk's file operations through almost unchanged, so its documentation
+  is the full reference for what a bucket can do.
+</Callout>
+
+## Providers
+
+The storage provider is chosen on its own, independently of where your server is deployed. A server on Cloudflare can keep its files in Vercel Blob, a
+server on Vercel can keep them in R2, and a server on Deno Deploy can use either.
+
+| Provider     | Files live in                                          | `options`                                                          |
+| ------------ | ------------------------------------------------------ | ------------------------------------------------------------------ |
+| `vercel`     | [Vercel Blob](https://vercel.com/storage/blob)         | `region`: where new Blob stores are created                        |
+| `cloudflare` | [Cloudflare R2](https://developers.cloudflare.com/r2/) | `locationHint`: `wnam`, `enam`, `weur`, `eeur`, `apac`, or `oc`    |
+| `filesystem` | A directory on the server's disk                       | `root`: defaults to `typebase-storage` under the OS temp directory |
+
+```ts title="typebase/storage.ts"
+export const storage = defineStorage({
+  provider: 'cloudflare',
+  options: { locationHint: 'weur' },
+  buckets: {
+    /* ... */
+  },
+});
+```
+
+`region` and `locationHint` only apply when a bucket is created. Changing them later moves nothing.
+
+### The filesystem provider
+
+`filesystem` keeps each bucket in its own subdirectory of `root`. It needs no account and no credentials, and it works on every server provider, but on a
+serverless platform that disk is ephemeral: files disappear whenever the instance does. Choose it deliberately, for throwaway files or a server you host
+yourself on a disk that persists.
+
+It has no URLs. A bucket on the filesystem provider has no `publicUrl`, `signedUrl`, or `signedUploadUrl`, and no `access` setting, and all four are type
+errors. Nothing serves those files over HTTP unless you write the route that does.
+
+## Buckets
+
+Every key of `buckets` is a bucket. On `vercel` and `cloudflare`, each one says whether it is public or private:
+
+```ts
+buckets: {
+  avatars: { access: 'public' },
+  documents: { access: 'private' },
+}
+```
+
+| Access    | Who can read a file                                                                   |
+| --------- | ------------------------------------------------------------------------------------- |
+| `public`  | Anyone with its URL. [`publicUrl`](#urls) returns a permanent link.                   |
+| `private` | Only someone holding a [`signedUrl`](#urls) your server handed out, until it expires. |
+
+A bucket's access is fixed once the bucket exists. Changing it in `storage.ts` does not change the bucket; the next [bucket sync](#bucket-sync) stops with
+an error instead.
+
+Each bucket also takes files-sdk's `prefix`, `plugins`, and `hooks`, passed through unchanged:
+
+```ts title="typebase/storage.ts"
+import { defineStorage } from 'typebase-io/server';
+import { encryption } from 'files-sdk/encryption';
+
+export const storage = defineStorage({
+  provider: 'cloudflare',
+  buckets: {
+    documents: {
+      access: 'private',
+      prefix: 'uploads/',
+      plugins: [encryption(Buffer.from(process.env.FILES_ENCRYPTION_KEY!, 'base64'))],
+    },
+  },
+});
+```
+
+### Bucket names
+
+Bucket names use lowercase letters, digits, and hyphens, start and end with a letter or digit, and are at most 32 characters long. That is R2's naming
+rule with room left for the project and target Typebase adds to it, so a name that works on one provider works on every one.
+
+## Using storage in an action
+
+Every action gets `storage` on its context once `storage.ts` exists. Pick a bucket by name with `storage.bucket()`:
+
+```ts title="typebase/actions/mutations/documents.ts"
+import { z } from 'zod';
+
+import { action } from '../../_generated/server.ts';
+
+export const save = action.input(z.object({ name: z.string(), body: z.string() })).handler(async ({ storage, input }) => {
+  const documents = storage.bucket('documents');
+
+  await documents.upload(input.name, input.body, { contentType: 'text/plain' });
+
+  return { url: await documents.signedUrl(input.name, { expiresIn: 5 * 60 }) };
+});
+```
+
+The name autocompletes from your `buckets`, and one you didn't declare is a type error.
+
+Every bucket has files-sdk's file operations:
+
+| Method            | Description                                    |
+| ----------------- | ---------------------------------------------- |
+| `upload`          | Write a file.                                  |
+| `download`        | Read a file.                                   |
+| `head`            | Read a file's metadata without its contents.   |
+| `exists`          | Check whether a file exists.                   |
+| `delete`          | Delete a file.                                 |
+| `copy`, `move`    | Copy or move a file within the bucket.         |
+| `list`, `listAll` | List files, one page at a time or all of them. |
+| `search`          | Find files by key.                             |
+
+Their options and return values are files-sdk's own; see [its documentation](https://github.com/haydenbleasel/files-sdk) for each.
+
+### URLs
+
+files-sdk has one `url` method. Typebase splits it in two so that the kind of URL a bucket can hand out follows from its access:
+
+| Method                          | On        | Returns                                                                                                         |
+| ------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| `publicUrl(key)`                | `public`  | The file's permanent URL.                                                                                       |
+| `signedUrl(key, options)`       | `private` | A URL that expires after `options.expiresIn` seconds.                                                           |
+| `signedUploadUrl(key, options)` | both      | A URL a browser can upload one file to directly. See [Uploading from the browser](#uploading-from-the-browser). |
+
+Calling `publicUrl` on a private bucket, or `signedUrl` on a public one, is a type error. A private file never ends up behind a permanent link, and a
+public bucket never pretends it can make a link expire.
+
+`signedUrl` also takes `responseContentDisposition`, which sets the `Content-Disposition` the file is served with. Pass `'attachment'` for files your
+users uploaded, so a browser downloads an uploaded `.html` or `.svg` instead of rendering it at your bucket's origin. Vercel Blob has no way to set that
+header and throws rather than drop the option silently.
+
+## Uploading from the browser
+
+Sending a file's bytes through an action means your server receives, buffers, and forwards all of them. A signed upload URL lets the browser upload
+straight to the bucket instead: your action decides the key and the limits, and hands back a URL that accepts exactly that upload for a short time.
+
+This is the action `init --with-storage` scaffolds:
+
+```ts title="typebase/actions/queries/storage.ts"
+export const getAvatarUploadUrl = action
+  .input(
+    z.object({
+      contentType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+    })
+  )
+  .handler(async ({ storage, input }) => {
+    const key = crypto.randomUUID();
+
+    const upload = await storage.bucket('avatars').signedUploadUrl(key, {
+      expiresIn: 60,
+      contentType: input.contentType,
+      maxSize: 5 * 1024 * 1024,
+    });
+
+    return { key, upload };
+  });
+```
+
+| Option        | Description                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `expiresIn`   | Seconds until the URL stops working. Required.                                                                         |
+| `contentType` | The only content type the URL accepts.                                                                                 |
+| `maxSize`     | The largest upload the URL accepts, in bytes. Without it, anyone holding the URL can upload any size until it expires. |
+| `minSize`     | The smallest upload the URL accepts, in bytes, when `maxSize` is set. Defaults to `1`.                                 |
+
+`upload` is either a `PUT` with headers to send, or a `POST` with form fields to send before the file, depending on the provider and options. Handle both
+on the client:
+
+```ts
+const { key, upload } = await client.queries.storage.getAvatarUploadUrl({ contentType: file.type });
+
+if (upload.method === 'PUT') {
+  await fetch(upload.url, { method: 'PUT', headers: upload.headers, body: file });
+} else {
+  const form = new FormData();
+
+  for (const [name, value] of Object.entries(upload.fields)) {
+    form.append(name, value);
+  }
+
+  form.append('file', file);
+
+  await fetch(upload.url, { method: 'POST', body: form });
+}
+```
+
+Then store `key` wherever the rest of your data lives, and build the file's URL from it when you need one.
+
+## Bucket names on the provider
+
+Every bucket exists twice on the provider, once for `dev` and once for `prod`, so testing never writes into production files. Each copy is named:
+
+```
+<project>-<bucket>-<target>
+```
+
+With a project of `my-app`, the `avatars` bucket is `my-app-avatars-dev` and `my-app-avatars-prod`, which is what you look for in the provider's
+dashboard.
+
+`<project>` is chosen once, the first time you sync, and then frozen in [`typebase.json`](/docs/configuration#storage):
+
+```json title="typebase.json"
+{
+  "storage": {
+    "project": "my-app"
+  }
+}
+```
+
+It comes from your server config (the Vercel project name, the Cloudflare Worker name, or the Deno Deploy slug) or, when you haven't deployed yet, from
+the `name` in your `package.json`, cleaned into something a bucket name accepts. After that it is read and never derived again. Renaming your server
+project, or moving it to another server provider, would otherwise point your code at a fresh set of empty buckets. Commit `typebase.json`, so your team
+reads the same name.
+
+## Bucket sync
+
+Buckets have to exist on the provider before your server can use them. **Bucket sync** creates them:
+
+```npm
+npx typebase-io-cli storage sync dev
+```
+
+For the target you name, it:
+
+1. Chooses and freezes the project name, if `typebase.json` doesn't have one yet.
+2. Lists the buckets that already exist for the target.
+3. Prints the full name of every declared bucket that is missing, then creates each one with its declared access.
+4. Adopts every declared bucket that already exists under its expected name, so running it twice is harmless.
+5. Warns about **orphan buckets**: buckets for this project and target that `storage.ts` no longer declares. They are left in place.
+6. Makes sure the credentials cover every declared bucket, and writes them into your project-root `.env`.
+
+Bucket sync never deletes or empties a bucket. Removing a line from `storage.ts` cannot destroy files; an orphan bucket keeps its files, and keeps
+costing you, until you delete it in the provider's dashboard.
+
+If a bucket already exists with a different access than you declared, the sync stops before it changes anything:
+
+```
+The bucket `avatars` is declared public, but `my-app-avatars-dev` already exists on vercel as private. A bucket's access cannot
+change once it exists: declare it private, or delete `my-app-avatars-dev` on vercel and sync again.
+```
+
+That is deliberate. Quietly writing files you declared private into a bucket someone made public by hand is the one mistake storage must not make.
+
+[`deploy`](/docs/cli/deploy) runs the same bucket sync for its target before it builds, so a deploy never ships code that points at a bucket that doesn't
+exist. Run `storage sync` yourself to develop against real dev buckets before you have ever deployed. See the [`storage` reference](/docs/cli/storage)
+for the command.
+
+<Callout type="info">With the `filesystem` provider there is nothing to create, so bucket sync and deploy say so and carry on.</Callout>
+
+### Accounts
+
+Bucket sync signs in with the same Vercel or Cloudflare login [`deploy`](/docs/cli/deploy#provider-setup) uses. The first time, it asks which Vercel team
+or Cloudflare account should hold your buckets, and saves the answer to `typebase.json` as `storage.vercel.orgId` or `storage.cloudflare.accountId`. It
+never asks for a server project, so storage on one platform works with a server on another, or with no server deployed at all.
+
+## Credentials
+
+Your server needs credentials to reach its buckets. Bucket sync creates them, writes them to your project-root `.env`, and `deploy` sets them on your
+server provider next to `DATABASE_URL`. You never copy a token between dashboards.
+
+| Provider     | Environment variables                                                                                                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vercel`     | `TYPEBASE_STORAGE_VERCEL_TOKENS`: a JSON object from bucket name to that Blob store's read/write token.                                                                                                               |
+| `cloudflare` | `TYPEBASE_STORAGE_R2_ACCOUNT_ID`, `TYPEBASE_STORAGE_R2_ACCESS_KEY_ID`, `TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY`, `TYPEBASE_STORAGE_R2_BUCKETS`, plus `TYPEBASE_STORAGE_R2_PUBLIC_URL_<BUCKET>` for each public bucket. |
+| `filesystem` | None.                                                                                                                                                                                                                 |
+
+In your project-root `.env`, the dev values carry a `_DEV` suffix and the prod values carry none, the same way `DATABASE_URL_DEV` and `DATABASE_URL` do,
+so both targets coexist. On the server provider the keys are always unsuffixed, and each target holds its own values.
+
+<Callout type="warn">
+  The token you logged in to Vercel or Cloudflare with is never put on your server. It can do anything your account can, so it stays in your
+  project-root `.env`, for the CLI. The server only gets credentials scoped to its buckets.
+</Callout>
+
+On Vercel, each Blob store has its own token, and all of them travel in the one variable, so adding a bucket never adds a variable to manage.
+
+On Cloudflare, each target gets one R2-only API token scoped to exactly the project's buckets for that target. Adding a bucket widens that token in
+place rather than replacing it, so a running server's credentials never change underneath it.
+
+### Public buckets on R2
+
+A public R2 bucket is served from Cloudflare's `r2.dev` domain, which bucket sync turns on for you, so public URLs work without any DNS setup. That domain
+is rate-limited and not meant for production traffic, and a `prod` sync with public R2 buckets says so:
+
+```
+Warning: public buckets are served from r2.dev, which is rate-limited and not meant for production. Connect a custom domain to
+my-app-avatars-prod in the Cloudflare dashboard before you rely on it.
+```
+
+## Local storage
+
+A [local run](/docs/work-locally) does not use your real buckets by default. It swaps the `vercel` or `cloudflare` provider for **local storage**: the same
+buckets, kept on disk in the [server cache](/docs/cli/start#the-server-cache). A test upload never lands in a real bucket by accident, and nothing needs a
+sync or a network connection first.
+
+Local storage serves and signs its own URLs, so everything the types promise works in a browser:
+
+- `publicUrl` returns a URL the local server serves.
+- `signedUrl` returns a URL the local server serves only with a valid signature, and only until it expires. Expiry bugs show up locally, before
+  production.
+- `signedUploadUrl` returns a URL the local server accepts a `PUT` to, enforcing the content type and size limits you asked for.
+
+All three are served under `/storage` on the local server, such as `http://127.0.0.1:8080/storage/avatars/<key>`. Files survive the restart a local run
+does on every change, and they live outside your project, so there is nothing to ignore or commit. The signing secret is created on first use and kept
+next to the files; there's no variable to set.
+
+To run against your real buckets instead, pass `--dev-storage` or `--prod-storage`:
+
+```npm
+npx typebase-io-cli start --dev-storage
+```
+
+It reads the credentials [bucket sync](#bucket-sync) wrote to your project-root `.env`, and is independent of the database flags, so a dev database with
+local storage is as easy as the other way round. See [choosing storage](/docs/cli/start#choosing-storage).
+
+A declared `filesystem` provider is never swapped. It stays itself, in its own `root`, locally and everywhere else.
+
+### In a generated server
+
+[`generate-server`](/docs/cli/generate-server) uses your declared provider, reading the same environment variables a deployed server reads.
+`--local-storage` opts into local storage instead. There is no fallback from one to the other: a server built without the flag that is missing a
+storage variable fails at boot rather than quietly writing to disk. See [storage in a generated server](/docs/cli/generate-server#storage).
+
+## Regenerating types
+
+Adding or removing `storage.ts` changes the action context, so run codegen afterwards:
+
+```npm
+npx typebase-io-cli codegen
+```
+
+Editing an existing storage file (adding a bucket, changing its access) does not need a codegen run. [`npx typebase-io-cli deploy`](/docs/cli/deploy)
+reruns codegen on every deploy. Adding a bucket does need a [bucket sync](#bucket-sync) before a deployed server or `--dev-storage` can reach it; a
+deploy runs one for you.

@@ -43,8 +43,9 @@ export function Faq() {
               question: 'Is Typebase a hosting service?',
               answer: (
                 <>
-                  Typebase is a library and CLI. Your server runs in your own hosting account, and the database is yours too. The CLI deploys to
-                  Vercel, Cloudflare Workers, or Deno Deploy with a Neon database. You can also{' '}
+                  Typebase is a library and CLI. Your server runs in your own hosting account, and the database and files are yours too. The CLI
+                  deploys to Vercel, Cloudflare Workers, or Deno Deploy with a Neon database, and keeps files in Vercel Blob or Cloudflare R2. You can
+                  also{' '}
                   <Link href="/docs/cli/generate-server" className="text-fd-primary underline underline-offset-4">
                     generate a server to host yourself
                   </Link>

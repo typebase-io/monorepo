@@ -30,6 +30,7 @@ the values already in it.
 | `-f, --force`         | Overwrite `tsconfig.json` and regenerate the scaffolded example files.                    |
 | `--with-auth`         | Include an example `auth.ts` with email/password authentication.                          |
 | `--with-db-publisher` | Include a `publisher.ts`, the `events` table it needs, and actions that use it.           |
+| `--with-storage`      | Include a `storage.ts` with a public and a private bucket, and actions that use them.     |
 | `--skip-example`      | Skip generating the example schema, actions, and `env.ts`.                                |
 | `--with-migrations`   | Record schema changes as [migrations](/docs/database/migrations) instead of pushing them. |
 
@@ -74,5 +75,19 @@ Sets up a [publisher](/docs/publisher), so actions can publish events and stream
 - `db/relations.ts`: an `events: {}` entry registering that table
 - `actions/mutations/todos.ts`: `create` publishes `todo.created` after inserting
 - `actions/queries/todos.ts`: `getMany` becomes a [streaming action](/docs/actions/streaming) that re-sends the list on every new todo
+
+<Callout type="info">It cannot be combined with `--skip-example`, which skips the example this flag adds to.</Callout>
+
+### `--with-storage`
+
+Sets up [storage](/docs/storage), so actions can keep files in buckets and hand out URLs to them. On top of the usual scaffold it writes:
+
+- `storage.ts`: a `vercel` storage provider with a public `avatars` bucket and a private `documents` bucket
+- `actions/queries/storage.ts`: `getAvatarUploadUrl`, which returns a [signed upload URL](/docs/storage#uploading-from-the-browser) for an avatar, and
+  `getDocumentUrl`, which returns a signed URL to read a document
+
+Nothing is created on Vercel yet. A [local run](/docs/work-locally) uses [local storage](/docs/storage#local-storage) and works straight away; run
+[`storage sync dev`](/docs/cli/storage) or deploy when you want the real buckets. To keep files somewhere else, change `provider` in `storage.ts` before
+your first sync.
 
 <Callout type="info">It cannot be combined with `--skip-example`, which skips the example this flag adds to.</Callout>

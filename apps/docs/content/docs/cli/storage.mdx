@@ -1,0 +1,55 @@
+---
+title: typebase-io-cli storage
+description: Create the buckets your storage file declares.
+---
+
+## `storage sync <target>`
+
+Create every bucket declared in [`storage.ts`](/docs/storage) that does not exist yet for the target, and write the credentials for them into your
+project-root `.env`.
+
+```npm
+npx typebase-io-cli storage sync dev
+```
+
+```npm
+npx typebase-io-cli storage sync prod
+```
+
+| Argument              | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `target` _(required)_ | The buckets to sync. Must be `dev` or `prod`. |
+
+This command:
+
+1. Chooses the storage project name and saves it to `typebase.json` as `storage.project`, the first time only
+2. Asks which Vercel team or Cloudflare account holds your buckets and saves it to `typebase.json`, the first time only
+3. Prints the full name of every declared bucket that is missing, then creates each one with its declared access
+4. Adopts every declared bucket that already exists
+5. Warns about orphan buckets, which exist for this project and target but are no longer declared, and leaves them in place
+6. Creates or widens the credentials so they cover every declared bucket
+7. Writes the target's storage keys to your project-root `.env`, with a `_DEV` suffix for `dev`
+
+It never deletes or empties a bucket, and it stops without changing anything when an existing bucket's access differs from what `storage.ts` declares.
+See [bucket sync](/docs/storage#bucket-sync) for why.
+
+With the `filesystem` provider there is nothing to create, and the command says so and exits.
+
+### Prerequisites
+
+- A `typebase/storage.ts` file with a `defineStorage` call whose `provider` is a plain string and whose `buckets` object is written inline, so the CLI
+  can read it without running it
+- An `access` on every bucket, when the provider is `vercel` or `cloudflare`
+
+### Signing in
+
+It signs in with the same token [`deploy`](/docs/cli/deploy#provider-setup) uses: `VERCEL_TOKEN` or `CLOUDFLARE_API_TOKEN` in your project-root `.env`, or
+a browser login when there is none. That token stays in `.env` for the CLI. It is never written to the storage keys or sent to your server.
+
+### Running it from deploy
+
+[`deploy <target>`](/docs/cli/deploy) runs this same sync for its own target before it builds, then sets the storage keys on your server provider. Run
+`storage sync` on its own to prepare buckets without deploying, for example to develop against real dev buckets with
+[`start --dev-storage`](/docs/cli/start#choosing-storage) before your first deploy.
+
+See the [Storage](/docs/storage) page for bucket names, credentials, and local storage.

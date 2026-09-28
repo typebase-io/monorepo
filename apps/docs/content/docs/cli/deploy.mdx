@@ -29,6 +29,7 @@ The first time you run this, the CLI will ask you to:
 2. **Authenticate** with the provider
 3. **Select or create a project** on the provider
 4. **Select or create a database** on [Neon](https://neon.tech) (if your project has a database schema)
+5. **Select the account that holds your buckets** (if your project has a [`storage.ts`](/docs/storage) on Vercel or Cloudflare)
 
 After the first deploy, the CLI remembers your choices in `typebase.json`, so future deploys are a single command.
 
@@ -38,15 +39,16 @@ When you run `npx typebase-io-cli deploy`, the CLI performs these steps automati
 
 1. **Regenerates the types in `_generated/`**: Runs the same logic as [`npx typebase-io-cli codegen`](/docs/cli/codegen), so you never have to run it by hand before deploying.
 2. **Validates your TypeScript**: Checks your `typebase/` directory against those freshly generated types, so what gets checked is what gets built.
-3. **Generates server files**: Builds the server code from your actions, schema, auth, env, and publisher config.
-4. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
-5. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable). A change that would drop data stops here for confirmation; `--skip-schema-changes-confirmation` approves it in advance. In [migrations mode](/docs/database/migrations) it applies your pending migrations instead, and refuses to deploy when your schema files hold changes no migration records.
-6. **Deploys the server**: Uploads the built server to your chosen provider.
-7. **Sets environment variables**: Configures `DATABASE_URL` and `BETTER_AUTH_SECRET` on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value. Anything you declared in [`env.ts`](/docs/env) is your responsibility: set it with `npx typebase-io-cli env <target> add <KEY> <value>`, or the deployed server will refuse to boot.
-8. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`).
+3. **Syncs your storage buckets**: If your project has a [`storage.ts`](/docs/storage), runs [bucket sync](/docs/storage#bucket-sync) for the target: creates any declared bucket that doesn't exist yet, never deletes one, and makes sure the credentials cover them all. An existing bucket whose access differs from what you declared stops the deploy here.
+4. **Generates server files**: Builds the server code from your actions, schema, auth, env, publisher, and storage config.
+5. **Transpiles to JavaScript**: Converts TypeScript to JavaScript for deployment.
+6. **Pushes your database schema**: Syncs your Drizzle schema to your Neon database (if applicable). A change that would drop data stops here for confirmation; `--skip-schema-changes-confirmation` approves it in advance. In [migrations mode](/docs/database/migrations) it applies your pending migrations instead, and refuses to deploy when your schema files hold changes no migration records.
+7. **Deploys the server**: Uploads the built server to your chosen provider.
+8. **Sets environment variables**: Configures `DATABASE_URL`, `BETTER_AUTH_SECRET`, and your [storage credentials](/docs/storage#credentials) on your provider. The key on the provider is always `DATABASE_URL`, regardless of target; each environment (`dev`, `prod`) holds its own value. Anything you declared in [`env.ts`](/docs/env) is your responsibility: set it with `npx typebase-io-cli env <target> add <KEY> <value>`, or the deployed server will refuse to boot.
+9. **Saves the URL and environment variables**: Writes the deployment URL to your project-root `.env` (`TYPEBASE_APP_URL` for `prod`, `TYPEBASE_APP_URL_DEV` for `dev`), along with the connection string (`DATABASE_URL` for `prod`, `DATABASE_URL_DEV` for `dev`) and the storage credentials (unsuffixed for `prod`, with a `_DEV` suffix for `dev`).
 
 <Callout type="warn">
-  Schema changes are applied (step 5) before the new server code is live (step 6), whether they arrive by push or as migrations. This is normal for
+  Schema changes are applied (step 6) before the new server code is live (step 7), whether they arrive by push or as migrations. This is normal for
   most deployment workflows, but it means the previous version of your server briefly runs against the new schema. For destructive changes in `prod`
   (dropped columns, renamed tables), design your rollout so the old code keeps working, typically by shipping additive changes first, then removing
   the old fields in a later deploy.
@@ -91,6 +93,7 @@ Each environment gets its own:
 
 - Deployment URL
 - Database (or database branch)
+- Storage buckets
 - Environment variables
 
 Deploy to dev:
@@ -109,7 +112,8 @@ npx typebase-io-cli deploy prod
 
 <Callout type="warn">
   When you log in to a provider, the CLI saves the API token it obtains (`VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, `DENO_DEPLOY_TOKEN`, `NEON_API_KEY`)
-  to your project-root `.env`. Make sure `.env` is listed in your `.gitignore` so these tokens never end up in version control.
+  to your project-root `.env`. Make sure `.env` is listed in your `.gitignore` so these tokens never end up in version control. The same goes for the
+  [storage credentials](/docs/storage#credentials) a deploy writes there.
 </Callout>
 
 ### Vercel
@@ -156,6 +160,20 @@ If your project has a `db/schema.ts`, the CLI will set up a [Neon](https://neon.
 3. **Environment variable**: The connection string is set on your deployment provider under the key `DATABASE_URL`, and mirrored into your project-root `.env` as `DATABASE_URL` for prod or `DATABASE_URL_DEV`.
 
 Dev and prod deployments use separate Neon branches, so your development data doesn't affect production.
+
+## Storage provisioning
+
+If your project has a [`storage.ts`](/docs/storage), the CLI creates its buckets for you:
+
+1. **First deploy**: The CLI asks which Vercel team or Cloudflare account holds your buckets, and freezes the project part of their names in
+   `typebase.json`. The storage provider doesn't have to match your server provider: a Worker can keep its files in Vercel Blob.
+2. **Bucket sync**: Every declared bucket missing for the target is created as `<project>-<bucket>-<target>`. Nothing is ever deleted; a bucket you
+   stopped declaring is reported and left alone.
+3. **Environment variables**: The credentials for those buckets are set on your deployment provider and mirrored into your project-root `.env`. Your
+   own Vercel or Cloudflare login token is never among them.
+
+Dev and prod deployments use separate buckets, so a test upload never lands in production. [`storage sync`](/docs/cli/storage) does steps 1 and 2 on their
+own, without deploying.
 
 ## Deploying with migrations
 

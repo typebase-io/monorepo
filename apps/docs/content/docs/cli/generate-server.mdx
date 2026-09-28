@@ -60,6 +60,7 @@ _handler/
     auth.ts              # Your auth config (if applicable)
     env.ts               # Validated environment variables (if applicable)
     publisher.ts         # Publisher runtime config (if applicable)
+    storage.ts           # Storage runtime config (if applicable)
   typebase-server.json   # Adapter, mode, CLI version, dependencies, env keys
 ```
 
@@ -191,10 +192,11 @@ Cloudflare mount becomes `module.exports = { fetch: typebaseHandler }`.
 
 An embedded server is mounted wherever you like, so the paths it serves are configurable, and independently of each other:
 
-| Flag                    | Serves       | Default     |
-| ----------------------- | ------------ | ----------- |
-| `--actions-path <path>` | Your actions | `/rpc`      |
-| `--auth-path <path>`    | Auth         | `/api/auth` |
+| Flag                    | Serves                                                       | Default     |
+| ----------------------- | ------------------------------------------------------------ | ----------- |
+| `--actions-path <path>` | Your actions                                                 | `/rpc`      |
+| `--auth-path <path>`    | Auth                                                         | `/api/auth` |
+| `--storage-path <path>` | [Local storage](#storage) files, with `--local-storage` only | `/storage`  |
 
 ```npm
 npx typebase-io-cli generate-server --embedded --actions-path /typebase/rpc --auth-path /typebase/auth
@@ -207,7 +209,8 @@ Both options are embedded-only. Passing either with a standalone build is an err
 nothing would use the value. A value inherited from `typebase.json` is ignored instead, for the same reason a configured port is.
 
 Generation refuses when the auth path would swallow the actions path — `--auth-path /typebase` together with `--actions-path /typebase/rpc`, for instance. Auth
-is matched first, so every action request would be answered by auth and never reach your actions. Keeping the two paths independent, rather than deriving both
+is matched first, so every action request would be answered by auth and never reach your actions. The storage path is checked the same way: it can't sit
+under the auth path, and it can't contain the actions path. Keeping the two paths independent, rather than deriving both
 from one prefix, is what lets you move either one without the other picking up a duplicated segment.
 
 <Callout type="info">
@@ -271,17 +274,19 @@ npx typebase-io-cli generate-server --adapter fastify
 
 ## Options
 
-| Flag                    | Description                                                          | Default                                |
-| ----------------------- | -------------------------------------------------------------------- | -------------------------------------- |
-| `--output <type>`       | Output format: `ts`, `esm`, or `cjs`                                 | `ts`                                   |
-| `--adapter <adapter>`   | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare` | `node`                                 |
-| `--embedded`            | Generate source for your existing application to mount               | `false`                                |
-| `--out-dir <path>`      | Output directory for generated files                                 | `_server`, or `_handler` when embedded |
-| `--actions-path <path>` | Path an embedded server serves your actions at (embedded only)       | `/rpc`                                 |
-| `--auth-path <path>`    | Path an embedded server serves auth at (embedded only)               | `/api/auth`                            |
-| `--watch`               | Rebuild on every change inside your `typebase/` directory            | `false`                                |
-| `--command <command>`   | Command to run in the generated server after it is generated         | none                                   |
-| `--port <number>`       | Port the generated server listens on (standalone only)               | `8080`                                 |
+| Flag                    | Description                                                                           | Default                                |
+| ----------------------- | ------------------------------------------------------------------------------------- | -------------------------------------- |
+| `--output <type>`       | Output format: `ts`, `esm`, or `cjs`                                                  | `ts`                                   |
+| `--adapter <adapter>`   | HTTP adapter: `node`, `bun`, `hono`, `fastify`, `deno`, `cloudflare`                  | `node`                                 |
+| `--embedded`            | Generate source for your existing application to mount                                | `false`                                |
+| `--out-dir <path>`      | Output directory for generated files                                                  | `_server`, or `_handler` when embedded |
+| `--actions-path <path>` | Path an embedded server serves your actions at (embedded only)                        | `/rpc`                                 |
+| `--auth-path <path>`    | Path an embedded server serves auth at (embedded only)                                | `/api/auth`                            |
+| `--local-storage`       | Keep a Vercel or Cloudflare storage's files on disk and serve them from the server    | `false`                                |
+| `--storage-path <path>` | Path an embedded server serves local storage at (embedded and `--local-storage` only) | `/storage`                             |
+| `--watch`               | Rebuild on every change inside your `typebase/` directory                             | `false`                                |
+| `--command <command>`   | Command to run in the generated server after it is generated                          | none                                   |
+| `--port <number>`       | Port the generated server listens on (standalone only)                                | `8080`                                 |
 
 ## Default configuration
 
@@ -316,6 +321,8 @@ _server/
     auth.ts            # Your auth config (if applicable)
     env.ts             # Validated environment variables (if applicable)
     publisher.ts       # Publisher runtime config (if applicable)
+    storage.ts         # Storage runtime config (if applicable)
+  .local-storage/      # Local storage files (with --local-storage, once the server has stored one)
   package.json         # Dependencies for the server
   tsconfig.json        # TypeScript config
   typebase-server.json # Adapter, mode, CLI version, dependencies, env keys
@@ -334,8 +341,8 @@ reads that from the `pnpm` field in the generated `package.json` instead. npm, y
 `src/publisher.ts` is emitted when the project has a `publisher.ts`; it creates the configured provider with the runtime resources it needs. For the `db` provider, that is the generated database client.
 
 `.env` in a standalone server is filled in from your project-root `.env`, with the keys the server validates: `DATABASE_URL`,
-`BETTER_AUTH_SECRET`, and whatever you declared in [`env.ts`](/docs/env). `DATABASE_URL` comes from your `DATABASE_URL_DEV` when there is one, so a
-server you run locally reaches the dev branch. Keys already in the file are never overwritten, and nothing else from your project `.env` (provider
+`BETTER_AUTH_SECRET`, your [storage credentials](/docs/storage#credentials), and whatever you declared in [`env.ts`](/docs/env). `DATABASE_URL` and the
+storage keys come from their `_DEV` versions when there are any, so a server you run locally reaches the dev branch and the dev buckets. Keys already in the file are never overwritten, and nothing else from your project `.env` (provider
 tokens especially) is copied. This is a `generate-server` convenience only; [`deploy`](/docs/cli/deploy) syncs variables to the provider instead and
 never puts a `.env` in the bundle. An [embedded server](#embedded-servers) gets no `.env` either: your application loads the environment it runs in.
 
@@ -344,7 +351,40 @@ written next to it points its `out` at them. The generated server is self-contai
 drizzle tooling. The server never reads them itself — migrations are applied by the CLI, from your machine or from CI. A project in push mode gets no
 `migrations` folder.
 
-`src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, or an `auth.ts` — anything that means the server has variables to validate. In a standalone server, `dotenv` is added to `package.json` and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither. An embedded server never loads environment files at all, since it has no bootstrap and mutating its host's environment is not its business.
+`src/env.ts` is emitted whenever your project has an `env.ts`, a `db/schema.ts`, an `auth.ts`, or a `storage.ts` that needs credentials — anything that means the server has variables to validate. In a standalone server, `dotenv` is added to `package.json` and `dotenv/config` imported by `index.ts`, only when that env module exists and the adapter is not `cloudflare`, which reads its values from Worker bindings rather than `process.env`. A server with nothing to read gets neither. An embedded server never loads environment files at all, since it has no bootstrap and mutating its host's environment is not its business.
+
+## Storage
+
+`src/storage.ts` is emitted when the project has a `storage.ts`. It creates your declared storage with what the provider needs to run, and `files-sdk`
+is added to the server's dependencies.
+
+By default that is your real provider. A `vercel` or `cloudflare` storage reads its [credentials](/docs/storage#credentials) from the environment,
+under the same names a deployed server uses, so a self-hosted server is configured exactly like a deployed one. A `filesystem` storage needs nothing and
+keeps its files in its own `root`.
+
+### `--local-storage`
+
+`--local-storage` swaps a `vercel` or `cloudflare` provider for [local storage](/docs/storage#local-storage), the same one a [local run](/docs/cli/start#choosing-storage)
+uses: files on disk, served and signed by the generated server itself. It needs no credentials, so it reads no storage variables.
+
+```npm
+npx typebase-io-cli generate-server --local-storage
+```
+
+It is a flag rather than a fallback on purpose. A server generated without it that is missing a storage variable fails at boot, instead of quietly
+writing production uploads to a disk that may not survive the next deploy.
+
+Files are kept in `.local-storage`, resolved against the directory the server runs from. For a standalone server started from `typebase/_server/`, that's
+`typebase/_server/.local-storage/`, which [regeneration](#regeneration) keeps alongside `.env` and `node_modules`. The URL signing secret is created there
+on first use.
+
+A standalone server serves the files at `/storage` on its own port. An embedded server serves them at `--storage-path`, or `server.storagePath` in
+[`typebase.json`](/docs/configuration#serverstoragepath), and builds its URLs as paths relative to your application's origin. The route is part of
+`typebaseHandler`, like auth, so [mounting](#mounting) is unchanged. A server built without `--local-storage` has no storage route at all.
+
+`--local-storage` does nothing for a project without a `storage.ts`, or whose `storage.ts` declares `filesystem`, and says so. It can't be combined with
+`--adapter cloudflare`, since a Worker has no disk to keep files on, and `--storage-path` without `--local-storage` is an error, because nothing would
+serve the path.
 
 ## Watch mode
 
@@ -449,7 +489,7 @@ npx typebase-io-cli generate-server --watch --command "node src/index.js"
 
 ## Regeneration
 
-Each run rebuilds the server from scratch and replaces the previous output directory — files whose source was deleted or renamed don't linger. Two exceptions survive regeneration because they belong to you, not the generator: `.env` and `node_modules`. Install dependencies and configure your env once; re-runs keep both.
+Each run rebuilds the server from scratch and replaces the previous output directory — files whose source was deleted or renamed don't linger. Three exceptions survive regeneration because they belong to you, not the generator: `.env`, `node_modules`, and the `.local-storage` files of a server generated with [`--local-storage`](#--local-storage). Install dependencies and configure your env once; re-runs keep them.
 
 If a generation fails, the previous output is left untouched, so a working server is never destroyed by a failed rebuild.
 

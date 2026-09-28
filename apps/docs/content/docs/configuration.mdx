@@ -36,7 +36,7 @@ The path to your `typebase/` directory, relative to the project root.
 }
 ```
 
-This tells the CLI where to find your `db/`, `actions/`, `auth.ts`, `env.ts`, `publisher.ts`, and `_generated/` files.
+This tells the CLI where to find your `db/`, `actions/`, `auth.ts`, `env.ts`, `publisher.ts`, `storage.ts`, and `_generated/` files.
 
 ---
 
@@ -168,6 +168,26 @@ Equivalent to `generate-server --auth-path`, embedded-only on the same terms as 
 generated auth config as better-auth's `basePath`, so the framework and the route it is mounted at cannot disagree — unless your own `typebase/auth.ts` sets
 one, which wins. See [the auth path](/docs/auth#the-auth-path-of-an-embedded-server).
 
+#### `server.storagePath`
+
+The path an embedded server serves [local storage](/docs/storage#local-storage) files at.
+
+| Type     | Default      |
+| -------- | ------------ |
+| `string` | `"/storage"` |
+
+```json
+{
+  "server": {
+    "embedded": true,
+    "storagePath": "/typebase/files"
+  }
+}
+```
+
+Equivalent to `generate-server --storage-path`, and embedded-only on the same terms as `server.actionsPath`. It only matters for a server generated with
+`--local-storage`, since no other server serves files itself. See [storage in a generated server](/docs/cli/generate-server#storage).
+
 #### `server.port`
 
 The port the generated server listens on.
@@ -264,6 +284,35 @@ Neon database configuration. Managed automatically by the CLI when you use a dat
 | `orgId`     | Your Neon organization ID |
 | `projectId` | Your Neon project ID      |
 
+---
+
+### `storage`
+
+[Storage](/docs/storage) configuration. Managed automatically by [bucket sync](/docs/storage#bucket-sync), the first time you run
+[`storage sync`](/docs/cli/storage) or deploy a project with a `storage.ts`.
+
+```json
+{
+  "storage": {
+    "project": "my-app",
+    "cloudflare": {
+      "accountId": "abc123"
+    }
+  }
+}
+```
+
+| Field                  | Description                                                          |
+| ---------------------- | -------------------------------------------------------------------- |
+| `project`              | The project part of every bucket name, `<project>-<bucket>-<target>` |
+| `vercel.orgId`         | The Vercel team that holds your Blob stores                          |
+| `cloudflare.accountId` | The Cloudflare account that holds your R2 buckets                    |
+
+`project` is chosen on the first sync and never derived again, so renaming your server project or moving to another server provider keeps your buckets.
+See [bucket names on the provider](/docs/storage#bucket-names-on-the-provider). Only the account entry for the provider in `storage.ts` is read, and it
+is separate from the `vercel` and `cloudflare` server sections above, so your files and your server can live on different accounts, or different
+platforms.
+
 ## Full schema
 
 Here is the complete `typebase.json` schema with all optional fields:
@@ -275,7 +324,10 @@ Here is the complete `typebase.json` schema with all optional fields:
   "server": {
     "output": "ts",
     "adapter": "node",
-    "outDir": "_server"
+    "outDir": "_server",
+    "actionsPath": "/rpc",
+    "authPath": "/api/auth",
+    "storagePath": "/storage"
   },
   "vercel": {
     "projectId": "",
@@ -295,6 +347,15 @@ Here is the complete `typebase.json` schema with all optional fields:
   "neon": {
     "orgId": "",
     "projectId": ""
+  },
+  "storage": {
+    "project": "",
+    "vercel": {
+      "orgId": ""
+    },
+    "cloudflare": {
+      "accountId": ""
+    }
   }
 }
 ```
