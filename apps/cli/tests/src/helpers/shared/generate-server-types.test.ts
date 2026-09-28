@@ -15,6 +15,12 @@ interface Files {
   hasPublisher: boolean;
 }
 
+const FILESYSTEM_STORAGE = removeExtraSpaces(`
+  import { defineStorage } from "typebase-io/server";
+
+  export const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });
+`);
+
 const RESOLVED_CASES: (Files & { description: string; fixture: string })[] = [
   {
     description: 'a project with nothing in it',
@@ -362,6 +368,7 @@ describe('generateServerTypes', () => {
       authFilePath: path.join(tmp.path, 'auth.ts'),
       envFilePath: path.join(tmp.path, 'env.ts'),
       publisherFilePath: path.join(tmp.path, 'publisher.ts'),
+      storageFilePath: path.join(tmp.path, 'storage.ts'),
       actionsDirPath: path.join(tmp.path, 'actions'),
       generatedDirPath: path.join(tmp.path, 'generated'),
     });
@@ -378,5 +385,14 @@ describe('generateServerTypes', () => {
     writeProject(files);
 
     await expect(run()).rejects.toThrow(error);
+  });
+
+  it('declares the storage the project has, so actions see its buckets', async () => {
+    writeProject({ hasRouter: true, hasDB: false, hasAuth: false, hasEnv: false, hasPublisher: false });
+    tmp.write('storage.ts', FILESYSTEM_STORAGE);
+
+    await run();
+
+    expect(tmp.read('generated/server.ts')).toEqualTemplate('generate-server-types', 'router-storage.txt');
   });
 });

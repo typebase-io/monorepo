@@ -1,0 +1,9 @@
+import { createStorage } from "typebase-io/server";
+import { createLocalStorage } from "typebase-io/server/local-storage";
+
+export const localFileStorage = createLocalStorage({ root: "/cache/.local-storage", url: "http://localhost:8080/storage" });
+
+export const storage = createStorage({
+  provider: "vercel",
+  buckets: { avatars: { access: "public" } },
+}, { local: localFileStorage });

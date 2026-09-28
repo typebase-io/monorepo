@@ -449,11 +449,187 @@ export const env = defineEnv({ MAIL_API_KEY: z.string() });`
       expectServer(name, files, root);
     });
 
+    it('generates a server that creates the declared storage once and injects it into every action', async () => {
+      await setupProject({ withAuth: false, withDb: false });
+
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({\n  provider: "filesystem",\n  buckets: { avatars: {} },\n});\n'
+      );
+
+      tmp.write(
+        'typebase/actions/files.ts',
+        [
+          'import { z } from "zod";',
+          '',
+          'import { action } from "../_generated/server.ts";',
+          '',
+          'export const uploadAvatar = action',
+          '  .input(z.object({ key: z.string(), body: z.string() }))',
+          '  .handler(async ({ storage, input }) => {',
+          '    await storage.bucket("avatars").upload(input.key, input.body);',
+          '',
+          '    return { key: input.key };',
+          '  });',
+          '',
+        ].join('\n')
+      );
+
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('ts-storage', [...TS_BARE, 'src/actions/files.ts', 'src/storage.ts']);
+    });
+
     it('writes an embedded server to the output directory it was given', async () => {
       await setupProject({ withAuth: false, withDb: true });
       await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--out-dir', 'dist'], { from: 'user' }));
 
       expectServer('embedded-node-db-only', TS_EMBEDDED_DB_ONLY, 'dist');
+    });
+  });
+
+  describe('local storage', () => {
+    const TS_EMBEDDED_BARE = TS_BARE.filter((f) => f !== 'package.json' && f !== 'src/index.ts' && f !== 'tsconfig.json');
+
+    const setupProjectWithStorage = async (provider = 'vercel') => {
+      await setupProject({ withAuth: false, withDb: false });
+
+      tmp.write(
+        'typebase/storage.ts',
+        `import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({\n  provider: "${provider}",\n  buckets: { avatars: { access: "public" } },\n});\n`
+      );
+    };
+
+    it('generates a server that reads the Blob store tokens from its environment without `--local-storage`', async () => {
+      await setupProjectWithStorage();
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('ts-vercel-storage', [...TS_BARE, 'src/env.ts', 'src/storage.ts'], '_server');
+    });
+
+    it('copies the dev Blob store tokens into the generated server before the production ones', async () => {
+      await setupProjectWithStorage();
+
+      tmp.write('.env', 'TYPEBASE_STORAGE_VERCEL_TOKENS={"avatars":"prod"}\nTYPEBASE_STORAGE_VERCEL_TOKENS_DEV={"avatars":"dev"}\n');
+
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expect(dotenv.parse(tmp.read('typebase/_server/.env')).TYPEBASE_STORAGE_VERCEL_TOKENS).toBe('{"avatars":"dev"}');
+    });
+
+    it('generates a standalone server that keeps its files where it runs and serves them at the storage path', async () => {
+      await setupProjectWithStorage();
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      expectServer('ts-local-storage', [...TS_BARE, 'src/storage.ts'], '_server');
+    });
+
+    it('generates an embedded server that serves local storage at the path it was given, with URLs relative to the page', async () => {
+      await setupProjectWithStorage();
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--local-storage', '--storage-path', '/files'], { from: 'user' }));
+
+      expectServer('embedded-local-storage', [...TS_EMBEDDED_BARE, 'src/storage.ts'], '_handler');
+    });
+
+    it('reads the storage path from typebase.json', async () => {
+      tmp.write('typebase.json', JSON.stringify({ server: { embedded: true, storagePath: '/files' } }));
+
+      await setupProjectWithStorage();
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      expectServer('embedded-local-storage', [...TS_EMBEDDED_BARE, 'src/storage.ts'], '_handler');
+    });
+
+    it('keeps the files local storage holds when the server is generated again', async () => {
+      await setupProjectWithStorage();
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      tmp.write('typebase/_server/.local-storage/avatars/me.txt', 'kept');
+      tmp.write('typebase/_server/.local-storage/.signing-secret', 'a'.repeat(64));
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      expect(tmp.read('typebase/_server/.local-storage/avatars/me.txt')).toBe('kept');
+      expect(tmp.read('typebase/_server/.local-storage/.signing-secret')).toBe('a'.repeat(64));
+    });
+
+    it('uses a declared filesystem storage as it is, with no route, and says local storage has no effect', async () => {
+      await setupProject({ withAuth: false, withDb: false });
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({\n  provider: "filesystem",\n  buckets: { avatars: {} },\n});\n'
+      );
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      expect(warned()).toContain(
+        '`--local-storage` has no effect: `storage.ts` declares the `filesystem` provider, which keeps its files where it says.'
+      );
+      expect(tmp.read('typebase/_server/src/storage.ts')).toEqualTemplate('generate-server', 'ts-storage', 'src', 'storage.ts.txt');
+      expect(tmp.read('typebase/_server/src/server.ts')).toEqualTemplate('generate-server', 'ts-bare', 'src', 'server.ts.txt');
+    });
+
+    it('never checks a storage path that nothing will be served at', async () => {
+      await setupProject({ withAuth: false, withDb: false });
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });\n'
+      );
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--local-storage', '--storage-path', '/'], { from: 'user' }));
+
+      expect(tmp.exists('typebase/_handler/src/server.ts')).toBe(true);
+    });
+
+    it('says local storage has no effect on a project without storage', async () => {
+      await setupProject({ withAuth: false, withDb: false });
+
+      await withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage'], { from: 'user' }));
+
+      expect(warned()).toContain('`--local-storage` has no effect: the project has no `storage.ts`.');
+      expect(tmp.read('typebase/_server/src/server.ts')).toEqualTemplate('generate-server', 'ts-bare', 'src', 'server.ts.txt');
+    });
+
+    it('checks the storage path against the auth base path the auth file sets', async () => {
+      await setupProject({ withAuth: true, withDb: true });
+      tmp.write('typebase/auth.ts', 'import { defineAuth } from "typebase-io/server";\n\nexport const auth = defineAuth({ basePath: "/files" });\n');
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "vercel", buckets: { avatars: { access: "private" } } });\n'
+      );
+
+      await expect(
+        withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--local-storage', '--storage-path', '/files/uploads'], { from: 'user' }))
+      ).rejects.toThrow('Refusing to generate an embedded server that serves auth at `/files` and local storage at `/files/uploads`');
+    });
+
+    it('generates a server that reads the R2 keys and public base URLs from its environment without `--local-storage`', async () => {
+      await setupProjectWithStorage('cloudflare');
+      await withCwd(tmp.path, () => generateServer.parseAsync([], { from: 'user' }));
+
+      expectServer('ts-cloudflare-storage', [...TS_BARE, 'src/env.ts', 'src/storage.ts'], '_server');
+    });
+
+    it('refuses local storage on a Cloudflare server, generating nothing', async () => {
+      await setupProjectWithStorage();
+
+      await expect(
+        withCwd(tmp.path, () => generateServer.parseAsync(['--local-storage', '--adapter', 'cloudflare'], { from: 'user' }))
+      ).rejects.toThrow('Refusing to generate a Cloudflare server with `--local-storage`');
+
+      expect(fs.existsSync(path.join(tmp.path, 'typebase/_server'))).toBe(false);
+    });
+
+    it('refuses a storage path that would hide the actions', async () => {
+      await setupProjectWithStorage();
+
+      await expect(
+        withCwd(tmp.path, () => generateServer.parseAsync(['--embedded', '--local-storage', '--storage-path', '/'], { from: 'user' }))
+      ).rejects.toThrow('Refusing to generate an embedded server that serves local storage at `/` and actions at `/rpc`');
     });
   });
 

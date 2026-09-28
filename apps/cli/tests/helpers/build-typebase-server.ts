@@ -13,6 +13,7 @@ import { generateEnvFile } from '#helpers/generate-server/generate-env-file.ts';
 import { generatePackageJson } from '#helpers/generate-server/generate-package-json.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
 import { generateServerFiles } from '#helpers/generate-server/generate-server-files.ts';
+import { generateStorageFile } from '#helpers/generate-server/generate-storage-file.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
@@ -42,11 +43,18 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
   const authFilePath = path.join(projectDir, 'auth.ts');
   const envFilePath = path.join(projectDir, 'env.ts');
   const publisherFilePath = path.join(projectDir, 'publisher.ts');
+  const storageFilePath = path.join(projectDir, 'storage.ts');
 
   const includeDBFiles = hasDB(schemaFilePath);
   const includeAuthFile = hasAuth(authFilePath);
   const includeEnvFile = includeDBFiles || includeAuthFile || hasEnv(envFilePath);
-  const { hasPublisher: publisherProvider } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
+  const { hasPublisher: publisherProvider, hasStorage: storageProvider } = resolveProjectShapeOrThrow({
+    schemaFilePath,
+    authFilePath,
+    envFilePath,
+    publisherFilePath,
+    storageFilePath,
+  });
 
   const tempServerDir = path.join(tmp.path, 'temp-server');
   const serverDir = path.join(tmp.path, 'server');
@@ -62,6 +70,7 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     authFilePath,
     envFilePath,
     publisherFilePath,
+    storageFilePath,
     actionsDirPath: path.join(projectDir, 'actions'),
     generatedDirPath,
   });
@@ -78,6 +87,7 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     configuredOutDir: '_server',
     hasAuth: includeAuthFile,
     hasEnv: includeEnvFile,
+    hasStorage: storageProvider !== false,
   });
 
   if (includeEnvFile) {
@@ -101,12 +111,24 @@ export const buildTypebaseServer = async (tmp: TempDir, projectDir: string, opti
     });
   }
 
+  if (storageProvider !== false) {
+    await generateStorageFile({
+      storageFilePath,
+      storageOutputDirPath: path.join(tempServerDir, 'src'),
+      provider: storageProvider,
+      useTs: false,
+    });
+  }
+
   await generateAction({
     serverOutputDirPath: path.join(tempServerDir, 'src', '_generated'),
-    hasDB: includeDBFiles,
-    hasAuth: includeAuthFile,
-    hasEnv: includeEnvFile,
-    hasPublisher: publisherProvider !== false,
+    features: {
+      db: includeDBFiles,
+      auth: includeAuthFile,
+      env: includeEnvFile,
+      publisher: publisherProvider !== false,
+      storage: storageProvider !== false,
+    },
   });
 
   await generateActionsFiles({

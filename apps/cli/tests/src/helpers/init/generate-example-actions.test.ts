@@ -25,7 +25,7 @@ describe('generateExampleActions', () => {
   });
 
   it('creates the queries and mutations directories', async () => {
-    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: true, withPublisher: false });
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: true, withPublisher: false, withStorage: false });
 
     expect(isDir(tmp, 'actions/queries')).toBe(true);
     expect(isDir(tmp, 'actions/mutations')).toBe(true);
@@ -34,14 +34,14 @@ describe('generateExampleActions', () => {
   it('creates the directories even when the typebase directory does not exist yet', async () => {
     const nestedTypebaseDir = path.join(tmp.path, 'does', 'not', 'exist', 'yet');
 
-    await generateExampleActions({ typebaseDirPath: nestedTypebaseDir, withAuth: false, withPublisher: false });
+    await generateExampleActions({ typebaseDirPath: nestedTypebaseDir, withAuth: false, withPublisher: false, withStorage: false });
 
     expect(fs.statSync(path.join(nestedTypebaseDir, 'actions', 'queries')).isDirectory()).toBe(true);
     expect(fs.statSync(path.join(nestedTypebaseDir, 'actions', 'mutations')).isDirectory()).toBe(true);
   });
 
   it('writes query and mutation todos plus custom actions when withAuth is true', async () => {
-    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: true, withPublisher: false });
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: true, withPublisher: false, withStorage: false });
 
     expect(tmp.read('actions/queries/todos.ts')).toEqualTemplate('generate-example-actions', 'queries-with-auth.txt');
     expect(tmp.read('actions/mutations/todos.ts')).toEqualTemplate('generate-example-actions', 'mutations-with-auth.txt');
@@ -49,7 +49,7 @@ describe('generateExampleActions', () => {
   });
 
   it('does not write custom actions when withAuth is false', async () => {
-    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: false });
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: false, withStorage: false });
 
     expect(tmp.read('actions/queries/todos.ts')).toEqualTemplate('generate-example-actions', 'queries-without-auth.txt');
     expect(tmp.read('actions/mutations/todos.ts')).toEqualTemplate('generate-example-actions', 'mutations-without-auth.txt');
@@ -57,9 +57,21 @@ describe('generateExampleActions', () => {
   });
 
   it('writes actions that stream and publish when the project has a publisher', async () => {
-    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: true });
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: true, withStorage: false });
 
     expect(tmp.read('actions/queries/todos.ts')).toEqualTemplate('generate-example-actions', 'queries-with-publisher.txt');
     expect(tmp.read('actions/mutations/todos.ts')).toEqualTemplate('generate-example-actions', 'mutations-with-publisher.txt');
+  });
+
+  it('writes storage actions that hand out an avatar upload URL and a signed document URL when withStorage is true', async () => {
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: false, withStorage: true });
+
+    expect(tmp.read('actions/queries/storage.ts')).toEqualTemplate('generate-example-actions', 'storage.txt');
+  });
+
+  it('does not write storage actions when withStorage is false', async () => {
+    await generateExampleActions({ typebaseDirPath: tmp.path, withAuth: false, withPublisher: false, withStorage: false });
+
+    expect(tmp.exists('actions/queries/storage.ts')).toBe(false);
   });
 });

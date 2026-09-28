@@ -1,0 +1,28 @@
+{
+  "adapter": "node",
+  "mode": "standalone",
+  "cliVersion": "<version>",
+  "dependencies": {
+    "@orpc/server": "1.14.3",
+    "@t3-oss/env-core": "0.13.11",
+    "dotenv": "17.4.2",
+    "drizzle-kit": "1.0.0-beta.22",
+    "drizzle-orm": "1.0.0-beta.22",
+    "files-sdk": "2.6.0",
+    "pg": "8.20.0",
+    "typebase-io": "0.1.0",
+    "zod": "*"
+  },
+  "devDependencies": {
+    "@types/node": "24.1.0",
+    "@types/pg": "8.20.0",
+    "typescript": "5.9.3"
+  },
+  "envKeys": [
+    "TYPEBASE_STORAGE_R2_ACCOUNT_ID",
+    "TYPEBASE_STORAGE_R2_ACCESS_KEY_ID",
+    "TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY",
+    "TYPEBASE_STORAGE_R2_BUCKETS",
+    "TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS"
+  ]
+}

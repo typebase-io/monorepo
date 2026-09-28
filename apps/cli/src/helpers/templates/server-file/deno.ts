@@ -1,23 +1,35 @@
+import { normalizeServerPath } from '#helpers/shared/normalize-server-path.ts';
 import { serverPathPrefix } from '#helpers/shared/server-path-prefix.ts';
 import { authPathCondition } from '#helpers/templates/server-file/auth-path-condition.ts';
 import { type ServerFileOptions } from '#helpers/templates/server-file/options.ts';
 import { rpcPlugins, rpcPluginsImport } from '#helpers/templates/server-file/rpc-plugins.ts';
 
-export const denoServerFileTemplate = ({ routerCode, hasAuth, mode, actionsPath, authPath }: ServerFileOptions) => {
+export const denoServerFileTemplate = ({ routerCode, hasAuth, mode, actionsPath, authPath, storagePath }: ServerFileOptions) => {
   const authImport = hasAuth ? `import { auth } from "./auth.ts";\n` : '';
+  const storageImport = storagePath === undefined ? '' : `import { localFileStorage } from "./storage.ts";\n`;
 
   const authHandler = hasAuth
-    ? `  const pathname = new URL(request.url).pathname;
-
-  if (${authPathCondition(authPath)}) {
+    ? `if (${authPathCondition(authPath)}) {
     return auth.handler(request);
-  }\n\n`
+  }`
     : '';
+
+  const storageHandler =
+    storagePath === undefined
+      ? ''
+      : `if (pathname === ${JSON.stringify(normalizeServerPath(storagePath))} || pathname.startsWith(${JSON.stringify(normalizeServerPath(storagePath))} + "/")) {
+    return localFileStorage.handle(request);
+  }`;
+
+  const routeHandlers = [authHandler, storageHandler].filter(Boolean);
+
+  const pathHandlers =
+    routeHandlers.length === 0 ? '' : `  ${['const pathname = new URL(request.url).pathname;', ...routeHandlers].join('\n\n  ')}\n\n`;
 
   return `import { RPCHandler } from "@orpc/server/fetch";
 ${rpcPluginsImport(mode)}
 import { onError } from "@orpc/server";
-${authImport}
+${authImport}${storageImport}
 ${routerCode}
 
 const handler = new RPCHandler(router, {
@@ -30,7 +42,7 @@ ${rpcPlugins(mode)}
 });
 
 export const typebaseHandler = async (request: Request): Promise<Response> => {
-${authHandler}  const { matched, response } = await handler.handle(request, {
+${pathHandlers}  const { matched, response } = await handler.handle(request, {
     prefix: ${JSON.stringify(serverPathPrefix(actionsPath))},
     context: {},
   });

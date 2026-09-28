@@ -32,6 +32,7 @@ export const generateServerFiles = async ({
   trustedOrigins,
   actionsPath,
   authPath,
+  storagePath,
 }: {
   adapter: ServerAdapter;
   mode: ServerMode;
@@ -46,6 +47,7 @@ export const generateServerFiles = async ({
   trustedOrigins: string[];
   actionsPath: string;
   authPath: string | { fromAuth: true };
+  storagePath?: string;
 }) => {
   const serverFilePath = path.join(outputDirPath, 'server.ts');
   const indexFilePath = path.join(outputDirPath, 'index.ts');
@@ -60,7 +62,7 @@ export const generateServerFiles = async ({
 
   const routerCode = [routerImports, router].filter(Boolean).join('\n\n');
 
-  const options = { routerCode, hasAuth, trustedOrigins, mode, actionsPath, authPath };
+  const options = { routerCode, hasAuth, trustedOrigins, mode, actionsPath, authPath, storagePath };
 
   const [serverFile, bootstrap] = match(adapter)
     .returnType<[string, string]>()

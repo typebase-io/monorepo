@@ -30,6 +30,7 @@ describe('getTypebaseConfig', () => {
         explicitOutDir: undefined,
         actionsPath: '/rpc',
         authPath: '/api/auth',
+        storagePath: '/storage',
         port: 8080,
       },
       vercel: undefined,
@@ -73,6 +74,7 @@ describe('getTypebaseConfig', () => {
           outDir: 'dist',
           actionsPath: '/typebase/rpc',
           authPath: '/typebase/auth',
+          storagePath: '/typebase/storage',
           port: 3000,
         },
       })
@@ -91,6 +93,7 @@ describe('getTypebaseConfig', () => {
         explicitOutDir: 'dist',
         actionsPath: '/typebase/rpc',
         authPath: '/typebase/auth',
+        storagePath: '/typebase/storage',
         port: 3000,
       },
       vercel: undefined,

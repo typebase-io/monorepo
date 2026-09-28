@@ -1,0 +1,43 @@
+import { ServerError } from "typebase-io/server";
+import { z } from "zod";
+import { action } from "../../_generated/server.js";
+export const getOne = action
+    .input(z.object({
+    id: z.number(),
+}))
+    .output(z.object({
+    id: z.number(),
+    value: z.string(),
+    completed: z.boolean(),
+}))
+    .handler(async ({ db, input }) => {
+    const todo = await db.query.todos.findFirst({
+        where: { id: input.id },
+    });
+    if (!todo) {
+        throw new ServerError("NOT_FOUND");
+    }
+    return {
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    };
+});
+export const getMany = action
+    .output(z
+    .object({
+    id: z.number(),
+    value: z.string(),
+    completed: z.boolean(),
+})
+    .array())
+    .handler(async ({ db }) => {
+    const todos = await db.query.todos.findMany({
+        orderBy: { createdAt: "desc" },
+    });
+    return todos.map((todo) => ({
+        id: todo.id,
+        value: todo.value,
+        completed: todo.completed,
+    }));
+});

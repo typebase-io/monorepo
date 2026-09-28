@@ -23,6 +23,12 @@ describe('getUserPackageInfo', () => {
     expect(await getUserPackageInfo(tmp.path)).toEqual({ packageJson: { dependencies: { pg: '^8' } }, dirPath: tmp.path });
   });
 
+  it('returns the package name the manifest declares', async () => {
+    tmp.write('package.json', JSON.stringify({ name: '@acme/app' }));
+
+    expect((await getUserPackageInfo(tmp.path)).packageJson.name).toBe('@acme/app');
+  });
+
   it('finds the closest manifest above a nested output directory', async () => {
     tmp.write('package.json', JSON.stringify({ dependencies: { pg: '^7' } }));
     tmp.write('host/package.json', JSON.stringify({ dependencies: { pg: '^8' } }));

@@ -1,0 +1,10 @@
+import { createStorage } from "typebase-io/server";
+
+export const storage = createStorage({
+  provider: "filesystem",
+  options: { root: "/var/files" },
+  buckets: {
+    avatars: {},
+    documents: { prefix: "docs" },
+  },
+}, {});

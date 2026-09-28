@@ -8,6 +8,7 @@ const spies = vi.hoisted(() => ({
   auth: vi.fn(),
   db: vi.fn(),
   deploy: vi.fn(),
+  storage: vi.fn(),
   logs: vi.fn(),
   env: vi.fn(),
   config: vi.fn(),
@@ -56,6 +57,12 @@ vi.mock('#commands/deploy.ts', async () => {
   const { Command } = await import('@commander-js/extra-typings');
 
   return { deploy: new Command('deploy').action(spies.deploy) };
+});
+
+vi.mock('#commands/storage.ts', async () => {
+  const { Command } = await import('@commander-js/extra-typings');
+
+  return { storage: new Command('storage').action(spies.storage) };
 });
 
 vi.mock('#commands/logs.ts', async () => {
@@ -142,6 +149,13 @@ describe('cli entrypoint', () => {
     expect(spies.isTypebaseIoInstalled).toHaveBeenCalled();
     expect(spies.init).toHaveBeenCalledOnce();
     expect(exitSpy).toHaveBeenCalled();
+  });
+
+  it('runs the storage command, checking for the typebase-io install first', async () => {
+    await runCli(['storage']);
+
+    expect(spies.isTypebaseIoInstalled).toHaveBeenCalled();
+    expect(spies.storage).toHaveBeenCalledOnce();
   });
 
   it.each(['env', 'logs', 'config'] as const)('runs the %s command without checking for the typebase-io install', async (command) => {

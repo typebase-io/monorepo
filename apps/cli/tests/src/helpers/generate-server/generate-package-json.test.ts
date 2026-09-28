@@ -45,6 +45,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: true,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(dependencyMaps).toEqual({
@@ -84,6 +85,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'cloudflare-esm.txt');
@@ -104,6 +106,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: true,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'fastify-cjs-auth-bun.txt');
@@ -124,6 +127,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_handler',
       hasAuth: true,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(dependencies).not.toHaveProperty('@fastify/cors');
@@ -148,6 +152,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'fastify-esm-noauth.txt');
@@ -168,6 +173,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'typebase-version-from-scoped-devdep.txt');
@@ -190,6 +196,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'pins-server-dep-over-user-dep.txt');
@@ -210,6 +217,7 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: true,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'hono-ts-unknown.txt');
@@ -230,9 +238,31 @@ describe('generatePackageJson', () => {
       configuredOutDir: '_server',
       hasAuth: false,
       hasEnv: false,
+      hasStorage: false,
     });
 
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-no-env.txt');
+  });
+
+  it('adds files-sdk for a project with storage, which the storage runs on', async () => {
+    vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+    const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0' } });
+
+    await generatePackageJson({
+      adapter: 'node',
+      mode: 'standalone',
+      typebaseDirPath,
+      outputDirPath,
+      generation: 'esm',
+      outDir: '_server',
+      configuredOutDir: '_server',
+      hasAuth: false,
+      hasEnv: false,
+      hasStorage: true,
+    });
+
+    expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-storage.txt');
   });
 
   describe('generated output already in the project', () => {
@@ -260,6 +290,7 @@ describe('generatePackageJson', () => {
         configuredOutDir: '_server',
         hasAuth: false,
         hasEnv: true,
+        hasStorage: false,
       });
 
       expect(tmp.read('out/package.json')).not.toContain('left-over-package');
@@ -281,6 +312,7 @@ describe('generatePackageJson', () => {
         configuredOutDir: '_server',
         hasAuth: false,
         hasEnv: true,
+        hasStorage: false,
       });
 
       expect(tmp.read('out/package.json')).not.toContain('left-over-package');

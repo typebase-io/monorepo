@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 import { getAndSaveAuthSecret } from '#helpers/auth/get-and-save-auth-secret.ts';
-import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, serverOutputs } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, DEFAULT_STORAGE_PATH, serverOutputs } from '#helpers/constants.ts';
 import { applyMigrations } from '#helpers/db/apply-migrations.ts';
 import { buildSchema } from '#helpers/db/build-schema.ts';
 import { detectDrift } from '#helpers/db/detect-drift.ts';
@@ -27,6 +27,7 @@ import { pruneAbandonedServerCaches } from '#helpers/start/prune-abandoned-serve
 import { resolveDatabaseUrl } from '#helpers/start/resolve-database-url.ts';
 import { resolveServerCache } from '#helpers/start/resolve-server-cache.ts';
 import { resolveServerOutput } from '#helpers/start/resolve-server-output.ts';
+import { resolveStorageEnv } from '#helpers/start/resolve-storage-env.ts';
 
 export const start = new Command('start')
   .summary('Run your Typebase server locally')
@@ -51,6 +52,10 @@ export const start = new Command('start')
       'devDatabase',
     ])
   )
+  .addOption(new Option('--dev-storage', 'Run against your dev buckets, using the storage keys in the project env file').conflicts('prodStorage'))
+  .addOption(
+    new Option('--prod-storage', 'Run against your production buckets, using the storage keys in the project env file').conflicts('devStorage')
+  )
   .option('--skip-schema-changes-confirmation', 'Apply destructive database schema changes without asking. They are still reported.')
   .option('--command <command>', 'Command to run in the server cache instead of starting the server directly')
   .option('--install-command <command>', "Command to install the server dependencies with, instead of your package manager's own")
@@ -62,6 +67,7 @@ export const start = new Command('start')
     const dbDirPath = path.join(typebaseDirPath, 'db');
     const migrationsDirPath = path.join(dbDirPath, 'migrations');
     const schemaFilePath = path.join(dbDirPath, 'schema.ts');
+    const storageFilePath = path.join(typebaseDirPath, 'storage.ts');
     const port = params.port ?? server.port;
     const portAvailable = await isPortAvailable(port);
 
@@ -72,12 +78,18 @@ export const start = new Command('start')
       schemaFilePath,
     });
 
+    const storage = resolveStorageEnv({ devStorage: params.devStorage, prodStorage: params.prodStorage, storageFilePath });
+
     if (!portAvailable) {
       throw new Error(`Port ${port} is already in use. Pass a different one with --port.`);
     }
 
     if (database) {
       ora().info(`Using the database from ${database.source}.`);
+    }
+
+    if (storage) {
+      ora().info(`Using the ${storage.target} buckets from ${storage.source}.`);
     }
 
     const { output, warnAboutTranspiling } = resolveServerOutput(params.output);
@@ -220,11 +232,22 @@ export const start = new Command('start')
               actionsPath: DEFAULT_ACTIONS_PATH,
               authPath: DEFAULT_AUTH_PATH,
               authBaseURL: `http://127.0.0.1:${port}`,
+              localStorage: storage
+                ? undefined
+                : {
+                    root: path.join(cacheDirPath, 'storage'),
+                    url: `http://127.0.0.1:${port}${DEFAULT_STORAGE_PATH}`,
+                    path: DEFAULT_STORAGE_PATH,
+                  },
               signal: buildSignal,
               quiet: rebuild,
             });
           } finally {
             spinner?.stop();
+          }
+
+          for (const { key, value } of storage?.env ?? []) {
+            await writeEnvFile(key, value, path.join(serverDirPath, '.env'));
           }
 
           if (!(await installIfManifestChanged(rebuild)) || cancelled()) {

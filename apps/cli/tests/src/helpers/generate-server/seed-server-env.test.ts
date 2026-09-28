@@ -48,6 +48,51 @@ describe('seedServerEnv', () => {
     expect(serverEnv()).toBe('DATABASE_URL=postgres://prod/db\n');
   });
 
+  it('prefers the dev Blob store tokens, so a local server does not write into production buckets', async () => {
+    tmp.write('.env', 'TYPEBASE_STORAGE_VERCEL_TOKENS={"avatars":"prod"}\nTYPEBASE_STORAGE_VERCEL_TOKENS_DEV={"avatars":"dev"}\n');
+
+    await seed(['TYPEBASE_STORAGE_VERCEL_TOKENS']);
+
+    expect(serverEnv()).toBe('TYPEBASE_STORAGE_VERCEL_TOKENS={"avatars":"dev"}\n');
+  });
+
+  it('prefers the dev R2 keys, so a local server does not write into production buckets', async () => {
+    tmp.write(
+      '.env',
+      [
+        'TYPEBASE_STORAGE_R2_ACCOUNT_ID=acc',
+        'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID=prod-id',
+        'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID_DEV=dev-id',
+        'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY=prod-secret',
+        'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY_DEV=dev-secret',
+        'TYPEBASE_STORAGE_R2_BUCKETS={"avatars":"app-avatars-prod"}',
+        'TYPEBASE_STORAGE_R2_BUCKETS_DEV={"avatars":"app-avatars-dev"}',
+        'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS=https://pub-prod.r2.dev',
+        'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS_DEV=https://pub-dev.r2.dev',
+        '',
+      ].join('\n')
+    );
+
+    await seed([
+      'TYPEBASE_STORAGE_R2_ACCOUNT_ID',
+      'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID',
+      'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY',
+      'TYPEBASE_STORAGE_R2_BUCKETS',
+      'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS',
+    ]);
+
+    expect(serverEnv()).toBe(
+      [
+        'TYPEBASE_STORAGE_R2_ACCOUNT_ID=acc',
+        'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID=dev-id',
+        'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY=dev-secret',
+        'TYPEBASE_STORAGE_R2_BUCKETS={"avatars":"app-avatars-dev"}',
+        'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS=https://pub-dev.r2.dev',
+        '',
+      ].join('\n')
+    );
+  });
+
   it('copies keys declared in the project env schema', async () => {
     tmp.write('.env', 'RESEND_API_KEY=re_123\n');
 

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
+  "storage": {
+    "project": "acme-my-app",
+    "cloudflare": {
+      "accountId": "acc_acme"
+    }
+  }
+}

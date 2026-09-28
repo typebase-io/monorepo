@@ -1,0 +1,32 @@
+import { z } from "zod";
+
+import { action } from "../../_generated/server.ts";
+
+export const getAvatarUploadUrl = action
+  .input(
+    z.object({
+      contentType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+    }),
+  )
+  .handler(async ({ storage, input }) => {
+    const key = crypto.randomUUID();
+
+    const upload = await storage.bucket("avatars").signedUploadUrl(key, {
+      expiresIn: 60,
+      contentType: input.contentType,
+      maxSize: 5 * 1024 * 1024,
+    });
+
+    return { key, upload };
+  });
+
+export const getDocumentUrl = action
+  .input(
+    z.object({
+      key: z.string(),
+    }),
+  )
+  .output(z.string())
+  .handler(async ({ storage, input }) => {
+    return storage.bucket("documents").signedUrl(input.key, { expiresIn: 5 * 60 });
+  });

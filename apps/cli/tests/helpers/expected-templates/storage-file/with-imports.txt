@@ -1,0 +1,9 @@
+import { createStorage } from "typebase-io/server";
+import { contentType } from "files-sdk/content-type";
+
+export const storage = createStorage({
+  provider: "filesystem",
+  buckets: {
+    documents: { plugins: [contentType()] },
+  },
+}, {});

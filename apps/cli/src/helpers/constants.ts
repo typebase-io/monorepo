@@ -12,6 +12,22 @@ export const DEFAULT_ACTIONS_PATH = '/rpc';
 
 export const DEFAULT_AUTH_PATH = '/api/auth';
 
+export const DEFAULT_STORAGE_PATH = '/storage';
+
+export const LOCAL_STORAGE_DIR_NAME = '.local-storage';
+
+export const VERCEL_STORAGE_TOKENS_ENV_KEY = 'TYPEBASE_STORAGE_VERCEL_TOKENS';
+
+export const R2_ACCOUNT_ID_ENV_KEY = 'TYPEBASE_STORAGE_R2_ACCOUNT_ID';
+
+export const R2_ACCESS_KEY_ID_ENV_KEY = 'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID';
+
+export const R2_SECRET_ACCESS_KEY_ENV_KEY = 'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY';
+
+export const R2_BUCKETS_ENV_KEY = 'TYPEBASE_STORAGE_R2_BUCKETS';
+
+export const R2_PUBLIC_URL_ENV_KEY_PREFIX = 'TYPEBASE_STORAGE_R2_PUBLIC_URL_';
+
 export const TYPEBASE_CONFIG_SCHEMA_URL =
   'https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json';
 
@@ -30,8 +46,20 @@ export type ServerProvider = (typeof serverProviders)[number];
 export const publisherProviders = ['db'] as const;
 export type PublisherProvider = (typeof publisherProviders)[number];
 
+export const storageProviders = ['vercel', 'cloudflare', 'filesystem'] as const;
+export type StorageProvider = (typeof storageProviders)[number];
+
+export const bucketAccesses = ['public', 'private'] as const;
+export type BucketAccess = (typeof bucketAccesses)[number];
+
 export const envTargets = ['dev', 'prod'] as const;
 export type EnvTarget = (typeof envTargets)[number];
+
+export interface LocalStorageRoute {
+  root: string;
+  url: string;
+  path: string;
+}
 
 export const DEFAULT_SERVER_OUT_DIRS = {
   standalone: '_server',
@@ -86,6 +114,10 @@ export const DEPS = {
   fastify: {
     name: 'fastify',
     version: '5.8.5',
+  },
+  'files-sdk': {
+    name: 'files-sdk',
+    version: '2.6.0',
   },
   hono: {
     name: 'hono',
@@ -169,6 +201,12 @@ export const typebaseConfigSchema = z.object({
             description: 'The path an embedded server serves auth at.',
           })
         ),
+        storagePath: z.optional(
+          z.string().trim().min(1).meta({
+            title: 'Storage path',
+            description: 'The path an embedded server serves local storage files at, when generated with `--local-storage`.',
+          })
+        ),
         port: z.optional(
           z.number().int().positive().meta({
             title: 'Port',
@@ -247,6 +285,38 @@ export const typebaseConfigSchema = z.object({
         }),
       })
       .meta({ title: 'Neon', description: 'Neon database configuration.' })
+  ),
+  storage: z.optional(
+    z
+      .object({
+        project: z.optional(
+          z.string().meta({
+            title: 'Project',
+            description: 'The project part of every bucket name, frozen by the first bucket sync.',
+          })
+        ),
+        vercel: z.optional(
+          z
+            .object({
+              orgId: z.string().meta({
+                title: 'Organization ID',
+                description: 'The Vercel team that holds the Blob stores.',
+              }),
+            })
+            .meta({ title: 'Vercel', description: 'Vercel storage account.' })
+        ),
+        cloudflare: z.optional(
+          z
+            .object({
+              accountId: z.string().meta({
+                title: 'Account ID',
+                description: 'The Cloudflare account that holds the R2 buckets.',
+              }),
+            })
+            .meta({ title: 'Cloudflare', description: 'Cloudflare storage account.' })
+        ),
+      })
+      .meta({ title: 'Storage', description: 'Storage configuration.' })
   ),
 });
 

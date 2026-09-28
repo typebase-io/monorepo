@@ -1,0 +1,2 @@
+VERCEL_TOKEN=cli-token
+TYPEBASE_STORAGE_VERCEL_TOKENS_DEV={"avatars":"vercel_blob_rw_store_acme-my-app-avatars-dev","documents":"vercel_blob_rw_store_acme-my-app-documents-dev"}

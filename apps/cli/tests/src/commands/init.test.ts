@@ -14,10 +14,12 @@ import { generateExampleAuth } from '#helpers/init/generate-example-auth.ts';
 import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
 import { generateExampleSchema } from '#helpers/init/generate-example-schema.ts';
+import { generateExampleStorage } from '#helpers/init/generate-example-storage.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
+import { validateTypes } from '#helpers/shared/validate-types.ts';
 import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
 
 import { expectProject } from '#tests/helpers/expect-project.ts';
@@ -43,6 +45,7 @@ vi.mock('#helpers/auth/generate-auth-schema.ts', async (o) => passThrough(await 
 vi.mock('#helpers/init/generate-example-actions.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-auth.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-publisher.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
+vi.mock('#helpers/init/generate-example-storage.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-relations.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/init/generate-example-schema.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 vi.mock('#helpers/shared/generate-db-types.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
@@ -181,6 +184,49 @@ describe('init command', () => {
     );
   });
 
+  describe('--with-storage', () => {
+    const WITH_STORAGE_FILES = [
+      '_generated/db.d.ts',
+      '_generated/server.ts',
+      'actions/mutations/todos.ts',
+      'actions/queries/storage.ts',
+      'actions/queries/todos.ts',
+      'db/relations.ts',
+      'db/schema.ts',
+      'env.ts',
+      'storage.ts',
+      'tsconfig.json',
+    ];
+
+    it('scaffolds a vercel storage file with a public and a private bucket, and actions that hand out their URLs', async () => {
+      await withCwd(tmp.path, () => init.parseAsync(['--with-storage'], { from: 'user' }));
+
+      expectProject(tmp, 'with-storage', WITH_STORAGE_FILES, { namespace: 'init' });
+    });
+
+    it('scaffolds a project that type-checks', async () => {
+      await withCwd(tmp.path, () => init.parseAsync(['--with-storage'], { from: 'user' }));
+
+      const typebaseDirPath = path.join(tmp.path, 'typebase');
+
+      expect(() => {
+        validateTypes({ dirPath: typebaseDirPath, tsConfigFilePath: path.join(typebaseDirPath, 'tsconfig.json'), skipErrors: false, quiet: true });
+      }).not.toThrow();
+    });
+
+    it('regenerates the storage example files when --force is passed', async () => {
+      tmp.write('typebase/tsconfig.json', '{ "existing": true }');
+      tmp.write('typebase/storage.ts', 'stale');
+      tmp.write('typebase/actions/queries/storage.ts', 'stale');
+
+      await withCwd(tmp.path, () => init.parseAsync(['--with-storage', '--force'], { from: 'user' }));
+
+      expect(process.exitCode).toBe(0);
+
+      expectProject(tmp, 'with-storage', WITH_STORAGE_FILES, { namespace: 'init' });
+    });
+  });
+
   it('scaffolds a bare project without examples when --skip-example is passed', async () => {
     await withCwd(tmp.path, () => init.parseAsync(['--skip-example'], { from: 'user' }));
 
@@ -236,18 +282,21 @@ describe('init command', () => {
     expect(JSON.parse(tmp.read('typebase.json'))).toEqual({ $schema: TYPEBASE_CONFIG_SCHEMA_URL, projectPath: '.' });
   });
 
-  it.each([['--with-auth'], ['--with-db-publisher']])('rejects %s together with --skip-example, since it has no example to add to', async (flag) => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
-      throw new Error('process.exit called');
-    }) as never);
+  it.each([['--with-auth'], ['--with-db-publisher'], ['--with-storage']])(
+    'rejects %s together with --skip-example, since it has no example to add to',
+    async (flag) => {
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+        throw new Error('process.exit called');
+      }) as never);
 
-    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+      vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 
-    await expect(withCwd(tmp.path, () => init.parseAsync([flag, '--skip-example'], { from: 'user' }))).rejects.toThrow('process.exit called');
+      await expect(withCwd(tmp.path, () => init.parseAsync([flag, '--skip-example'], { from: 'user' }))).rejects.toThrow('process.exit called');
 
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(listFiles(path.join(tmp.path, 'typebase'))).toEqual([]);
-  });
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(listFiles(path.join(tmp.path, 'typebase'))).toEqual([]);
+    }
+  );
 
   describe('propagates generator failures', () => {
     const cases: { name: string; mock: () => { mockRejectedValueOnce: (e: Error) => unknown }; args: string[] }[] = [
@@ -262,6 +311,7 @@ describe('init command', () => {
       { name: 'generateExampleAuth', mock: () => vi.mocked(generateExampleAuth), args: ['--with-auth'] },
       { name: 'generateAuthSchema', mock: () => vi.mocked(generateAuthSchema), args: ['--with-auth'] },
       { name: 'generateExamplePublisher', mock: () => vi.mocked(generateExamplePublisher), args: ['--with-db-publisher'] },
+      { name: 'generateExampleStorage', mock: () => vi.mocked(generateExampleStorage), args: ['--with-storage'] },
     ];
 
     it.each(cases)('rejects when $name throws', async ({ mock, args }) => {

@@ -4,7 +4,7 @@ import { authPathExpressions } from '#helpers/templates/server-file/auth-path-ex
 import { type ServerFileOptions } from '#helpers/templates/server-file/options.ts';
 import { rpcPlugins, rpcPluginsImport } from '#helpers/templates/server-file/rpc-plugins.ts';
 
-export const fastifyServerFileTemplate = ({ routerCode, hasAuth, mode, actionsPath, authPath }: ServerFileOptions) => {
+export const fastifyServerFileTemplate = ({ routerCode, hasAuth, mode, actionsPath, authPath, storagePath }: ServerFileOptions) => {
   const contentTypeParser =
     mode === 'embedded'
       ? `  fastify.addContentTypeParser("*", (_request, _payload, done) => {
@@ -46,11 +46,36 @@ import { auth } from "./auth.ts";
 
   const authRouteSection = authRoute ? `${authRoute}\n\n` : '';
 
+  const storageImports =
+    storagePath === undefined
+      ? ''
+      : `import { handleNodeRequest } from "typebase-io/server/local-storage";
+import { localFileStorage } from "./storage.ts";
+`;
+
+  const storageRouteSection =
+    storagePath === undefined
+      ? ''
+      : `  await fastify.register(async (storage) => {
+    storage.removeAllContentTypeParsers();
+    storage.addContentTypeParser("*", (_request, _payload, done) => {
+      done(null, undefined);
+    });
+
+    storage.all(${JSON.stringify(`${normalizeServerPath(storagePath)}/*`)}, async (request, reply) => {
+      reply.hijack();
+
+      await handleNodeRequest(localFileStorage.handle, request.raw, reply.raw);
+    });
+  });
+
+`;
+
   return `import type { FastifyInstance } from "fastify";
 import { RPCHandler } from "@orpc/server/fastify";
 ${rpcPluginsImport(mode)}
 import { onError } from "@orpc/server";
-${authImports}
+${authImports}${storageImports}
 ${routerCode}
 
 const rpcHandler = new RPCHandler(router, {
@@ -63,7 +88,7 @@ ${rpcPlugins(mode)}
 });
 
 export const typebaseHandler = async (fastify: FastifyInstance) => {
-${contentTypeParserSection}${authRouteSection}  fastify.all(${JSON.stringify(`${normalizeServerPath(actionsPath)}/*`)}, async (req, reply) => {
+${contentTypeParserSection}${authRouteSection}${storageRouteSection}  fastify.all(${JSON.stringify(`${normalizeServerPath(actionsPath)}/*`)}, async (req, reply) => {
     const { matched } = await rpcHandler.handle(req, reply, {
       prefix: ${JSON.stringify(serverPathPrefix(actionsPath))},
     });

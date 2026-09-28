@@ -1,0 +1,6 @@
+CLOUDFLARE_API_TOKEN=cf-token
+TYPEBASE_STORAGE_R2_ACCOUNT_ID=acc_acme
+TYPEBASE_STORAGE_R2_ACCESS_KEY_ID=tok_1
+TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY=2fcc64330f5f93bc96348f1e42fa4d7799c31f6254e7312baa0f1dd9a43df1a5
+TYPEBASE_STORAGE_R2_BUCKETS={"avatars":"acme-my-app-avatars-prod","documents":"acme-my-app-documents-prod"}
+TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS=https://pub-acme-my-app-avatars-prod.r2.dev

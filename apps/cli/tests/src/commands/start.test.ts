@@ -20,6 +20,7 @@ import { isPortAvailable } from '#helpers/start/is-port-available.ts';
 
 import { generateTypebaseProject } from '#tests/helpers/generate-typebase-project.ts';
 import { linkTypebaseIo } from '#tests/helpers/link-typebase-io.ts';
+import { listFiles } from '#tests/helpers/list-files.ts';
 import { createAbandonedServerCache } from '#tests/helpers/server-cache.ts';
 import { type TempDir, createTempDir, withCwd } from '#tests/helpers/temp-dir.ts';
 
@@ -751,6 +752,336 @@ describe('start command', () => {
     ).rejects.toThrow('`npm install --force` failed with exit code 1.');
 
     expect(readMarker()).toBe('');
+  });
+
+  describe('storage', () => {
+    const storageDirPath = () => path.join(getServerCacheDirPath(typebaseDirPath()), 'storage');
+
+    const setupProjectWithStorage = async (declaration: string) => {
+      await setupProject();
+
+      tmp.write(
+        'typebase/storage.ts',
+        `import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage(${declaration});\n`
+      );
+    };
+
+    const uploads = () =>
+      readMarker()
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as { pid: number; found: string[] });
+
+    const uploadingCommand = () => {
+      const scriptPath = tmp.write(
+        'upload.mjs',
+        [
+          "import fs from 'node:fs';",
+          "import path from 'node:path';",
+          "import { pathToFileURL } from 'node:url';",
+          '',
+          "const { storage } = await import(pathToFileURL(path.join(process.cwd(), 'src', 'storage.ts')).href);",
+          "const bucket = storage.bucket('avatars');",
+          'const found = (await bucket.list()).items.map((file) => file.key).sort();',
+          '',
+          "await bucket.upload(`${process.pid}.txt`, 'hello');",
+          '',
+          `fs.appendFileSync(${JSON.stringify(marker())}, JSON.stringify({ pid: process.pid, found }) + '\\n');`,
+          '',
+        ].join('\n')
+      );
+
+      return `node '${scriptPath}'`;
+    };
+
+    it.each(['vercel', 'cloudflare'])('runs a %s storage on local storage, one directory per bucket inside the server cache', async (provider) => {
+      await setupProjectWithStorage(`{ provider: "${provider}", buckets: { avatars: { access: "public" }, documents: { access: "private" } } }`);
+
+      watchUntil(() => uploads().length === 1, 'the server to upload a file');
+
+      await withCwd(tmp.path, () => start.parseAsync(['--command', uploadingCommand()], { from: 'user' }));
+
+      const [upload] = uploads();
+
+      expect(upload?.found).toEqual([]);
+      expect(fs.readFileSync(path.join(storageDirPath(), 'avatars', `${upload?.pid}.txt`), 'utf8')).toBe('hello');
+    });
+
+    it('keeps the files one pass wrote after the next rebuild and restart', async () => {
+      await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+      vi.mocked(watchServer).mockImplementation(async ({ build, signal }) => {
+        await build(signal, { rebuild: false });
+
+        await until(() => uploads().length === 1, 'the first pass to upload a file');
+
+        tmp.write('typebase/actions/queries/todos.ts', `${tmp.read('typebase/actions/queries/todos.ts')}\n// touched\n`);
+
+        await build(signal, { rebuild: true });
+
+        await until(() => uploads().length === 2, 'the second pass to upload a file');
+      });
+
+      await withCwd(tmp.path, () => start.parseAsync(['--command', uploadingCommand()], { from: 'user' }));
+
+      const [first, second] = uploads();
+
+      expect(second?.found).toEqual([`${first?.pid}.txt`]);
+      expect(fs.readFileSync(path.join(storageDirPath(), 'avatars', `${first?.pid}.txt`), 'utf8')).toBe('hello');
+    });
+
+    it('writes nothing inside the project tree', async () => {
+      await setupProjectWithStorage('{ provider: "cloudflare", buckets: { avatars: { access: "private" } } }');
+
+      watchUntil(() => uploads().length === 1, 'the server to upload a file');
+
+      await withCwd(tmp.path, () => start.parseAsync(['--command', uploadingCommand()], { from: 'user' }));
+
+      const [upload] = uploads();
+
+      expect(storageDirPath().startsWith(path.join(tmp.path, 'cache'))).toBe(true);
+      expect(listFiles(tmp.path).filter((file) => file.endsWith(`${upload?.pid}.txt`))).toEqual([
+        path.relative(tmp.path, path.join(storageDirPath(), 'avatars', `${upload?.pid}.txt`)).replace(/\\/g, '/'),
+      ]);
+    });
+
+    it('mounts the local storage route at the storage path of the server it runs', async () => {
+      await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+      await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+      expect(fs.readFileSync(inServer('src/server.ts'), 'utf8')).toEqualTemplate('start', 'local-storage-server.ts.txt');
+    });
+
+    it('mounts no storage route for a declared filesystem storage', async () => {
+      await setupProjectWithStorage('{ provider: "filesystem", buckets: { avatars: {} } }');
+
+      await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+      expect(fs.readFileSync(inServer('src/server.ts'), 'utf8')).toEqualTemplate('start', 'filesystem-storage-server.ts.txt');
+    });
+
+    it('keeps a declared filesystem storage on its own root', async () => {
+      const root = tmp.mkdir('files');
+
+      await setupProjectWithStorage(`{ provider: "filesystem", options: { root: ${JSON.stringify(root)} }, buckets: { avatars: {} } }`);
+
+      watchUntil(() => uploads().length === 1, 'the server to upload a file');
+
+      await withCwd(tmp.path, () => start.parseAsync(['--command', uploadingCommand()], { from: 'user' }));
+
+      const [upload] = uploads();
+
+      expect(fs.readFileSync(path.join(root, 'avatars', `${upload?.pid}.txt`), 'utf8')).toBe('hello');
+      expect(fs.existsSync(storageDirPath())).toBe(false);
+    });
+
+    describe('on real buckets', () => {
+      const serverEnv = () => (fs.existsSync(inServer('.env')) ? dotenv.parse(fs.readFileSync(inServer('.env'), 'utf8')) : {});
+
+      const devTokens = JSON.stringify({ avatars: 'vercel_blob_rw_avatarsDevStore_secret' });
+      const prodTokens = JSON.stringify({ avatars: 'vercel_blob_rw_avatarsProdStore_secret' });
+
+      const everyTargetsKeysInTheProject = () => {
+        tmp.write('.env', `TYPEBASE_STORAGE_VERCEL_TOKENS_DEV=${devTokens}\nTYPEBASE_STORAGE_VERCEL_TOKENS=${prodTokens}\n`);
+      };
+
+      const linkEnvCore = () => {
+        fs.mkdirSync(path.join(tmp.path, 'node_modules/@t3-oss'), { recursive: true });
+        fs.symlinkSync(
+          fs.realpathSync(path.resolve(import.meta.dirname, '../../../../core/node_modules/@t3-oss/env-core')),
+          path.join(tmp.path, 'node_modules/@t3-oss/env-core'),
+          'dir'
+        );
+      };
+
+      const publicUrlCommand = () => {
+        const scriptPath = tmp.write(
+          'public-url.mjs',
+          [
+            "import fs from 'node:fs';",
+            "import path from 'node:path';",
+            "import { pathToFileURL } from 'node:url';",
+            '',
+            "process.loadEnvFile('.env');",
+            '',
+            "const { storage } = await import(pathToFileURL(path.join(process.cwd(), 'src', 'storage.ts')).href);",
+            '',
+            `fs.writeFileSync(${JSON.stringify(marker())}, await storage.bucket('avatars').publicUrl('me.png'));`,
+            '',
+          ].join('\n')
+        );
+
+        return `node '${scriptPath}'`;
+      };
+
+      it.each([
+        { flag: '--dev-storage', target: 'dev', envKey: 'TYPEBASE_STORAGE_VERCEL_TOKENS_DEV', tokens: devTokens, store: 'avatarsDevStore' },
+        { flag: '--prod-storage', target: 'prod', envKey: 'TYPEBASE_STORAGE_VERCEL_TOKENS', tokens: prodTokens, store: 'avatarsProdStore' },
+      ])('runs a vercel storage on the $target Blob stores with $flag, and says so', async ({ flag, target, envKey, tokens, store }) => {
+        await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+        everyTargetsKeysInTheProject();
+        linkEnvCore();
+
+        watchUntil(() => readMarker() !== '', 'the server to build a public URL');
+
+        await withCwd(tmp.path, () => start.parseAsync([flag, '--command', publicUrlCommand()], { from: 'user' }));
+
+        expect(readMarker()).toBe(`https://${store}.public.blob.vercel-storage.com/me.png`);
+        expect(serverEnv().TYPEBASE_STORAGE_VERCEL_TOKENS).toBe(tokens);
+        expect(informed()).toContain(`Using the ${target} buckets from ${envKey}.`);
+        expect(fs.existsSync(storageDirPath())).toBe(false);
+      });
+
+      it('builds the server to read the Blob store tokens and mounts no local storage route', async () => {
+        await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+        everyTargetsKeysInTheProject();
+
+        await withCwd(tmp.path, () => start.parseAsync(['--dev-storage'], { from: 'user' }));
+
+        expect(fs.readFileSync(inServer('src/storage.ts'), 'utf8')).toEqualTemplate('start', 'vercel-storage.ts.txt');
+        expect(fs.readFileSync(inServer('src/env.ts'), 'utf8')).toEqualTemplate('start', 'vercel-storage-env.ts.txt');
+        expect(fs.readFileSync(inServer('src/index.ts'), 'utf8')).toEqualTemplate('start', 'vercel-storage-index.ts.txt');
+        expect(fs.readFileSync(inServer('src/server.ts'), 'utf8')).toEqualTemplate('start', 'vercel-storage-server.ts.txt');
+      });
+
+      it('still runs on local storage without either flag, even when the keys are in the env file', async () => {
+        await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+        everyTargetsKeysInTheProject();
+
+        await withCwd(tmp.path, () => start.parseAsync([], { from: 'user' }));
+
+        expect(fs.readFileSync(inServer('src/server.ts'), 'utf8')).toEqualTemplate('start', 'local-storage-server.ts.txt');
+        expect(serverEnv().TYPEBASE_STORAGE_VERCEL_TOKENS).toBeUndefined();
+      });
+
+      it.each([
+        { flag: '--dev-storage', envKey: 'TYPEBASE_STORAGE_VERCEL_TOKENS_DEV', env: `TYPEBASE_STORAGE_VERCEL_TOKENS=${prodTokens}\n`, target: 'dev' },
+        {
+          flag: '--prod-storage',
+          envKey: 'TYPEBASE_STORAGE_VERCEL_TOKENS',
+          env: `TYPEBASE_STORAGE_VERCEL_TOKENS_DEV=${devTokens}\n`,
+          target: 'prod',
+        },
+      ])('fails naming $envKey when it is missing, before generating anything', async ({ flag, envKey, env, target }) => {
+        await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+        tmp.write('.env', env);
+
+        await expect(withCwd(tmp.path, () => start.parseAsync([flag], { from: 'user' }))).rejects.toThrow(
+          `No storage keys found in ${envKey}. Run \`npx typebase-io-cli storage sync ${target}\` to create the ${target} buckets and write their keys to .env.`
+        );
+
+        expect(fs.existsSync(serverDirPath())).toBe(false);
+        expect(runUntilStopped).not.toHaveBeenCalled();
+      });
+
+      it('refuses the dev and the production buckets together, before generating anything', async () => {
+        await setupProjectWithStorage('{ provider: "vercel", buckets: { avatars: { access: "public" } } }');
+
+        everyTargetsKeysInTheProject();
+
+        await expect(withCwd(tmp.path, () => start.parseAsync(['--dev-storage', '--prod-storage'], { from: 'user' }))).rejects.toThrow(
+          'cannot be used with'
+        );
+
+        expect(fs.existsSync(serverDirPath())).toBe(false);
+      });
+
+      it('chooses the buckets independently of the database', async () => {
+        await generateTypebaseProject(tmp, { withAuth: false });
+
+        tmp.write(
+          'typebase/storage.ts',
+          'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "vercel", buckets: { avatars: { access: "public" } } });\n'
+        );
+        tmp.write(
+          '.env',
+          `DATABASE_URL_LOCAL=postgres://project/local\nDATABASE_URL_DEV=postgres://project/dev\nTYPEBASE_STORAGE_VERCEL_TOKENS=${prodTokens}\n`
+        );
+
+        await withCwd(tmp.path, () => start.parseAsync(['--dev-database', '--prod-storage'], { from: 'user' }));
+
+        expect(serverEnv().DATABASE_URL).toBe('postgres://project/dev');
+        expect(serverEnv().TYPEBASE_STORAGE_VERCEL_TOKENS).toBe(prodTokens);
+      });
+
+      describe('with the cloudflare provider', () => {
+        const r2Keys = (target: 'dev' | 'prod') => {
+          const suffix = target === 'dev' ? '_DEV' : '';
+
+          return [
+            `TYPEBASE_STORAGE_R2_ACCOUNT_ID${suffix}=acc_acme`,
+            `TYPEBASE_STORAGE_R2_ACCESS_KEY_ID${suffix}=tok_${target}`,
+            `TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY${suffix}=secret_${target}`,
+            `TYPEBASE_STORAGE_R2_BUCKETS${suffix}={"avatars":"acme-avatars-${target}"}`,
+            `TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS${suffix}=https://pub-avatars-${target}.r2.dev`,
+          ];
+        };
+
+        it.each([
+          { flag: '--dev-storage', target: 'dev' as const, source: 'TYPEBASE_STORAGE_R2_*_DEV' },
+          { flag: '--prod-storage', target: 'prod' as const, source: 'TYPEBASE_STORAGE_R2_*' },
+        ])('runs a cloudflare storage on the $target R2 buckets with $flag, and says so', async ({ flag, target, source }) => {
+          await setupProjectWithStorage('{ provider: "cloudflare", buckets: { avatars: { access: "public" } } }');
+
+          tmp.write('.env', `${[...r2Keys('dev'), ...r2Keys('prod')].join('\n')}\n`);
+          linkEnvCore();
+
+          watchUntil(() => readMarker() !== '', 'the server to build a public URL');
+
+          await withCwd(tmp.path, () => start.parseAsync([flag, '--command', publicUrlCommand()], { from: 'user' }));
+
+          expect(readMarker()).toBe(`https://pub-avatars-${target}.r2.dev/me.png`);
+          expect(serverEnv()).toEqual({
+            TYPEBASE_STORAGE_R2_ACCOUNT_ID: 'acc_acme',
+            TYPEBASE_STORAGE_R2_ACCESS_KEY_ID: `tok_${target}`,
+            TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY: `secret_${target}`,
+            TYPEBASE_STORAGE_R2_BUCKETS: `{"avatars":"acme-avatars-${target}"}`,
+            TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS: `https://pub-avatars-${target}.r2.dev`,
+          });
+          expect(informed()).toContain(`Using the ${target} buckets from ${source}.`);
+          expect(fs.existsSync(storageDirPath())).toBe(false);
+        });
+
+        it.each([
+          { flag: '--dev-storage', target: 'dev' as const, missing: 'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY_DEV' },
+          { flag: '--dev-storage', target: 'dev' as const, missing: 'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS_DEV' },
+          { flag: '--prod-storage', target: 'prod' as const, missing: 'TYPEBASE_STORAGE_R2_BUCKETS' },
+        ])('fails naming $missing when it is missing, before generating anything', async ({ flag, target, missing }) => {
+          await setupProjectWithStorage('{ provider: "cloudflare", buckets: { avatars: { access: "public" } } }');
+
+          tmp.write(
+            '.env',
+            `${r2Keys(target)
+              .filter((line) => !line.startsWith(`${missing}=`))
+              .join('\n')}\n`
+          );
+
+          await expect(withCwd(tmp.path, () => start.parseAsync([flag], { from: 'user' }))).rejects.toThrow(
+            `No storage keys found in ${missing}. Run \`npx typebase-io-cli storage sync ${target}\` to create the ${target} buckets and write their keys to .env.`
+          );
+
+          expect(fs.existsSync(serverDirPath())).toBe(false);
+          expect(runUntilStopped).not.toHaveBeenCalled();
+        });
+      });
+
+      it('keeps a declared filesystem storage on its own root, and says the flag has no effect', async () => {
+        await setupProjectWithStorage('{ provider: "filesystem", buckets: { avatars: {} } }');
+
+        await withCwd(tmp.path, () => start.parseAsync(['--dev-storage'], { from: 'user' }));
+
+        expect(warned()).toContain(
+          '`--dev-storage` has no effect: `storage.ts` declares the `filesystem` provider, which keeps its files where it says.'
+        );
+        expect(fs.readFileSync(inServer('src/server.ts'), 'utf8')).toEqualTemplate('start', 'filesystem-storage-server.ts.txt');
+      });
+    });
   });
 
   describe('database', () => {

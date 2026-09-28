@@ -1,0 +1,13 @@
+import { createStorage } from "typebase-io/server";
+import { env } from "./env.ts";
+
+export const storage = createStorage({ provider: "cloudflare", buckets: { avatars: { access: "public" }, "user-banners": { access: "public" }, documents: { access: "private" } } }, {
+  accountId: env.TYPEBASE_STORAGE_R2_ACCOUNT_ID,
+  accessKeyId: env.TYPEBASE_STORAGE_R2_ACCESS_KEY_ID,
+  secretAccessKey: env.TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY,
+  buckets: env.TYPEBASE_STORAGE_R2_BUCKETS,
+  publicUrls: {
+    "avatars": env.TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS,
+    "user-banners": env.TYPEBASE_STORAGE_R2_PUBLIC_URL_USER_BANNERS,
+  },
+});

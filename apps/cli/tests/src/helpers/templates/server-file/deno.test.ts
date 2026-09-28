@@ -45,4 +45,20 @@ describe('denoServerFileTemplate', () => {
       'embedded-root-paths.txt'
     );
   });
+
+  it('mounts the local storage route at the storage path', () => {
+    expect(denoServerFileTemplate({ ...OPTIONS, hasAuth: false, mode: 'embedded', storagePath: '/files/' })).toEqualTemplate(
+      'server-file',
+      'deno',
+      'local-storage.txt'
+    );
+  });
+
+  it('mounts the local storage route after auth', () => {
+    expect(denoServerFileTemplate({ ...OPTIONS, hasAuth: true, mode: 'embedded', storagePath: '/files' })).toEqualTemplate(
+      'server-file',
+      'deno',
+      'auth-local-storage.txt'
+    );
+  });
 });

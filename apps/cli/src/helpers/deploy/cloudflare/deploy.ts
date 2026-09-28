@@ -48,6 +48,7 @@ export const deploy = async ({
       format: 'esm',
       target: 'esnext',
       conditions: ['workerd', 'worker', 'browser'],
+      external: ['@aws-sdk/*'],
       plugins: [
         {
           name: 'nodejs-compat',

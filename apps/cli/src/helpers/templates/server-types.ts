@@ -1,30 +1,27 @@
-export const serverTypesTemplate = (
-  hasDB: boolean,
-  hasAuth: boolean,
-  hasEnv: boolean,
-  hasPublisher: boolean,
-  routerImports: string,
-  router: string
-) => {
+import { type ServerFeatures } from '#helpers/templates/server.ts';
+
+export const serverTypesTemplate = (features: ServerFeatures, routerImports: string, router: string) => {
   const imports = [
-    hasDB
+    features.db
       ? `import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`
       : `import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`,
-    hasAuth ? 'import type { auth as authConfig } from "../auth.ts";' : '',
-    hasEnv ? 'import type { env as envSchema } from "../env.ts";' : '',
-    hasPublisher ? 'import type { publisher as publisherConfig } from "../publisher.ts";' : '',
-    hasDB ? 'import type { relations } from "../db/relations.ts";' : '',
+    features.auth ? 'import type { auth as authConfig } from "../auth.ts";' : '',
+    features.env ? 'import type { env as envSchema } from "../env.ts";' : '',
+    features.publisher ? 'import type { publisher as publisherConfig } from "../publisher.ts";' : '',
+    features.storage ? 'import type { storage as storageConfig } from "../storage.ts";' : '',
+    features.db ? 'import type { relations } from "../db/relations.ts";' : '',
   ]
     .filter(Boolean)
     .join('\n');
 
   const actionType = (() => {
-    const dBPart = hasDB ? 'typeof relations' : 'never';
-    const authPart = hasAuth ? 'typeof authConfig' : 'never';
-    const envPart = hasEnv ? 'typeof envSchema' : 'never';
-    const publisherPart = hasPublisher ? 'typeof publisherConfig' : 'never';
+    const dBPart = features.db ? 'typeof relations' : 'never';
+    const authPart = features.auth ? 'typeof authConfig' : 'never';
+    const envPart = features.env ? 'typeof envSchema' : 'never';
+    const publisherPart = features.publisher ? 'typeof publisherConfig' : 'never';
+    const storagePart = features.storage ? ', typeof storageConfig' : '';
 
-    return `ActionBuilder<${dBPart}, ${authPart}, ${envPart}, ${publisherPart}>`;
+    return `ActionBuilder<${dBPart}, ${authPart}, ${envPart}, ${publisherPart}${storagePart}>`;
   })();
 
   const typeDeclarations = [
@@ -35,7 +32,7 @@ export const serverTypesTemplate = (
 
   const constDeclarations = [
     `export declare const action: ${actionType};`,
-    hasDB ? 'export declare const getDB: GetDBBuilder<typeof relations>;' : '',
+    features.db ? 'export declare const getDB: GetDBBuilder<typeof relations>;' : '',
   ]
     .filter(Boolean)
     .join('\n');

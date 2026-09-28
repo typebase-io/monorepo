@@ -22,6 +22,18 @@ describe('nodeServerFileTemplate', () => {
     );
   });
 
+  it('mounts the local storage route at the storage path', () => {
+    expect(nodeServerFileTemplate({ ...OPTIONS, storagePath: '/storage' })).toEqualTemplate('server-file', 'node', 'local-storage.txt');
+  });
+
+  it('mounts the local storage route next to auth, sharing one pathname', () => {
+    expect(nodeServerFileTemplate({ ...OPTIONS, hasAuth: true, storagePath: '/storage/' })).toEqualTemplate(
+      'server-file',
+      'node',
+      'auth-local-storage.txt'
+    );
+  });
+
   it('exports auth alongside the simple auth handler when auth is enabled without trusted origins', () => {
     expect(nodeServerFileTemplate({ ...OPTIONS, hasAuth: true, trustedOrigins: [], mode: 'standalone' })).toEqualTemplate(
       'server-file',

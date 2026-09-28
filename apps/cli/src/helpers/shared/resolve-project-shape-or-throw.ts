@@ -1,16 +1,19 @@
-import { type PublisherProvider } from '#helpers/constants.ts';
+import { type PublisherProvider, type StorageProvider } from '#helpers/constants.ts';
 import { getPublisherProvider } from '#helpers/shared/get-publisher-provider.ts';
+import { getStorageProvider } from '#helpers/shared/get-storage-provider.ts';
 import { hasAuth } from '#helpers/shared/has-auth.ts';
 import { hasDB } from '#helpers/shared/has-db.ts';
 import { hasEnv } from '#helpers/shared/has-env.ts';
 import { hasEventsTable } from '#helpers/shared/has-events-table.ts';
 import { hasPublisher } from '#helpers/shared/has-publisher.ts';
+import { hasStorage } from '#helpers/shared/has-storage.ts';
 
 export interface ProjectShape {
   hasDB: boolean;
   hasAuth: boolean;
   hasEnv: boolean;
   hasPublisher: false | PublisherProvider;
+  hasStorage: false | StorageProvider;
   needsEnvModule: boolean;
 }
 
@@ -19,17 +22,21 @@ export const resolveProjectShapeOrThrow = ({
   authFilePath,
   envFilePath,
   publisherFilePath,
+  storageFilePath,
 }: {
   schemaFilePath: string;
   authFilePath: string;
   envFilePath: string;
   publisherFilePath: string;
+  storageFilePath: string;
 }): ProjectShape => {
   const includeDB = hasDB(schemaFilePath);
   const includeAuth = hasAuth(authFilePath);
   const includeEnv = hasEnv(envFilePath);
   const includePublisher = hasPublisher(publisherFilePath);
   const publisherProvider = includePublisher ? getPublisherProvider(publisherFilePath) : undefined;
+  const includeStorage = hasStorage(storageFilePath);
+  const storageProvider = includeStorage ? getStorageProvider(storageFilePath) : undefined;
 
   if (includeAuth && !includeDB) {
     throw new Error(
@@ -52,6 +59,7 @@ export const resolveProjectShapeOrThrow = ({
     hasAuth: includeAuth,
     hasEnv: includeEnv,
     hasPublisher: publisherProvider ?? false,
+    hasStorage: storageProvider ?? false,
     needsEnvModule: includeDB || includeAuth || includeEnv,
   };
 };

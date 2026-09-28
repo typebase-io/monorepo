@@ -1,0 +1,11 @@
+import { z } from "zod";
+
+import { action } from "../_generated/server.ts";
+
+export const uploadAvatar = action
+  .input(z.object({ key: z.string(), body: z.string() }))
+  .handler(async ({ storage, input }) => {
+    await storage.bucket("avatars").upload(input.key, input.body);
+
+    return { key: input.key };
+  });

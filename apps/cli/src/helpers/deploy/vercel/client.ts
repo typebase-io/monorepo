@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 
+import { type BucketAccess } from '#helpers/constants.ts';
+
 export class VercelClient {
   #token: string;
   #orgId: string | undefined;
@@ -409,6 +411,127 @@ export class VercelClient {
     if (!response.ok) {
       throw new Error(await response.text());
     }
+  }
+
+  public async listTeams(): Promise<{ id: string; name: string; slug: string }[]> {
+    const teams: { id: string; name: string; slug: string }[] = [];
+    let until: string | undefined;
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    while (true) {
+      const params = new URLSearchParams({ limit: '100' });
+
+      if (until) {
+        params.set('until', until);
+      }
+
+      const response = await fetch(`https://api.vercel.com/v2/teams?${params}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const data = (await response.json()) as { teams: { id: string; name: string; slug: string }[]; pagination?: { next?: number | null } };
+
+      teams.push(...data.teams.map(({ id, name, slug }) => ({ id, name, slug })));
+
+      const next = data.pagination?.next;
+
+      if (!next || data.teams.length === 0) {
+        break;
+      }
+
+      until = String(next);
+    }
+
+    return teams;
+  }
+
+  public async listStores(): Promise<{ id: string; name: string; access: BucketAccess }[]> {
+    const stores: { id: string; name: string; access: BucketAccess }[] = [];
+    let until: string | undefined;
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    while (true) {
+      const params = new URLSearchParams();
+
+      if (this.#orgId) {
+        params.set('teamId', this.#orgId);
+      }
+
+      if (until) {
+        params.set('until', until);
+      }
+
+      const response = await fetch(`https://api.vercel.com/v1/storage/stores${params.size > 0 ? `?${params}` : ''}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const data = (await response.json()) as {
+        stores: { id: string; name: string; type: string; access?: BucketAccess }[];
+        pagination?: { next?: number | null };
+      };
+
+      // Stores created before private Blob storage existed carry no access and are public.
+      stores.push(...data.stores.filter(({ type }) => type === 'blob').map(({ id, name, access }) => ({ id, name, access: access ?? 'public' })));
+
+      const next = data.pagination?.next;
+
+      if (!next || data.stores.length === 0) {
+        break;
+      }
+
+      until = String(next);
+    }
+
+    return stores;
+  }
+
+  public async createStore({
+    name,
+    access,
+    region,
+  }: {
+    name: string;
+    access: BucketAccess;
+    region: string | undefined;
+  }): Promise<{ id: string; name: string; access: BucketAccess }> {
+    const response = await fetch(`https://api.vercel.com/v1/storage/stores/blob${this.query}`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({ name, access, ...(region ? { region } : {}) }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as { store: { id: string; name?: string; access?: BucketAccess } };
+
+    return { id: data.store.id, name: data.store.name ?? name, access: data.store.access ?? access };
+  }
+
+  public async getStoreToken({ id }: { id: string }): Promise<string> {
+    const response = await fetch(`https://api.vercel.com/v1/storage/stores/${id}/secrets${this.query}`, {
+      method: 'GET',
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const data = (await response.json()) as { rwToken: string };
+
+    return data.rwToken;
   }
 
   private get headers(): { Authorization: string; ['Content-Type']: string } {

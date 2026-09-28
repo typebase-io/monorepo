@@ -4,9 +4,10 @@ import { authPathExpressions } from '#helpers/templates/server-file/auth-path-ex
 import { type ServerFileOptions } from '#helpers/templates/server-file/options.ts';
 import { rpcPlugins, rpcPluginsImport, setsCorsHeaders } from '#helpers/templates/server-file/rpc-plugins.ts';
 
-export const honoServerFileTemplate = ({ routerCode, hasAuth, trustedOrigins, mode, actionsPath, authPath }: ServerFileOptions) => {
+export const honoServerFileTemplate = ({ routerCode, hasAuth, trustedOrigins, mode, actionsPath, authPath, storagePath }: ServerFileOptions) => {
   const authImports = [
     hasAuth ? `import { auth } from "./auth.ts";` : '',
+    storagePath === undefined ? '' : `import { localFileStorage } from "./storage.ts";`,
     setsCorsHeaders(mode) && hasAuth && trustedOrigins.length > 0 ? `import { cors } from "hono/cors";` : '',
   ]
     .filter(Boolean)
@@ -33,7 +34,14 @@ export const honoServerFileTemplate = ({ routerCode, hasAuth, trustedOrigins, mo
 });`
     : '';
 
-  const authBlocks = [authCors, authRoute].filter(Boolean).join('\n\n');
+  const storageRoute =
+    storagePath === undefined
+      ? ''
+      : `app.all(${JSON.stringify(`${normalizeServerPath(storagePath)}/*`)}, (c) => {
+  return localFileStorage.handle(c.req.raw);
+});`;
+
+  const authBlocks = [authCors, authRoute, storageRoute].filter(Boolean).join('\n\n');
   const authBlocksSection = authBlocks ? `${authBlocks}\n\n` : '';
 
   return `import { Hono } from "hono";

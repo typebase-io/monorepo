@@ -16,16 +16,18 @@ import {
   serverModes,
   serverOutputs,
   serverProviders,
+  storageProviders,
   typebaseConfigSchema,
 } from '#helpers/constants.ts';
 
 describe('constants', () => {
-  it('exposes the supported server adapters, server outputs, server modes, server providers, publisher providers and env targets', () => {
+  it('exposes the supported server adapters, server outputs, server modes, server providers, publisher providers, storage providers and env targets', () => {
     expect(serverAdapters).toEqual(['node', 'bun', 'cloudflare', 'deno', 'fastify', 'hono']);
     expect(serverOutputs).toEqual(['ts', 'esm', 'cjs']);
     expect(serverModes).toEqual(['standalone', 'embedded']);
     expect(serverProviders).toEqual(['vercel', 'cloudflare', 'deno']);
     expect(publisherProviders).toEqual(['db']);
+    expect(storageProviders).toEqual(['vercel', 'cloudflare', 'filesystem']);
     expect(envTargets).toEqual(['dev', 'prod']);
   });
 
@@ -53,6 +55,63 @@ describe('constants', () => {
     }
 
     expect(typebaseConfigSchema.safeParse({ server: { embedded: 'true' } }).success).toBe(false);
+  });
+
+  it('accepts a storage path in the config schema', () => {
+    expect(typebaseConfigSchema.safeParse({ server: { storagePath: '/files' } }).success).toBe(true);
+    expect(typebaseConfigSchema.safeParse({ server: { storagePath: '' } }).success).toBe(false);
+  });
+
+  it('publishes the storage path in the JSON schema, next to the other embedded paths', async () => {
+    const schema = JSON.parse(await readFile(new URL('../../../src/helpers/typebase.schema.json', import.meta.url), 'utf8')) as {
+      properties: { server: { properties: Record<string, unknown> } };
+    };
+
+    expect(schema.properties.server.properties.storagePath).toEqual({
+      type: 'string',
+      description: 'The path an embedded server serves local storage files at, when generated with `--local-storage`.',
+      minLength: 1,
+    });
+  });
+
+  it('accepts a storage section with the frozen project name and the Vercel team', () => {
+    expect(typebaseConfigSchema.safeParse({ storage: { project: 'app', vercel: { orgId: 'team_1' } } }).success).toBe(true);
+    expect(typebaseConfigSchema.safeParse({ storage: {} }).success).toBe(true);
+    expect(typebaseConfigSchema.safeParse({ storage: { vercel: {} } }).success).toBe(false);
+  });
+
+  it('accepts a storage section with the Cloudflare account', () => {
+    expect(typebaseConfigSchema.safeParse({ storage: { project: 'app', cloudflare: { accountId: 'acc_1' } } }).success).toBe(true);
+    expect(typebaseConfigSchema.safeParse({ storage: { cloudflare: {} } }).success).toBe(false);
+  });
+
+  it('publishes the storage section in the JSON schema', async () => {
+    const schema = JSON.parse(await readFile(new URL('../../../src/helpers/typebase.schema.json', import.meta.url), 'utf8')) as {
+      properties: Record<string, unknown>;
+    };
+
+    expect(schema.properties.storage).toEqual({
+      type: 'object',
+      description: 'Storage configuration.',
+      properties: {
+        project: { type: 'string', description: 'The project part of every bucket name, frozen by the first bucket sync.' },
+        vercel: {
+          type: 'object',
+          description: 'Vercel storage account.',
+          properties: { orgId: { type: 'string', description: 'The Vercel team that holds the Blob stores.' } },
+          required: ['orgId'],
+          additionalProperties: false,
+        },
+        cloudflare: {
+          type: 'object',
+          description: 'Cloudflare storage account.',
+          properties: { accountId: { type: 'string', description: 'The Cloudflare account that holds the R2 buckets.' } },
+          required: ['accountId'],
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: false,
+    });
   });
 
   it('publishes the embedded boolean in the JSON schema instead of a mode setting', async () => {

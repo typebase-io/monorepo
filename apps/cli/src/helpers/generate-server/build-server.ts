@@ -8,6 +8,8 @@ import ora from 'ora';
 import {
   DEFAULT_AUTH_PATH,
   DEFAULT_SERVER_OUT_DIRS,
+  LOCAL_STORAGE_DIR_NAME,
+  type LocalStorageRoute,
   SERVER_MARKER_FILE_NAME,
   type ServerAdapter,
   type ServerMode,
@@ -25,6 +27,7 @@ import { generatePackageJson } from '#helpers/generate-server/generate-package-j
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
 import { generateServerFiles } from '#helpers/generate-server/generate-server-files.ts';
+import { generateStorageFile } from '#helpers/generate-server/generate-storage-file.ts';
 import { seedServerEnv } from '#helpers/generate-server/seed-server-env.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { canonicalizePath } from '#helpers/shared/canonicalize-path.ts';
@@ -32,6 +35,7 @@ import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
 import { getBasePathFromAuth } from '#helpers/shared/get-base-path-from-auth.ts';
+import { getStorageEnvKeys } from '#helpers/shared/get-storage-env-keys.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { normalizeServerPath } from '#helpers/shared/normalize-server-path.ts';
 import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shape-or-throw.ts';
@@ -49,6 +53,7 @@ export const buildServer = async ({
   actionsPath,
   authPath: configuredAuthPath,
   authBaseURL,
+  localStorage,
   signal,
   quiet = false,
 }: {
@@ -62,6 +67,7 @@ export const buildServer = async ({
   actionsPath: string;
   authPath: string;
   authBaseURL?: string;
+  localStorage?: LocalStorageRoute;
   signal?: AbortSignal;
   quiet?: boolean;
 }) => {
@@ -74,6 +80,7 @@ export const buildServer = async ({
   const authFilePath = path.join(typebaseDirPath, 'auth.ts');
   const envFilePath = path.join(typebaseDirPath, 'env.ts');
   const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
+  const storageFilePath = path.join(typebaseDirPath, 'storage.ts');
   const dbDirPath = path.join(typebaseDirPath, 'db');
   const generatedDirPath = path.join(typebaseDirPath, '_generated');
   const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
@@ -124,8 +131,9 @@ export const buildServer = async ({
       hasDB: includeDBFiles,
       hasAuth: includeAuthFile,
       hasPublisher: includePublisherFile,
-      needsEnvModule: includeEnvFile,
-    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
+      hasStorage: includeStorageFile,
+      needsEnvModule,
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath, storageFilePath });
 
     const developerBasePath = mode === 'embedded' && includeAuthFile ? getBasePathFromAuth(authFilePath) : undefined;
 
@@ -141,7 +149,16 @@ export const buildServer = async ({
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({
+        tsConfigFilePath,
+        schemaFilePath,
+        authFilePath,
+        envFilePath,
+        publisherFilePath,
+        storageFilePath,
+        actionsDirPath,
+        generatedDirPath,
+      }),
     ]);
 
     spinner?.succeed('Types generated!');
@@ -160,6 +177,10 @@ export const buildServer = async ({
 
     signal?.throwIfAborted();
 
+    const localStorageRoute = includeStorageFile !== false && includeStorageFile !== 'filesystem' ? localStorage : undefined;
+    const storageEnvKeys = getStorageEnvKeys({ provider: includeStorageFile, localStorage: localStorageRoute, storageFilePath });
+    const includeEnvFile = needsEnvModule || storageEnvKeys.length > 0;
+
     const injectedBasePath = authPath === DEFAULT_AUTH_PATH && typeof developerBasePath !== 'object' ? undefined : authPath;
     const registeredAuthPath = developerBasePath ?? authPath;
 
@@ -177,6 +198,7 @@ export const buildServer = async ({
       configuredOutDir,
       hasAuth: includeAuthFile,
       hasEnv: includeEnvFile,
+      hasStorage: includeStorageFile !== false,
     });
 
     await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
@@ -188,6 +210,7 @@ export const buildServer = async ({
         adapter,
         hasDB: includeDBFiles,
         hasAuth: includeAuthFile,
+        storageEnvKeys,
         useTs: output === 'ts',
         target: undefined,
       });
@@ -204,12 +227,25 @@ export const buildServer = async ({
       });
     }
 
+    if (includeStorageFile) {
+      await generateStorageFile({
+        storageFilePath,
+        storageOutputDirPath: srcOutputDirPath,
+        provider: includeStorageFile,
+        useTs: output === 'ts',
+        localStorage: localStorageRoute,
+      });
+    }
+
     await generateAction({
       serverOutputDirPath,
-      hasDB: includeDBFiles,
-      hasAuth: includeAuthFile,
-      hasEnv: includeEnvFile,
-      hasPublisher: includePublisherFile !== false,
+      features: {
+        db: includeDBFiles,
+        auth: includeAuthFile,
+        env: includeEnvFile,
+        publisher: includePublisherFile !== false,
+        storage: includeStorageFile !== false,
+      },
     });
 
     if (existsSync(actionsDirPath)) {
@@ -246,6 +282,7 @@ export const buildServer = async ({
       trustedOrigins: includeAuthFile ? getTrustedOriginsFromAuth(authFilePath) : [],
       actionsPath,
       authPath: registeredAuthPath,
+      storagePath: localStorageRoute?.path,
     });
 
     if (mode === 'embedded' && output === 'ts') {
@@ -291,7 +328,7 @@ export const buildServer = async ({
     const previousEntries = await fs.readdir(serverDistDirPath).catch(() => []);
 
     for (const entry of previousEntries) {
-      if (entry !== '.env' && entry !== 'node_modules') {
+      if (entry !== '.env' && entry !== 'node_modules' && entry !== LOCAL_STORAGE_DIR_NAME) {
         await fs.rm(path.join(serverDistDirPath, entry), { recursive: true, force: true });
       }
     }

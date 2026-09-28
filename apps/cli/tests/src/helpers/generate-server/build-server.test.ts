@@ -5,7 +5,7 @@ import path from 'node:path';
 import ora from 'ora';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, type ServerOutput } from '#helpers/constants.ts';
+import { DEFAULT_ACTIONS_PATH, DEFAULT_AUTH_PATH, LOCAL_STORAGE_DIR_NAME, type LocalStorageRoute, type ServerOutput } from '#helpers/constants.ts';
 import { buildServer } from '#helpers/generate-server/build-server.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { validateTypes } from '#helpers/shared/validate-types.ts';
@@ -372,6 +372,76 @@ describe('buildServer', () => {
 
       expect(seededEnvKeys).toEqual([]);
       expect(serverEnv()).toBe('');
+    });
+  });
+
+  describe('storage', () => {
+    const LOCAL_STORAGE: LocalStorageRoute = { root: '/cache/.local-storage', url: 'http://localhost:8080/storage', path: '/storage' };
+
+    const declareStorage = (provider: string) => {
+      tmp.write(
+        'typebase/storage.ts',
+        `import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({\n  provider: "${provider}",\n  buckets: { avatars: { access: "public" } },\n});\n`
+      );
+    };
+
+    const buildWithStorage = (localStorage?: LocalStorageRoute) =>
+      withCwd(tmp.path, () =>
+        buildServer({
+          projectPath: path.join(tmp.path, 'typebase'),
+          output: 'ts',
+          adapter: 'node',
+          mode: 'standalone',
+          outDir: '_server',
+          configuredOutDir: '_server',
+          port: 8080,
+          actionsPath: DEFAULT_ACTIONS_PATH,
+          authPath: DEFAULT_AUTH_PATH,
+          localStorage,
+        })
+      );
+
+    const generated = (relativePath: string) => tmp.read(path.join('typebase/_server', relativePath));
+
+    it('generates a storage module that reads the provider keys from the env module', async () => {
+      declareStorage('vercel');
+
+      await buildWithStorage();
+
+      expect(generated('src/storage.ts')).toEqualTemplate('build-server', 'vercel-storage', 'storage.ts.txt');
+      expect(generated('src/env.ts')).toEqualTemplate('build-server', 'vercel-storage', 'env.ts.txt');
+      expect(generated('src/server.ts')).toEqualTemplate('build-server', 'server-without-storage-route.ts.txt');
+    });
+
+    it('runs the storage on the local storage route it is given, needing no provider keys', async () => {
+      declareStorage('vercel');
+
+      await buildWithStorage(LOCAL_STORAGE);
+
+      expect(generated('src/storage.ts')).toEqualTemplate('build-server', 'local-storage', 'storage.ts.txt');
+      expect(generated('src/env.ts')).toEqualTemplate('build-server', 'local-storage', 'env.ts.txt');
+      expect(generated('src/server.ts')).toEqualTemplate('build-server', 'local-storage', 'server.ts.txt');
+    });
+
+    it('keeps a filesystem storage on its own root, mounting no local storage route', async () => {
+      declareStorage('filesystem');
+
+      await buildWithStorage(LOCAL_STORAGE);
+
+      expect(generated('src/storage.ts')).toEqualTemplate('build-server', 'filesystem-storage', 'storage.ts.txt');
+      expect(generated('src/server.ts')).toEqualTemplate('build-server', 'server-without-storage-route.ts.txt');
+    });
+
+    it('keeps the files local storage holds across a rebuild', async () => {
+      declareStorage('vercel');
+
+      await buildWithStorage(LOCAL_STORAGE);
+
+      tmp.write(`typebase/_server/${LOCAL_STORAGE_DIR_NAME}/avatars/me.txt`, 'kept');
+
+      await buildWithStorage(LOCAL_STORAGE);
+
+      expect(generated(`${LOCAL_STORAGE_DIR_NAME}/avatars/me.txt`)).toBe('kept');
     });
   });
 });

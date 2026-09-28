@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
+  "cloudflare": {
+    "accountId": "acc_1",
+    "workerName": "edge_worker",
+    "subdomain": "acme"
+  },
+  "storage": {
+    "project": "edge-worker",
+    "vercel": {
+      "orgId": "team_acme"
+    }
+  }
+}

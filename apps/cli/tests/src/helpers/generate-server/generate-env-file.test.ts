@@ -13,6 +13,7 @@ interface Options {
   adapter?: ServerAdapter;
   hasDB?: boolean;
   hasAuth?: boolean;
+  storageEnvKeys?: string[];
   useTs?: boolean;
   target?: EnvTarget;
 }
@@ -28,13 +29,14 @@ describe('generateEnvFile', () => {
     tmp.cleanup();
   });
 
-  const run = ({ adapter = 'node', hasDB = true, hasAuth = false, useTs = true, target }: Options = {}) =>
+  const run = ({ adapter = 'node', hasDB = true, hasAuth = false, storageEnvKeys, useTs = true, target }: Options = {}) =>
     generateEnvFile({
       envFilePath: path.join(tmp.path, 'env.ts'),
       envOutputDirPath: path.join(tmp.path, 'out'),
       adapter,
       hasDB,
       hasAuth,
+      storageEnvKeys,
       useTs,
       target,
     });
@@ -78,6 +80,12 @@ describe('generateEnvFile', () => {
     await run({ hasDB: true, hasAuth: true });
 
     expect(tmp.read('out/env.ts')).toEqualTemplate('generate-env-file', 'db-auth.txt');
+  });
+
+  it('injects the storage keys after the database and auth ones', async () => {
+    await run({ hasDB: true, hasAuth: true, storageEnvKeys: ['TYPEBASE_STORAGE_R2_ACCOUNT_ID', 'TYPEBASE_STORAGE_R2_BUCKETS'] });
+
+    expect(tmp.read('out/env.ts')).toEqualTemplate('generate-env-file', 'storage.txt');
   });
 
   it('generates an env module with nothing injected when the project has neither', async () => {

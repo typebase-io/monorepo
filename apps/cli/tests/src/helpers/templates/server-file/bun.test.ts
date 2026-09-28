@@ -45,4 +45,20 @@ describe('bunServerFileTemplate', () => {
       'embedded-root-paths.txt'
     );
   });
+
+  it('mounts the local storage route at the storage path', () => {
+    expect(bunServerFileTemplate({ ...OPTIONS, hasAuth: false, mode: 'embedded', storagePath: '/files/' })).toEqualTemplate(
+      'server-file',
+      'bun',
+      'local-storage.txt'
+    );
+  });
+
+  it('mounts the local storage route after auth', () => {
+    expect(bunServerFileTemplate({ ...OPTIONS, hasAuth: true, mode: 'embedded', storagePath: '/files' })).toEqualTemplate(
+      'server-file',
+      'bun',
+      'auth-local-storage.txt'
+    );
+  });
 });

@@ -7,4 +7,5 @@ export interface ServerFileOptions {
   mode: ServerMode;
   actionsPath: string;
   authPath: string | { fromAuth: true };
+  storagePath?: string;
 }

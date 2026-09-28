@@ -110,6 +110,17 @@ describe('auth generate command', () => {
     expect(tmp.read('typebase/db/relations.ts')).toEqualTemplate('auth', 'with-publisher', 'relations.ts.txt');
   });
 
+  it('keeps the storage in the types it regenerates', async () => {
+    tmp.write(
+      'typebase/storage.ts',
+      'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });\n'
+    );
+
+    await withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
+
+    expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-storage-server.ts.txt');
+  });
+
   it('stays idempotent when the auth tables already exist in the schema', async () => {
     await withCwd(tmp.path, () => auth.parseAsync(['generate'], { from: 'user' }));
 

@@ -1,0 +1,6 @@
+import { createStorage } from "typebase-io/server";
+
+export const storage = createStorage({
+  provider: "filesystem",
+  buckets: { avatars: { access: "public" } },
+}, {});

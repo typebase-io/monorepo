@@ -16,6 +16,7 @@ export const generateEnvFile = async ({
   adapter,
   hasDB,
   hasAuth,
+  storageEnvKeys = [],
   useTs,
   target,
 }: {
@@ -24,6 +25,7 @@ export const generateEnvFile = async ({
   adapter: ServerAdapter;
   hasDB: boolean;
   hasAuth: boolean;
+  storageEnvKeys?: string[];
   useTs: boolean;
   target: EnvTarget | undefined;
 }) => {
@@ -31,7 +33,7 @@ export const generateEnvFile = async ({
 
   const outputFilePath = path.join(envOutputDirPath, 'env.ts');
   const project = new Project({ skipAddingFilesFromTsConfig: true, manipulationSettings: { indentationText: IndentationText.TwoSpaces } });
-  const defaultKeys = [hasDB ? 'DATABASE_URL' : '', hasAuth ? 'BETTER_AUTH_SECRET' : ''].filter(Boolean);
+  const defaultKeys = [hasDB ? 'DATABASE_URL' : '', hasAuth ? 'BETTER_AUTH_SECRET' : '', ...storageEnvKeys].filter(Boolean);
 
   const sourceFile = hasEnv(envFilePath) ? project.addSourceFileAtPath(envFilePath) : project.createSourceFile(envFilePath, 'defineEnv({});');
   const [callExpr] = findDefineCalls(sourceFile, 'defineEnv');

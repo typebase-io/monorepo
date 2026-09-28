@@ -69,4 +69,20 @@ describe('honoServerFileTemplate', () => {
       'embedded-dynamic-auth.txt'
     );
   });
+
+  it('mounts the local storage route at the storage path', () => {
+    expect(honoServerFileTemplate({ ...OPTIONS, hasAuth: false, mode: 'embedded', storagePath: '/files/' })).toEqualTemplate(
+      'server-file',
+      'hono',
+      'local-storage.txt'
+    );
+  });
+
+  it('mounts the local storage route after auth', () => {
+    expect(honoServerFileTemplate({ ...OPTIONS, hasAuth: true, mode: 'embedded', storagePath: '/files' })).toEqualTemplate(
+      'server-file',
+      'hono',
+      'auth-local-storage.txt'
+    );
+  });
 });

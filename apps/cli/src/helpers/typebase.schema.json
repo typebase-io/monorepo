@@ -50,6 +50,11 @@
           "description": "The path an embedded server serves auth at.",
           "minLength": 1
         },
+        "storagePath": {
+          "type": "string",
+          "description": "The path an embedded server serves local storage files at, when generated with `--local-storage`.",
+          "minLength": 1
+        },
         "port": {
           "type": "integer",
           "minimum": 1,
@@ -132,6 +137,41 @@
         }
       },
       "required": ["orgId", "projectId"],
+      "additionalProperties": false
+    },
+    "storage": {
+      "type": "object",
+      "description": "Storage configuration.",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "The project part of every bucket name, frozen by the first bucket sync."
+        },
+        "vercel": {
+          "type": "object",
+          "description": "Vercel storage account.",
+          "properties": {
+            "orgId": {
+              "type": "string",
+              "description": "The Vercel team that holds the Blob stores."
+            }
+          },
+          "required": ["orgId"],
+          "additionalProperties": false
+        },
+        "cloudflare": {
+          "type": "object",
+          "description": "Cloudflare storage account.",
+          "properties": {
+            "accountId": {
+              "type": "string",
+              "description": "The Cloudflare account that holds the R2 buckets."
+            }
+          },
+          "required": ["accountId"],
+          "additionalProperties": false
+        }
+      },
       "additionalProperties": false
     }
   },

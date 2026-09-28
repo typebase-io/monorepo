@@ -16,6 +16,7 @@ import { generateExampleEnv } from '#helpers/init/generate-example-env.ts';
 import { generateExamplePublisher } from '#helpers/init/generate-example-publisher.ts';
 import { generateExampleRelations } from '#helpers/init/generate-example-relations.ts';
 import { generateExampleSchema } from '#helpers/init/generate-example-schema.ts';
+import { generateExampleStorage } from '#helpers/init/generate-example-storage.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
@@ -33,9 +34,14 @@ export const init = new Command('init')
   .addOption(
     new Option('--with-db-publisher', 'Creates a `db` publisher and the `events` table it keeps events in').default(false).conflicts('skipExample')
   )
+  .addOption(
+    new Option('--with-storage', 'Creates a Vercel storage file with a public and a private bucket, plus actions that hand out their URLs')
+      .default(false)
+      .conflicts('skipExample')
+  )
   .option('--with-migrations', 'Records schema changes as migrations instead of pushing them, starting with the scaffolded schema')
   .option('--skip-example', 'Skips the example schema and actions')
-  .action(async ({ force, withAuth, withDbPublisher, skipExample, withMigrations }) => {
+  .action(async ({ force, withAuth, withDbPublisher, withStorage, skipExample, withMigrations }) => {
     const config = await getTypebaseConfig();
     const typebaseDirPath = path.resolve(config.projectPath);
 
@@ -49,6 +55,7 @@ export const init = new Command('init')
     const exampleAuthFilePath = path.join(typebaseDirPath, 'auth.ts');
     const exampleEnvFilePath = path.join(typebaseDirPath, 'env.ts');
     const examplePublisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
+    const exampleStorageFilePath = path.join(typebaseDirPath, 'storage.ts');
     const generatedDirPath = path.join(typebaseDirPath, '_generated');
     const dbTypesOutputPath = path.join(generatedDirPath, 'db.d.ts');
     const migrationsDirPath = path.join(dbDirPath, 'migrations');
@@ -78,9 +85,10 @@ export const init = new Command('init')
       skipExample
         ? fs.writeFile(exampleRelationsPath, `${baseRelationsTemplate(false)}\n`)
         : generateExampleRelations({ path: exampleRelationsPath, withAuth, withPublisher: withDbPublisher }),
-      skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth, withPublisher: withDbPublisher }),
+      skipExample ? Promise.resolve() : generateExampleActions({ typebaseDirPath, withAuth, withPublisher: withDbPublisher, withStorage }),
       skipExample ? Promise.resolve() : generateExampleEnv(exampleEnvFilePath),
       withDbPublisher ? generateExamplePublisher(examplePublisherFilePath) : Promise.resolve(),
+      withStorage ? generateExampleStorage(exampleStorageFilePath) : Promise.resolve(),
     ]);
 
     if (withAuth) {
@@ -121,6 +129,7 @@ export const init = new Command('init')
         authFilePath: exampleAuthFilePath,
         envFilePath: exampleEnvFilePath,
         publisherFilePath: examplePublisherFilePath,
+        storageFilePath: exampleStorageFilePath,
         actionsDirPath,
         generatedDirPath,
       }),

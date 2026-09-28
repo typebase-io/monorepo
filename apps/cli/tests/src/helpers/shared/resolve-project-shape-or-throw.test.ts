@@ -21,7 +21,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: false,
     hasPublisher: false,
-    expected: { hasDB: false, hasAuth: false, hasEnv: false, hasPublisher: false, needsEnvModule: false },
+    expected: { hasDB: false, hasAuth: false, hasEnv: false, hasPublisher: false, hasStorage: false, needsEnvModule: false },
   },
   {
     description: 'a project with only a database',
@@ -29,7 +29,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: false,
     hasPublisher: false,
-    expected: { hasDB: true, hasAuth: false, hasEnv: false, hasPublisher: false, needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: false, hasEnv: false, hasPublisher: false, hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with only an env schema',
@@ -37,7 +37,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: true,
     hasPublisher: false,
-    expected: { hasDB: false, hasAuth: false, hasEnv: true, hasPublisher: false, needsEnvModule: true },
+    expected: { hasDB: false, hasAuth: false, hasEnv: true, hasPublisher: false, hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database and auth',
@@ -45,7 +45,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: true,
     hasEnv: false,
     hasPublisher: false,
-    expected: { hasDB: true, hasAuth: true, hasEnv: false, hasPublisher: false, needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: true, hasEnv: false, hasPublisher: false, hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database and an env schema',
@@ -53,7 +53,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: true,
     hasPublisher: false,
-    expected: { hasDB: true, hasAuth: false, hasEnv: true, hasPublisher: false, needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: false, hasEnv: true, hasPublisher: false, hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database and a publisher',
@@ -61,7 +61,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: false,
     hasPublisher: true,
-    expected: { hasDB: true, hasAuth: false, hasEnv: false, hasPublisher: 'db', needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: false, hasEnv: false, hasPublisher: 'db', hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database, auth and an env schema',
@@ -69,7 +69,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: true,
     hasEnv: true,
     hasPublisher: false,
-    expected: { hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: false, needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: false, hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database, auth and a publisher',
@@ -77,7 +77,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: true,
     hasEnv: false,
     hasPublisher: true,
-    expected: { hasDB: true, hasAuth: true, hasEnv: false, hasPublisher: 'db', needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: true, hasEnv: false, hasPublisher: 'db', hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database, an env schema and a publisher',
@@ -85,7 +85,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: false,
     hasEnv: true,
     hasPublisher: true,
-    expected: { hasDB: true, hasAuth: false, hasEnv: true, hasPublisher: 'db', needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: false, hasEnv: true, hasPublisher: 'db', hasStorage: false, needsEnvModule: true },
   },
   {
     description: 'a project with a database, auth, an env schema and a publisher',
@@ -93,7 +93,7 @@ const RESOLVED_CASES: (Files & { description: string; expected: ProjectShape })[
     hasAuth: true,
     hasEnv: true,
     hasPublisher: true,
-    expected: { hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: 'db', needsEnvModule: true },
+    expected: { hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: 'db', hasStorage: false, needsEnvModule: true },
   },
 ];
 
@@ -148,6 +148,12 @@ const REFUSED_CASES: (Files & { description: string; error: string })[] = [
   },
 ];
 
+const FILESYSTEM_STORAGE = removeExtraSpaces(`
+  import { defineStorage } from "typebase-io/server";
+
+  export const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });
+`);
+
 const DB_PUBLISHER = removeExtraSpaces(`
   import { definePublisher } from "typebase-io/server";
 
@@ -189,6 +195,7 @@ describe('resolveProjectShapeOrThrow', () => {
       authFilePath: path.join(tmp.path, 'auth.ts'),
       envFilePath: path.join(tmp.path, 'env.ts'),
       publisherFilePath: path.join(tmp.path, 'publisher.ts'),
+      storageFilePath: path.join(tmp.path, 'storage.ts'),
     });
 
   it.each(RESOLVED_CASES)('reports $description', ({ hasDB, hasAuth, hasEnv, hasPublisher, expected }) => {
@@ -228,5 +235,30 @@ describe('resolveProjectShapeOrThrow', () => {
     tmp.write('publisher.ts', 'export const publisher = definePublisher({ provider: chosen, events: {} });');
 
     expect(() => run()).toThrow('Could not read which publisher `publisher.ts` asks for');
+  });
+
+  it('reports storage, which needs neither a database nor an env module', () => {
+    tmp.write('storage.ts', FILESYSTEM_STORAGE);
+
+    expect(run()).toEqual({ hasDB: false, hasAuth: false, hasEnv: false, hasPublisher: false, hasStorage: 'filesystem', needsEnvModule: false });
+  });
+
+  it('reports storage next to everything else', () => {
+    writeProject({ hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: true });
+    tmp.write('storage.ts', FILESYSTEM_STORAGE);
+
+    expect(run()).toEqual({ hasDB: true, hasAuth: true, hasEnv: true, hasPublisher: 'db', hasStorage: 'filesystem', needsEnvModule: true });
+  });
+
+  it('refuses a storage provider Typebase does not have', () => {
+    tmp.write('storage.ts', 'export const storage = defineStorage({ provider: "memory", buckets: {} });');
+
+    expect(() => run()).toThrow('asks for the `memory` storage provider, which Typebase does not have');
+  });
+
+  it('refuses a storage provider it cannot read from the file', () => {
+    tmp.write('storage.ts', 'export const storage = defineStorage({ provider: chosen, buckets: {} });');
+
+    expect(() => run()).toThrow('Could not read which storage provider `storage.ts` asks for');
   });
 });

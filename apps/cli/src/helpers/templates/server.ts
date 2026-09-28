@@ -1,26 +1,37 @@
-export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean, hasPublisher: boolean) => {
+export interface ServerFeatures {
+  db: boolean;
+  auth: boolean;
+  env: boolean;
+  publisher: boolean;
+  storage: boolean;
+}
+
+export const serverTemplate = (features: ServerFeatures) => {
   const imports = [
     'import { os } from "@orpc/server";',
     'import { Action } from "typebase-io/server";',
     'import type { RequestHeadersPluginContext } from "@orpc/server/plugins";',
-    hasDB ? 'import { db } from "../db/index.ts";' : '',
-    hasAuth ? 'import { auth } from "../auth.ts";' : '',
-    hasEnv ? 'import { env } from "../env.ts";' : '',
-    hasPublisher ? 'import { publisher } from "../publisher.ts";' : '',
+    features.db ? 'import { db } from "../db/index.ts";' : '',
+    features.auth ? 'import { auth } from "../auth.ts";' : '',
+    features.env ? 'import { env } from "../env.ts";' : '',
+    features.publisher ? 'import { publisher } from "../publisher.ts";' : '',
+    features.storage ? 'import { storage } from "../storage.ts";' : '',
   ].filter(Boolean);
 
   const contextEntries = [
-    hasDB ? 'db: context.db ?? db,' : '',
-    hasAuth ? 'auth: context.auth ?? auth,' : '',
-    hasEnv ? 'env: context.env ?? env,' : '',
-    hasPublisher ? 'publisher: context.publisher ?? publisher,' : '',
+    features.db ? 'db: context.db ?? db,' : '',
+    features.auth ? 'auth: context.auth ?? auth,' : '',
+    features.env ? 'env: context.env ?? env,' : '',
+    features.publisher ? 'publisher: context.publisher ?? publisher,' : '',
+    features.storage ? 'storage: context.storage ?? storage,' : '',
   ].filter(Boolean);
 
   const contextType = [
-    hasDB ? 'db?: typeof db' : '',
-    hasAuth ? 'auth?: typeof auth' : '',
-    hasEnv ? 'env?: typeof env' : '',
-    hasPublisher ? 'publisher?: typeof publisher' : '',
+    features.db ? 'db?: typeof db' : '',
+    features.auth ? 'auth?: typeof auth' : '',
+    features.env ? 'env?: typeof env' : '',
+    features.publisher ? 'publisher?: typeof publisher' : '',
+    features.storage ? 'storage?: typeof storage' : '',
   ]
     .filter(Boolean)
     .join('; ');
@@ -50,7 +61,7 @@ export const serverTemplate = (hasDB: boolean, hasAuth: boolean, hasEnv: boolean
     'const withProviders = base.use(providerMiddleware);',
     '',
     'export const action = new Action(withProviders);',
-    ...(hasDB ? ['', 'export const getDB = () => db;'] : [])
+    ...(features.db ? ['', 'export const getDB = () => db;'] : [])
   );
 
   return lines.join('\n');

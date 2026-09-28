@@ -9,6 +9,7 @@ import {
   DEFAULT_ACTIONS_PATH,
   DEFAULT_AUTH_PATH,
   DEFAULT_SERVER_OUT_DIRS,
+  DEFAULT_STORAGE_PATH,
   TYPEBASE_CONFIG_FILE_NAME,
   typebaseConfigSchema,
 } from '#helpers/constants.ts';
@@ -50,11 +51,13 @@ export const getTypebaseConfig = async () => {
       explicitOutDir: config.data.server?.outDir,
       actionsPath: config.data.server?.actionsPath ?? DEFAULT_ACTIONS_PATH,
       authPath: config.data.server?.authPath ?? DEFAULT_AUTH_PATH,
+      storagePath: config.data.server?.storagePath ?? DEFAULT_STORAGE_PATH,
       port: config.data.server?.port ?? 8080,
     },
     vercel: config.data.vercel,
     cloudflare: config.data.cloudflare,
     deno: config.data.deno,
     neon: config.data.neon,
+    storage: config.data.storage,
   };
 };

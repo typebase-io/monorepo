@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -10,11 +11,13 @@ import { codegen } from '#commands/codegen.ts';
 import { db } from '#commands/db.ts';
 import { deploy } from '#commands/deploy.ts';
 
+import { type BucketAccess } from '#helpers/constants.ts';
 import { applyMigrations } from '#helpers/db/apply-migrations.ts';
 import { neon } from '#helpers/db/neon/index.ts';
 import { pushSchema } from '#helpers/db/push-schema.ts';
 import { cloudflare } from '#helpers/deploy/cloudflare/index.ts';
 import { deno } from '#helpers/deploy/deno/index.ts';
+import { VercelClient } from '#helpers/deploy/vercel/client.ts';
 import { vercel } from '#helpers/deploy/vercel/index.ts';
 import { getCloudflareEnvVar } from '#helpers/env/cloudflare.ts';
 import { getDenoEnvVar } from '#helpers/env/deno.ts';
@@ -42,6 +45,77 @@ const { passThrough } = vi.hoisted(() => ({
   },
 }));
 
+const vercelStorage = vi.hoisted(() => ({
+  stores: [] as { id: string; name: string; access: BucketAccess }[],
+  events: [] as string[],
+}));
+
+vi.mock('#helpers/deploy/vercel/client.ts', () => ({
+  VercelClient: vi.fn(function () {
+    return {
+      listStores: vi.fn(() => Promise.resolve([...vercelStorage.stores])),
+      createStore: vi.fn(({ name, access }: { name: string; access: BucketAccess }) => {
+        const store = { id: `store_${name}`, name, access };
+
+        vercelStorage.events.push(`create ${name} ${access}`);
+        vercelStorage.stores.push(store);
+
+        return Promise.resolve(store);
+      }),
+      getStoreToken: vi.fn(({ id }: { id: string }) => Promise.resolve(`vercel_blob_rw_${id}`)),
+    };
+  }),
+}));
+
+const cloudflareStorage = vi.hoisted(() => ({
+  buckets: [] as { name: string; enabled: boolean }[],
+  tokens: [] as { id: string; name: string; value: string; policies: unknown[] }[],
+  events: [] as string[],
+}));
+
+vi.mock('#helpers/deploy/cloudflare/client.ts', () => ({
+  CloudflareClient: vi.fn(function () {
+    const domainOf = (name: string) => {
+      const bucket = cloudflareStorage.buckets.find((candidate) => candidate.name === name);
+
+      return { domain: `pub-${name}.r2.dev`, enabled: bucket?.enabled ?? false };
+    };
+
+    return {
+      listR2Buckets: vi.fn(() => Promise.resolve(cloudflareStorage.buckets.map(({ name }) => name))),
+      createR2Bucket: vi.fn(({ name }: { name: string }) => {
+        cloudflareStorage.events.push(`create ${name}`);
+        cloudflareStorage.buckets.push({ name, enabled: false });
+
+        return Promise.resolve();
+      }),
+      getR2ManagedDomain: vi.fn(({ name }: { name: string }) => Promise.resolve(domainOf(name))),
+      enableR2ManagedDomain: vi.fn(({ name }: { name: string }) => {
+        cloudflareStorage.events.push(`enable r2.dev ${name}`);
+        cloudflareStorage.buckets = cloudflareStorage.buckets.map((bucket) => (bucket.name === name ? { ...bucket, enabled: true } : bucket));
+
+        return Promise.resolve(domainOf(name));
+      }),
+      getPermissionGroupIds: vi.fn((names: string[]) => Promise.resolve(names.map((_name, index) => `pg_${index}`))),
+      createAccountToken: vi.fn(({ name, policies }: { name: string; policies: unknown[] }) => {
+        const token = {
+          id: `tok_${cloudflareStorage.tokens.length + 1}`,
+          name,
+          value: `token-value-${cloudflareStorage.tokens.length + 1}`,
+          policies,
+        };
+
+        cloudflareStorage.events.push(`mint ${token.id}`);
+        cloudflareStorage.tokens.push(token);
+
+        return Promise.resolve({ id: token.id, value: token.value });
+      }),
+      getAccountToken: vi.fn(({ id }: { id: string }) => Promise.resolve(cloudflareStorage.tokens.find((candidate) => candidate.id === id))),
+      updateAccountToken: vi.fn(() => Promise.resolve()),
+    };
+  }),
+}));
+
 vi.mock('#helpers/shared/validate-types.ts', () => ({ validateTypes: vi.fn() }));
 vi.mock('#helpers/db/apply-migrations.ts', () => ({ applyMigrations: vi.fn() }));
 vi.mock('#helpers/db/neon/index.ts', () => ({ neon: vi.fn() }));
@@ -56,6 +130,20 @@ vi.mock('#helpers/logs/stream-logs.ts', () => ({ streamLogs: vi.fn() }));
 vi.mock('#helpers/generate-server/generate-package-json.ts', async (o) => passThrough(await o<Record<string, unknown>>()));
 
 const CONNECTION_URI = 'postgres://neon/db';
+
+const VERCEL_STORAGE_FILE = `import { defineStorage } from 'typebase-io/server';
+
+export const storage = defineStorage({
+  provider: 'vercel',
+  buckets: {
+    avatars: { access: 'public' },
+    documents: { access: 'private' },
+  },
+});
+`;
+
+const CLOUDFLARE_STORAGE_FILE = VERCEL_STORAGE_FILE.replace("provider: 'vercel'", "provider: 'cloudflare'");
+
 const DEPLOY_URL = 'https://app.example.com';
 
 const JS_AUTH_DB = [
@@ -88,9 +176,17 @@ describe('deploy command', () => {
     vi.clearAllMocks();
 
     delete process.env.BETTER_AUTH_SECRET;
+    delete process.env.VERCEL_TOKEN;
 
     tmp = createTempDir();
     capturedEnv = [];
+
+    vercelStorage.stores = [];
+    vercelStorage.events = [];
+
+    cloudflareStorage.buckets = [];
+    cloudflareStorage.tokens = [];
+    cloudflareStorage.events = [];
 
     linkTypebaseIo(tmp);
     linkBetterAuth(tmp);
@@ -177,6 +273,197 @@ describe('deploy command', () => {
       for (const [other, fn] of Object.entries(deployFns)) {
         if (other !== provider) expect(fn).not.toHaveBeenCalled();
       }
+    });
+  });
+
+  it('builds and deploys a server that creates the declared storage and injects it into every action', async () => {
+    await setupProject({ withAuth: false, withDb: false });
+
+    tmp.write(
+      'typebase/storage.ts',
+      'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({\n  provider: "filesystem",\n  buckets: { avatars: {} },\n});\n'
+    );
+
+    await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+    expectProject(tmp, 'vercel-storage', [...JS_BARE, 'src/storage.js'], { namespace: 'deploy', root: 'captured' });
+    expect(vercel).toHaveBeenCalledOnce();
+  });
+
+  describe('storage', () => {
+    const TOKENS = JSON.stringify({ avatars: 'vercel_blob_rw_store_app-avatars-dev', documents: 'vercel_blob_rw_store_app-documents-dev' });
+
+    const writeVercelStorage = () => {
+      tmp.write('typebase.json', `${JSON.stringify({ storage: { project: 'app', vercel: { orgId: 'team_acme' } } }, null, 2)}\n`);
+      tmp.write('.env', 'VERCEL_TOKEN=cli-token\n');
+      tmp.write('typebase/storage.ts', VERCEL_STORAGE_FILE);
+    };
+
+    const succeeded = () =>
+      vi
+        .mocked(ora())
+        .succeed.mock.calls.flat()
+        .map((line) => String(line));
+
+    it("creates the target's buckets before the upload and builds a server that reads their tokens", async () => {
+      await setupProject({ withAuth: false, withDb: false });
+      writeVercelStorage();
+
+      vi.mocked(vercel).mockImplementationOnce(({ serverDirPath, env }) => {
+        vercelStorage.events.push('upload');
+        capturedEnv = env;
+
+        fs.cpSync(serverDirPath, path.join(tmp.path, 'captured'), { recursive: true });
+
+        return Promise.resolve({ deploymentId: 'dep_123', url: DEPLOY_URL });
+      });
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(vercelStorage.events).toEqual(['create app-avatars-dev public', 'create app-documents-dev private', 'upload']);
+      expect(vercelStorage.stores.map(({ name }) => name)).toEqual(['app-avatars-dev', 'app-documents-dev']);
+      expect(tmp.read('.env')).toEqualTemplate('deploy-storage', 'env-dev.txt');
+      expectProject(tmp, 'vercel-blob-storage', [...JS_BARE, 'src/env.js', 'src/storage.js'], { namespace: 'deploy', root: 'captured' });
+    });
+
+    it.each([
+      { provider: 'vercel', deployFn: vercel, readEnv: getVercelEnvVar },
+      { provider: 'deno', deployFn: deno, readEnv: getDenoEnvVar },
+      { provider: 'cloudflare', deployFn: cloudflare, readEnv: getCloudflareEnvVar },
+    ] as const)('sets the storage keys on a $provider server and reports them', async ({ provider, deployFn, readEnv }) => {
+      await setupProject({ withAuth: false, withDb: false });
+      writeVercelStorage();
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', provider], { from: 'user' }));
+
+      expect(deployFn).toHaveBeenCalledOnce();
+      expect(readEnv).toHaveBeenCalledWith({ key: 'TYPEBASE_STORAGE_VERCEL_TOKENS', target: 'dev' });
+      expect(capturedEnv).toEqual([{ key: 'TYPEBASE_STORAGE_VERCEL_TOKENS', value: TOKENS, secret: true }]);
+      expect(succeeded()).toContain(`TYPEBASE_STORAGE_VERCEL_TOKENS set on ${provider}.`);
+    });
+
+    it('does not report the storage keys when the provider already has them', async () => {
+      vi.mocked(getVercelEnvVar).mockResolvedValue(TOKENS);
+
+      await setupProject({ withAuth: false, withDb: false });
+      writeVercelStorage();
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(capturedEnv).toEqual([{ key: 'TYPEBASE_STORAGE_VERCEL_TOKENS', value: TOKENS, secret: true }]);
+      expect(succeeded().filter((line) => line.startsWith('TYPEBASE_STORAGE_VERCEL_TOKENS set'))).toEqual([]);
+    });
+
+    it("syncs only the deploy target's buckets", async () => {
+      await setupProject({ withAuth: false, withDb: false });
+      writeVercelStorage();
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['prod', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(vercelStorage.stores.map(({ name }) => name)).toEqual(['app-avatars-prod', 'app-documents-prod']);
+      expect(getVercelEnvVar).toHaveBeenCalledWith({ key: 'TYPEBASE_STORAGE_VERCEL_TOKENS', target: 'prod' });
+    });
+
+    it('stops before anything is uploaded when an existing bucket has a different access', async () => {
+      vercelStorage.stores = [{ id: 'store_existing', name: 'app-avatars-dev', access: 'private' }];
+
+      await setupProject({ withAuth: false, withDb: true });
+      writeVercelStorage();
+
+      await expect(withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }))).rejects.toThrow(
+        'The bucket `avatars` is declared public, but `app-avatars-dev` already exists on vercel as private.'
+      );
+
+      expect(vercelStorage.events).toEqual([]);
+      expect(neon).not.toHaveBeenCalled();
+      expect(vercel).not.toHaveBeenCalled();
+    });
+
+    describe('with the cloudflare provider', () => {
+      const R2_ENV = [
+        { key: 'TYPEBASE_STORAGE_R2_ACCOUNT_ID', value: 'acc_acme', secret: true },
+        { key: 'TYPEBASE_STORAGE_R2_ACCESS_KEY_ID', value: 'tok_1', secret: true },
+        { key: 'TYPEBASE_STORAGE_R2_SECRET_ACCESS_KEY', value: createHash('sha256').update('token-value-1').digest('hex'), secret: true },
+        { key: 'TYPEBASE_STORAGE_R2_BUCKETS', value: '{"avatars":"app-avatars-dev","documents":"app-documents-dev"}', secret: true },
+        { key: 'TYPEBASE_STORAGE_R2_PUBLIC_URL_AVATARS', value: 'https://pub-app-avatars-dev.r2.dev', secret: true },
+      ];
+
+      const writeCloudflareStorage = () => {
+        delete process.env.CLOUDFLARE_API_TOKEN;
+
+        tmp.write('typebase.json', `${JSON.stringify({ storage: { project: 'app', cloudflare: { accountId: 'acc_acme' } } }, null, 2)}\n`);
+        tmp.write('.env', 'CLOUDFLARE_API_TOKEN=cf-token\n');
+        tmp.write('typebase/storage.ts', CLOUDFLARE_STORAGE_FILE);
+      };
+
+      it("creates the target's R2 buckets before the upload and builds a server that reads the R2 keys", async () => {
+        await setupProject({ withAuth: false, withDb: false });
+        writeCloudflareStorage();
+
+        vi.mocked(vercel).mockImplementationOnce(({ serverDirPath, env }) => {
+          cloudflareStorage.events.push('upload');
+          capturedEnv = env;
+
+          fs.cpSync(serverDirPath, path.join(tmp.path, 'captured'), { recursive: true });
+
+          return Promise.resolve({ deploymentId: 'dep_123', url: DEPLOY_URL });
+        });
+
+        await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+        expect(cloudflareStorage.events).toEqual([
+          'create app-avatars-dev',
+          'enable r2.dev app-avatars-dev',
+          'create app-documents-dev',
+          'mint tok_1',
+          'upload',
+        ]);
+        expectProject(tmp, 'cloudflare-r2-storage', [...JS_BARE, 'src/env.js', 'src/storage.js'], { namespace: 'deploy', root: 'captured' });
+      });
+
+      it.each([
+        { provider: 'vercel', deployFn: vercel, readEnv: getVercelEnvVar },
+        { provider: 'deno', deployFn: deno, readEnv: getDenoEnvVar },
+        { provider: 'cloudflare', deployFn: cloudflare, readEnv: getCloudflareEnvVar },
+      ] as const)('sets the R2 keys and public base URLs on a $provider server and reports them', async ({ provider, deployFn, readEnv }) => {
+        await setupProject({ withAuth: false, withDb: false });
+        writeCloudflareStorage();
+
+        await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', provider], { from: 'user' }));
+
+        expect(deployFn).toHaveBeenCalledOnce();
+        expect(capturedEnv).toEqual(R2_ENV);
+
+        for (const { key } of R2_ENV) {
+          expect(readEnv).toHaveBeenCalledWith({ key, target: 'dev' });
+          expect(succeeded()).toContain(`${key} set on ${provider}.`);
+        }
+      });
+    });
+
+    it('creates no buckets with the filesystem provider, says so, and still deploys', async () => {
+      await setupProject({ withAuth: false, withDb: false });
+
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });\n'
+      );
+
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(console.log).toHaveBeenCalledWith('The filesystem storage provider keeps files on disk, so there are no buckets to create for dev.');
+      expect(VercelClient).not.toHaveBeenCalled();
+      expect(capturedEnv).toEqual([]);
+      expect(vercel).toHaveBeenCalledOnce();
+    });
+
+    it('touches no storage provider when the project has no storage file', async () => {
+      await setupProject({ withAuth: false, withDb: true });
+      await withCwd(tmp.path, () => deploy.parseAsync(['dev', '--provider', 'vercel'], { from: 'user' }));
+
+      expect(VercelClient).not.toHaveBeenCalled();
+      expect(getVercelEnvVar).not.toHaveBeenCalledWith({ key: 'TYPEBASE_STORAGE_VERCEL_TOKENS', target: 'dev' });
+      expect(capturedEnv).toEqual([{ key: 'DATABASE_URL', value: CONNECTION_URI, secret: true }]);
     });
   });
 

@@ -85,6 +85,14 @@
             "x-current-value": "/api/auth",
             "x-is-default": true
           },
+          "storagePath": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Storage path",
+            "description": "The path an embedded server serves local storage files at, when generated with `--local-storage`.",
+            "x-current-value": "/storage",
+            "x-is-default": true
+          },
           "port": {
             "type": "integer",
             "exclusiveMinimum": 0,
@@ -220,6 +228,54 @@
         ],
         "title": "Neon",
         "description": "Neon database configuration."
+      },
+      "storage": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "title": "Project",
+            "description": "The project part of every bucket name, frozen by the first bucket sync.",
+            "x-current-value": null,
+            "x-is-default": true
+          },
+          "vercel": {
+            "type": "object",
+            "properties": {
+              "orgId": {
+                "type": "string",
+                "title": "Organization ID",
+                "description": "The Vercel team that holds the Blob stores.",
+                "x-current-value": null,
+                "x-is-default": true
+              }
+            },
+            "required": [
+              "orgId"
+            ],
+            "title": "Vercel",
+            "description": "Vercel storage account."
+          },
+          "cloudflare": {
+            "type": "object",
+            "properties": {
+              "accountId": {
+                "type": "string",
+                "title": "Account ID",
+                "description": "The Cloudflare account that holds the R2 buckets.",
+                "x-current-value": null,
+                "x-is-default": true
+              }
+            },
+            "required": [
+              "accountId"
+            ],
+            "title": "Cloudflare",
+            "description": "Cloudflare storage account."
+          }
+        },
+        "title": "Storage",
+        "description": "Storage configuration."
       }
     }
   }

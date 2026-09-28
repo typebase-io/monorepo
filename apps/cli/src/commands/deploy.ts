@@ -30,11 +30,13 @@ import { generatePackageJson } from '#helpers/generate-server/generate-package-j
 import { generatePackageManagerConfig } from '#helpers/generate-server/generate-package-manager-config.ts';
 import { generatePublisherFile } from '#helpers/generate-server/generate-publisher-file.ts';
 import { generateServerFiles } from '#helpers/generate-server/generate-server-files.ts';
+import { generateStorageFile } from '#helpers/generate-server/generate-storage-file.ts';
 import { transpileTsToJs } from '#helpers/generate-server/transpile-ts-to-js.ts';
 import { streamLogs } from '#helpers/logs/stream-logs.ts';
 import { generateDBTypes } from '#helpers/shared/generate-db-types.ts';
 import { generateServerTypes } from '#helpers/shared/generate-server-types.ts';
 import { generateTsConfig } from '#helpers/shared/generate-ts-config.ts';
+import { getStorageEnvKeys } from '#helpers/shared/get-storage-env-keys.ts';
 import { getTrustedOriginsFromAuth } from '#helpers/shared/get-trusted-origins-from-auth.ts';
 import { getTypebaseConfig } from '#helpers/shared/get-typebase-config.ts';
 import { hasMigrations } from '#helpers/shared/has-migrations.ts';
@@ -42,6 +44,7 @@ import { resolveProjectShapeOrThrow } from '#helpers/shared/resolve-project-shap
 import { validateTypes } from '#helpers/shared/validate-types.ts';
 import { writeEnvFile } from '#helpers/shared/write-env-file.ts';
 import { writeTypebaseConfig } from '#helpers/shared/write-typebase-config.ts';
+import { syncBuckets } from '#helpers/storage/sync-buckets.ts';
 
 export const deploy = new Command('deploy')
   .summary('Deploy your server')
@@ -95,6 +98,7 @@ export const deploy = new Command('deploy')
     const authFilePath = path.join(typebaseDirPath, 'auth.ts');
     const envFilePath = path.join(typebaseDirPath, 'env.ts');
     const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
+    const storageFilePath = path.join(typebaseDirPath, 'storage.ts');
     const dbDirPath = path.join(typebaseDirPath, 'db');
     const migrationsDirPath = path.join(dbDirPath, 'migrations');
 
@@ -113,11 +117,16 @@ export const deploy = new Command('deploy')
       hasDB: includeDBFiles,
       hasAuth: includeAuthFile,
       hasPublisher: includePublisherFile,
-      needsEnvModule: includeEnvFile,
-    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath });
+      hasStorage: includeStorageFile,
+      needsEnvModule,
+    } = resolveProjectShapeOrThrow({ schemaFilePath, authFilePath, envFilePath, publisherFilePath, storageFilePath });
+
+    const storageEnvKeys = getStorageEnvKeys({ provider: includeStorageFile, localStorage: undefined, storageFilePath });
+    const includeEnvFile = needsEnvModule || storageEnvKeys.length > 0;
 
     const useMigrations = includeDBFiles && hasMigrations(migrationsDirPath);
     const env: { key: string; value: string; secret: boolean }[] = [];
+    const newStorageKeys: string[] = [];
 
     let hadDatabaseUrl = false;
     let hadAuthSecret = false;
@@ -126,7 +135,16 @@ export const deploy = new Command('deploy')
 
     await Promise.all([
       generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-      generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
+      generateServerTypes({
+        tsConfigFilePath,
+        schemaFilePath,
+        authFilePath,
+        envFilePath,
+        publisherFilePath,
+        storageFilePath,
+        actionsDirPath,
+        generatedDirPath,
+      }),
     ]);
 
     codegenSpinner.succeed('Types generated!');
@@ -149,6 +167,8 @@ export const deploy = new Command('deploy')
       }
     }
 
+    const { env: storageEnv } = includeStorageFile ? await syncBuckets({ target, storageFilePath }) : { env: [] };
+
     const spinner = ora('Generating server files...').start();
 
     try {
@@ -164,6 +184,7 @@ export const deploy = new Command('deploy')
         configuredOutDir: server.outDir,
         hasAuth: includeAuthFile,
         hasEnv: includeEnvFile,
+        hasStorage: includeStorageFile !== false,
       });
 
       const generatedFile = await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
@@ -175,6 +196,7 @@ export const deploy = new Command('deploy')
           adapter,
           hasDB: includeDBFiles,
           hasAuth: includeAuthFile,
+          storageEnvKeys,
           useTs: false,
           target,
         });
@@ -189,12 +211,24 @@ export const deploy = new Command('deploy')
         });
       }
 
+      if (includeStorageFile) {
+        await generateStorageFile({
+          storageFilePath,
+          storageOutputDirPath: srcOutputDirPath,
+          provider: includeStorageFile,
+          useTs: false,
+        });
+      }
+
       await generateAction({
         serverOutputDirPath,
-        hasDB: includeDBFiles,
-        hasAuth: includeAuthFile,
-        hasEnv: includeEnvFile,
-        hasPublisher: includePublisherFile !== false,
+        features: {
+          db: includeDBFiles,
+          auth: includeAuthFile,
+          env: includeEnvFile,
+          publisher: includePublisherFile !== false,
+          storage: includeStorageFile !== false,
+        },
       });
 
       await generateActionsFiles({ actionsDirPath, actionsOutputDirPath, useTs: false });
@@ -283,6 +317,20 @@ export const deploy = new Command('deploy')
         }
       }
 
+      for (const { key, value } of storageEnv) {
+        const existing = await match(provider)
+          .with('vercel', () => getVercelEnvVar({ key, target }))
+          .with('deno', () => getDenoEnvVar({ key, target }))
+          .with('cloudflare', () => getCloudflareEnvVar({ key, target }))
+          .exhaustive();
+
+        if (existing !== value) {
+          newStorageKeys.push(key);
+        }
+
+        env.push({ key, value, secret: true });
+      }
+
       const { deploymentId, url } = await match(provider)
         .with('vercel', () => vercel({ serverDirPath: serverDistDirPath, target, env }))
         .with('deno', () => deno({ serverDirPath: serverDistDirPath, target, env }))
@@ -295,6 +343,10 @@ export const deploy = new Command('deploy')
 
       if (includeAuthFile && !hadAuthSecret) {
         ora().succeed(`BETTER_AUTH_SECRET set on ${provider}.`);
+      }
+
+      for (const key of newStorageKeys) {
+        ora().succeed(`${key} set on ${provider}.`);
       }
 
       await writeEnvFile(target === 'prod' ? 'TYPEBASE_APP_URL' : 'TYPEBASE_APP_URL_DEV', url);

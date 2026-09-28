@@ -13,6 +13,7 @@ import { generateServer } from '#commands/generate-server.ts';
 import { init } from '#commands/init.ts';
 import { logs } from '#commands/logs.ts';
 import { start } from '#commands/start.ts';
+import { storage } from '#commands/storage.ts';
 
 import { getCliVersion } from '#helpers/shared/get-cli-version.ts';
 import { isTypebaseIoInstalled } from '#helpers/shared/is-typebase-io-installed.ts';
@@ -50,6 +51,7 @@ const main = async () => {
     .addCommand(auth)
     .addCommand(db)
     .addCommand(deploy)
+    .addCommand(storage)
     .addCommand(logs)
     .addCommand(env)
     .addCommand(config);

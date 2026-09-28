@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -125,6 +126,28 @@ describe('deploy', () => {
     expect(bundle).toContain('node:fs');
     expect(bundle).toContain('import mod from "node:os"');
     expect(bundle).toContain('cloudflare:workers');
+  });
+
+  it('bundles a worker that keeps its files in R2, leaving out the S3 SDK its fetch client never loads', async () => {
+    fs.mkdirSync(path.join(serverDirPath, 'node_modules'), { recursive: true });
+    fs.symlinkSync(
+      fs.realpathSync(path.resolve(import.meta.dirname, '../../../../../../core/node_modules/files-sdk')),
+      path.join(serverDirPath, 'node_modules/files-sdk'),
+      'dir'
+    );
+    tmp.write(
+      'server/src/index.js',
+      'import { r2 } from "files-sdk/r2";\n\nexport default { fetch: () => new Response("R2_MARKER " + typeof r2) };\n'
+    );
+
+    const { getForm } = captureUpload({ ok: true, json: { result: { etag: 'etag-1' } } });
+
+    await deploy({ token: 'cf-token', accountId: 'acc-1', workerName: 'my-worker', serverDirPath, env: [] });
+
+    const bundle = await readBundle(getForm());
+
+    expect(bundle).toContain('R2_MARKER');
+    expect(bundle).toContain('import("@aws-sdk/client-s3")');
   });
 
   it('omits the bindings field when there are no env vars', async () => {

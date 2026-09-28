@@ -104,4 +104,10 @@ describe('generateServerFiles', () => {
 
     expectOutcome('node-no-env');
   });
+
+  it('mounts the local storage route at the storage path it is given', async () => {
+    await run({ adapter: 'node', storagePath: '/storage' });
+
+    expectOutcome('node-local-storage');
+  });
 });

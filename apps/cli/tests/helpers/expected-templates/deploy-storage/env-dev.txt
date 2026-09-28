@@ -1,0 +1,3 @@
+VERCEL_TOKEN=cli-token
+TYPEBASE_STORAGE_VERCEL_TOKENS_DEV={"avatars":"vercel_blob_rw_store_app-avatars-dev","documents":"vercel_blob_rw_store_app-documents-dev"}
+TYPEBASE_APP_URL_DEV=https://app.example.com

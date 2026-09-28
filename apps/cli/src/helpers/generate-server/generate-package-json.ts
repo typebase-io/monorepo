@@ -16,6 +16,7 @@ export const generatePackageJson = async ({
   configuredOutDir,
   hasAuth,
   hasEnv,
+  hasStorage,
 }: {
   adapter: ServerAdapter;
   mode: ServerMode;
@@ -26,6 +27,7 @@ export const generatePackageJson = async ({
   configuredOutDir: string;
   hasAuth: boolean;
   hasEnv: boolean;
+  hasStorage: boolean;
 }) => {
   const defaultSkipDirs = new Set(['node_modules', 'dist', 'build', outDir, configuredOutDir]);
   const userDependencies = await getPackageDeps({ sourceDirPath: typebaseDirPath, skipDirs: (name) => defaultSkipDirs.has(name) });
@@ -75,6 +77,10 @@ export const generatePackageJson = async ({
     if (adapter !== 'cloudflare' && mode === 'standalone') {
       dependencies[DEPS.dotenv.name] = DEPS.dotenv.version;
     }
+  }
+
+  if (hasStorage) {
+    dependencies[DEPS['files-sdk'].name] = DEPS['files-sdk'].version;
   }
 
   if (generation === 'ts') {

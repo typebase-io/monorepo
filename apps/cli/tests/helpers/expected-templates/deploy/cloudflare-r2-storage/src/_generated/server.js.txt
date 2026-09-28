@@ -1,0 +1,17 @@
+import { os } from "@orpc/server";
+import { Action } from "typebase-io/server";
+import { env } from "../env.js";
+import { storage } from "../storage.js";
+const base = os.$context();
+const providerMiddleware = base
+    .$context()
+    .middleware(async ({ context, next }) => {
+    return next({
+        context: {
+            env: context.env ?? env,
+            storage: context.storage ?? storage,
+        },
+    });
+});
+const withProviders = base.use(providerMiddleware);
+export const action = new Action(withProviders);

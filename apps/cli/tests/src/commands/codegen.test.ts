@@ -87,6 +87,17 @@ describe('codegen command', () => {
     expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-publisher-server.ts.txt');
   });
 
+  it('declares the storage in the types when the project has storage', async () => {
+    tmp.write(
+      'typebase/storage.ts',
+      'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });\n'
+    );
+
+    await withCwd(tmp.path, () => codegen.parseAsync([], { from: 'user' }));
+
+    expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-storage-server.ts.txt');
+  });
+
   it('refuses a publisher whose schema has no events table, and writes nothing', async () => {
     await generateExamplePublisher(path.join(tmp.path, 'typebase', 'publisher.ts'));
 

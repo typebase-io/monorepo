@@ -864,6 +864,17 @@ export const todos = p.pgTable("todos", {
       expect(tmp.exists('typebase/_generated/server.ts')).toBe(true);
     });
 
+    it('keeps the storage in the types it regenerates', async () => {
+      tmp.write(
+        'typebase/storage.ts',
+        'import { defineStorage } from "typebase-io/server";\n\nexport const storage = defineStorage({ provider: "filesystem", buckets: { avatars: {} } });\n'
+      );
+
+      await withCwd(tmp.path, () => db.parseAsync(['pull', '--url', 'postgres://source/db', '--force'], { from: 'user' }));
+
+      expect(tmp.read('typebase/_generated/server.ts')).toEqualTemplate('codegen', 'with-storage-server.ts.txt');
+    });
+
     it('explains what was written and what to run next', async () => {
       await withCwd(tmp.path, () => db.parseAsync(['pull', '--url', 'postgres://source/db', '--force'], { from: 'user' }));
 

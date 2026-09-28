@@ -1,0 +1,10 @@
+import { createStorage } from "typebase-io/server";
+import { env } from "./env.ts";
+
+export const storage = createStorage({
+  provider: "vercel",
+  buckets: {
+    avatars: { access: "public" },
+    documents: { access: "private", prefix: "docs" },
+  },
+}, { tokens: env.TYPEBASE_STORAGE_VERCEL_TOKENS });

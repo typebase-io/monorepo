@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
+  "deno": {
+    "org": "org_1",
+    "projectId": "prj_1",
+    "slug": "deno-slug"
+  },
+  "storage": {
+    "project": "deno-slug",
+    "vercel": {
+      "orgId": "team_acme"
+    }
+  }
+}

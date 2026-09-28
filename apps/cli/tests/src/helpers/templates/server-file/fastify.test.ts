@@ -61,4 +61,20 @@ describe('fastifyServerFileTemplate', () => {
       'embedded-dynamic-auth.txt'
     );
   });
+
+  it('mounts the local storage route at the storage path', () => {
+    expect(fastifyServerFileTemplate({ ...OPTIONS, hasAuth: false, mode: 'embedded', storagePath: '/files/' })).toEqualTemplate(
+      'server-file',
+      'fastify',
+      'local-storage.txt'
+    );
+  });
+
+  it('mounts the local storage route after auth', () => {
+    expect(fastifyServerFileTemplate({ ...OPTIONS, hasAuth: true, mode: 'embedded', storagePath: '/files' })).toEqualTemplate(
+      'server-file',
+      'fastify',
+      'auth-local-storage.txt'
+    );
+  });
 });

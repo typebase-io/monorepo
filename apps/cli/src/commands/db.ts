@@ -382,6 +382,7 @@ const createPullCommand = () =>
       const authFilePath = path.join(typebaseDirPath, 'auth.ts');
       const envFilePath = path.join(typebaseDirPath, 'env.ts');
       const publisherFilePath = path.join(typebaseDirPath, 'publisher.ts');
+      const storageFilePath = path.join(typebaseDirPath, 'storage.ts');
       const dbDirPath = path.join(typebaseDirPath, 'db');
       const migrationsDirPath = path.join(dbDirPath, 'migrations');
       const schemaFilePath = path.join(dbDirPath, 'schema.ts');
@@ -462,7 +463,16 @@ const createPullCommand = () =>
 
       await Promise.all([
         generateDBTypes({ schemaFilePath, authFilePath, outFilePath: dbTypesOutputPath }),
-        generateServerTypes({ tsConfigFilePath, schemaFilePath, authFilePath, envFilePath, publisherFilePath, actionsDirPath, generatedDirPath }),
+        generateServerTypes({
+          tsConfigFilePath,
+          schemaFilePath,
+          authFilePath,
+          envFilePath,
+          publisherFilePath,
+          storageFilePath,
+          actionsDirPath,
+          generatedDirPath,
+        }),
       ]);
 
       typesSpinner.succeed('Types generated!');

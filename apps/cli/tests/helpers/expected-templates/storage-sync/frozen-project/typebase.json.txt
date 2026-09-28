@@ -1,0 +1,8 @@
+{
+  "storage": {
+    "project": "frozen",
+    "vercel": {
+      "orgId": "team_beta"
+    }
+  }
+}

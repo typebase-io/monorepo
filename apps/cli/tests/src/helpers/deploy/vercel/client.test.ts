@@ -379,3 +379,161 @@ describe('VercelClient', () => {
     );
   });
 });
+
+const HEADERS = { Authorization: 'Bearer vercel-token', 'Content-Type': 'application/json' };
+
+describe('VercelClient storage', () => {
+  const client = new VercelClient({ token: 'vercel-token', orgId: 'team-1' });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('lists the teams the token can reach, following pagination', async () => {
+    const { calls } = mockFetch((url) =>
+      url.includes('until=')
+        ? { json: { teams: [{ id: 'team-2', name: 'Beta', slug: 'beta' }], pagination: { next: null } } }
+        : { json: { teams: [{ id: 'team-1', name: 'Acme', slug: 'acme' }], pagination: { next: 1700 } } }
+    );
+
+    await expect(client.listTeams()).resolves.toEqual([
+      { id: 'team-1', name: 'Acme', slug: 'acme' },
+      { id: 'team-2', name: 'Beta', slug: 'beta' },
+    ]);
+
+    expect(calls.map(({ url, method, headers }) => ({ url, method, headers }))).toEqual([
+      { url: 'https://api.vercel.com/v2/teams?limit=100', method: 'GET', headers: HEADERS },
+      { url: 'https://api.vercel.com/v2/teams?limit=100&until=1700', method: 'GET', headers: HEADERS },
+    ]);
+  });
+
+  it('throws when listing teams fails', async () => {
+    mockFetch(() => ({ ok: false, status: 403, text: 'forbidden' }));
+
+    await expect(client.listTeams()).rejects.toThrow('forbidden');
+  });
+
+  it('lists the blob stores of the team with their access, skipping other kinds of store', async () => {
+    const { calls } = mockFetch(() => ({
+      json: {
+        stores: [
+          { id: 'store_1', name: 'app-avatars-dev', type: 'blob', access: 'public' },
+          { id: 'store_2', name: 'app-documents-dev', type: 'blob', access: 'private' },
+          { id: 'store_3', name: 'legacy-dev', type: 'blob' },
+          { id: 'store_4', name: 'app-config-dev', type: 'edge-config' },
+        ],
+      },
+    }));
+
+    await expect(client.listStores()).resolves.toEqual([
+      { id: 'store_1', name: 'app-avatars-dev', access: 'public' },
+      { id: 'store_2', name: 'app-documents-dev', access: 'private' },
+      { id: 'store_3', name: 'legacy-dev', access: 'public' },
+    ]);
+
+    expect(calls).toEqual([
+      { url: 'https://api.vercel.com/v1/storage/stores?teamId=team-1', method: 'GET', headers: HEADERS, body: undefined, rawBody: undefined },
+    ]);
+  });
+
+  it('follows pagination when listing stores', async () => {
+    const { calls } = mockFetch((url) =>
+      url.includes('until=')
+        ? { json: { stores: [{ id: 'store_2', name: 'app-documents-dev', type: 'blob', access: 'private' }], pagination: { next: null } } }
+        : { json: { stores: [{ id: 'store_1', name: 'app-avatars-dev', type: 'blob', access: 'public' }], pagination: { next: 1700 } } }
+    );
+
+    await expect(client.listStores()).resolves.toEqual([
+      { id: 'store_1', name: 'app-avatars-dev', access: 'public' },
+      { id: 'store_2', name: 'app-documents-dev', access: 'private' },
+    ]);
+
+    expect(calls.map(({ url }) => url)).toEqual([
+      'https://api.vercel.com/v1/storage/stores?teamId=team-1',
+      'https://api.vercel.com/v1/storage/stores?teamId=team-1&until=1700',
+    ]);
+  });
+
+  it('lists the stores of the personal account without a team', async () => {
+    const { calls } = mockFetch(() => ({ json: { stores: [{ id: 'store_1', name: 'app-avatars-dev', type: 'blob', access: 'public' }] } }));
+
+    await expect(new VercelClient({ token: 'vercel-token', orgId: undefined }).listStores()).resolves.toEqual([
+      { id: 'store_1', name: 'app-avatars-dev', access: 'public' },
+    ]);
+
+    expect(calls.map(({ url }) => url)).toEqual(['https://api.vercel.com/v1/storage/stores']);
+  });
+
+  it('throws when listing stores fails', async () => {
+    mockFetch(() => ({ ok: false, status: 500, text: 'stores unavailable' }));
+
+    await expect(client.listStores()).rejects.toThrow('stores unavailable');
+  });
+
+  it('creates a blob store with its access and region', async () => {
+    const { calls } = mockFetch(() => ({ json: { store: { id: 'store_9', name: 'app-avatars-dev', access: 'public', region: 'fra1' } } }));
+
+    await expect(client.createStore({ name: 'app-avatars-dev', access: 'public', region: 'fra1' })).resolves.toEqual({
+      id: 'store_9',
+      name: 'app-avatars-dev',
+      access: 'public',
+    });
+
+    expect(calls).toEqual([
+      {
+        url: 'https://api.vercel.com/v1/storage/stores/blob?teamId=team-1',
+        method: 'POST',
+        headers: HEADERS,
+        body: JSON.stringify({ name: 'app-avatars-dev', access: 'public', region: 'fra1' }),
+        rawBody: JSON.stringify({ name: 'app-avatars-dev', access: 'public', region: 'fra1' }),
+      },
+    ]);
+  });
+
+  it('creates a blob store without a region when none is declared', async () => {
+    const { calls } = mockFetch(() => ({ json: { store: { id: 'store_9', name: 'app-documents-dev', access: 'private' } } }));
+
+    await client.createStore({ name: 'app-documents-dev', access: 'private', region: undefined });
+
+    expect(calls[0]?.body).toBe(JSON.stringify({ name: 'app-documents-dev', access: 'private' }));
+  });
+
+  it('keeps the requested name and access when the created store does not echo them', async () => {
+    mockFetch(() => ({ json: { store: { id: 'store_9' } } }));
+
+    await expect(client.createStore({ name: 'app-documents-dev', access: 'private', region: undefined })).resolves.toEqual({
+      id: 'store_9',
+      name: 'app-documents-dev',
+      access: 'private',
+    });
+  });
+
+  it('throws when creating a store fails', async () => {
+    mockFetch(() => ({ ok: false, status: 409, text: 'store name taken' }));
+
+    await expect(client.createStore({ name: 'app-avatars-dev', access: 'public', region: undefined })).rejects.toThrow('store name taken');
+  });
+
+  it('fetches the read/write token of a store', async () => {
+    const { calls } = mockFetch(() => ({ json: { rwToken: 'vercel_blob_rw_abc' } }));
+
+    await expect(client.getStoreToken({ id: 'store_1' })).resolves.toBe('vercel_blob_rw_abc');
+
+    expect(calls).toEqual([
+      {
+        url: 'https://api.vercel.com/v1/storage/stores/store_1/secrets?teamId=team-1',
+        method: 'GET',
+        headers: HEADERS,
+        body: undefined,
+        rawBody: undefined,
+      },
+    ]);
+  });
+
+  it('throws when fetching a store token fails', async () => {
+    mockFetch(() => ({ ok: false, status: 404, text: 'store not found' }));
+
+    await expect(client.getStoreToken({ id: 'store_1' })).rejects.toThrow('store not found');
+  });
+});

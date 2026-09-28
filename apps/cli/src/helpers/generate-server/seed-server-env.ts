@@ -18,7 +18,8 @@ export const seedServerEnv = async ({ serverDistDirPath, keys }: { serverDistDir
       return [];
     }
 
-    const value = key === 'DATABASE_URL' ? (projectEnv.DATABASE_URL_DEV ?? projectEnv.DATABASE_URL) : projectEnv[key];
+    const preferDev = key === 'DATABASE_URL' || key.startsWith('TYPEBASE_STORAGE_');
+    const value = preferDev ? (projectEnv[`${key}_DEV`] ?? projectEnv[key]) : projectEnv[key];
 
     return value === undefined ? [] : [{ key, value }];
   });

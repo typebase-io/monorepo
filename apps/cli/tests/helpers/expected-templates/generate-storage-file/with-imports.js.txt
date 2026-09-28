@@ -1,0 +1,8 @@
+import { createStorage } from "typebase-io/server";
+import { contentType } from "files-sdk/content-type";
+import { logUploads } from "./hooks.js";
+
+export const storage = createStorage({
+  provider: "filesystem",
+  buckets: { documents: { plugins: [contentType()], hooks: logUploads } },
+}, {});

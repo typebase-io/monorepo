@@ -1,0 +1,9 @@
+export const exampleStorageTemplate = `import { defineStorage } from "typebase-io/server";
+
+export const storage = defineStorage({
+  provider: "vercel",
+  buckets: {
+    avatars: { access: "public" },
+    documents: { access: "private" },
+  },
+});`;
