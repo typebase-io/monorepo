@@ -5,6 +5,8 @@ import { p } from '#db/drizzle.ts';
 
 import { type AnySchema, type DB } from '#server/actions/types.ts';
 import { ServerError } from '#server/error/index.ts';
+import { deserializeEventValue } from '#server/publisher/providers/deserialize-event-value.ts';
+import { serializeEventValue } from '#server/publisher/providers/serialize-event-value.ts';
 import { Publisher, type SubscribeOptions } from '#server/publisher/publisher.ts';
 
 export const eventsTable = p.pgTable(
@@ -65,7 +67,7 @@ export class DatabasePublisher<TEvents extends object> extends Publisher<TEvents
   }
 
   async publish<TName extends keyof TEvents & string>(name: TName, value: TEvents[TName], { tx }: { tx?: PublisherDatabase } = {}) {
-    await (tx ?? this.#db).insert(eventsTable).values({ name, value: await this.#validate(name, value) });
+    await (tx ?? this.#db).insert(eventsTable).values({ name, value: serializeEventValue(name, await this.#validate(name, value)) });
   }
 
   async #validate(name: string, value: unknown): Promise<unknown> {
@@ -163,7 +165,7 @@ export class DatabasePublisher<TEvents extends object> extends Publisher<TEvents
         subscriber.cursor = row.id;
 
         if (row.name === subscriber.name) {
-          subscriber.queue.push({ id: row.id, value: row.value });
+          subscriber.queue.push({ id: row.id, value: deserializeEventValue(row.value) });
         }
       }
 

@@ -9,6 +9,8 @@ import { fakePublisherDatabase } from '#tests/helpers/fake-publisher-database.ts
 interface Events {
   'post.created': { id: number };
   'post.removed': { id: number };
+  'post.edited': { id: number; editedAt: Date; views: bigint; tags: Set<string>; link: URL; note?: string };
+  'post.attached': { id: number; file: Blob };
 }
 
 const createPublisher = (options: { maxBufferedEvents?: number } = {}) => {
@@ -46,7 +48,7 @@ describe('DatabasePublisher', () => {
 
     await publisher.publish('post.created', { id: 1 }, { tx: transaction.db });
 
-    expect(transaction.rows).toEqual([{ id: 1, name: 'post.created', value: { id: 1 } }]);
+    expect(transaction.rows).toEqual([{ id: 1, name: 'post.created', value: { '~typebase': 1, json: { id: 1 }, meta: [] } }]);
     expect(database.rows).toEqual([]);
   });
 
@@ -56,7 +58,54 @@ describe('DatabasePublisher', () => {
 
     await publisher.publish('post.created', { id: 1 });
 
-    expect(database.rows).toEqual([{ id: 1, name: 'post.created', value: { id: 1 } }]);
+    expect(database.rows).toEqual([{ id: 1, name: 'post.created', value: { '~typebase': 1, json: { id: 1 }, meta: [] } }]);
+  });
+
+  it('delivers dates, bigints, sets and URLs as they were published, not as JSON strings', async () => {
+    const { publisher } = createPublisher();
+    const iterator = await publisher.subscribe('post.edited');
+
+    const received = take(iterator, 1);
+
+    await publisher.publish('post.edited', {
+      id: 1,
+      editedAt: new Date('2026-09-30T10:00:00.000Z'),
+      views: 10n,
+      tags: new Set(['news']),
+      link: new URL('https://typebase.io/posts/1'),
+      note: undefined,
+    });
+
+    const [event] = await received;
+
+    expect(event).toEqual({
+      id: 1,
+      editedAt: new Date('2026-09-30T10:00:00.000Z'),
+      views: 10n,
+      tags: new Set(['news']),
+      link: new URL('https://typebase.io/posts/1'),
+    });
+    expect(event?.editedAt).toBeInstanceOf(Date);
+  });
+
+  it('still delivers events written before payloads were serialized', async () => {
+    const { publisher, database } = createPublisher();
+
+    database.rows.push({ id: 1, name: 'post.created', value: { id: 1 } });
+    database.rows.push({ id: 2, name: 'post.created', value: { id: 2 } });
+
+    const received = await take(await publisher.subscribe('post.created', { lastEventId: '0' }), 2);
+
+    expect(received).toEqual([{ id: 1 }, { id: 2 }]);
+  });
+
+  it('refuses a payload holding a file, which the events table cannot store', async () => {
+    const { publisher, database } = createPublisher();
+
+    await expect(publisher.publish('post.attached', { id: 1, file: new Blob(['hello']) })).rejects.toThrow(
+      'The payload published as `post.attached` holds a Blob or File, which the events table cannot store. Upload it to storage and publish its key instead.'
+    );
+    expect(database.rows).toEqual([]);
   });
 
   it('delivers what is published after a subscriber joins', async () => {

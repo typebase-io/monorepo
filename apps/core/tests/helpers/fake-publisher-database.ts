@@ -40,7 +40,7 @@ export const fakePublisherDatabase = () => {
     },
     insert: () => ({
       values: ({ name, value }: { name: string; value: unknown }) => {
-        rows.push({ id: rows.length + 1, name, value });
+        rows.push({ id: rows.length + 1, name, value: JSON.parse(JSON.stringify(value)) });
 
         return Promise.resolve();
       },

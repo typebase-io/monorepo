@@ -34,7 +34,7 @@ describe('createPublisher', () => {
 
     await publisher.publish('post.created', { id: 1 });
 
-    expect(database.rows).toEqual([{ id: 1, name: 'post.created', value: { id: 1 } }]);
+    expect(database.rows).toEqual([{ id: 1, name: 'post.created', value: { '~typebase': 1, json: { id: 1 }, meta: [] } }]);
   });
 
   it('refuses a payload the event schema rejects', async () => {
@@ -57,7 +57,7 @@ describe('createPublisher', () => {
 
     await publisher.publish('post.created', { id: '7' } as never);
 
-    expect(database.rows[0]?.value).toEqual({ id: 7 });
+    expect(database.rows[0]?.value).toEqual({ '~typebase': 1, json: { id: 7 }, meta: [] });
   });
 
   it('passes an event with no schema through untouched', async () => {
@@ -66,6 +66,6 @@ describe('createPublisher', () => {
 
     await publisher.publish('post.created', { id: 1 });
 
-    expect(database.rows[0]?.value).toEqual({ id: 1 });
+    expect(database.rows[0]?.value).toEqual({ '~typebase': 1, json: { id: 1 }, meta: [] });
   });
 });

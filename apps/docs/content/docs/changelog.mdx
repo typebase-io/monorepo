@@ -18,6 +18,23 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.20 [#v0-1-20]
+
+_2026-09-30._
+
+**Fixed**
+
+- The `db` [publisher](/docs/publisher) delivers events with the types they were published with. A `Date` in a payload used to reach subscribers,
+  and your client, as an ISO string, because events are stored in a `jsonb` column and JSON has no date type; `bigint`, `Set`, `Map`, and `URL`
+  values were flattened the same way. Payloads are now stored with the same serializer oRPC uses to send them to the client, so `createdAt: z.date()`
+  arrives as a `Date`. Events stored before this release are still delivered exactly as they were, so a client resuming across the upgrade misses
+  nothing.
+
+**Changed**
+
+- Publishing a payload that holds a `Blob` or `File` now fails straight away, naming the event, instead of storing an empty object in its place. The
+  events table only holds JSON: upload the file to [storage](/docs/storage) and publish its key.
+
 ## 0.1.19 [#v0-1-19]
 
 _2026-09-28._
