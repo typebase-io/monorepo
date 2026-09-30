@@ -20,20 +20,20 @@ const description =
   'Typebase adds a backend to your existing app. Write your database, server functions, and authentication in TypeScript. Deploy with one command.';
 
 export const metadata: Metadata = {
-  title: 'A backend for your app. A folder of TypeScript. | Typebase',
+  title: 'Like Supabase, but code your AI can read. | Typebase',
   description,
   openGraph: {
     type: 'website',
     siteName: 'Typebase',
     locale: 'en_US',
-    title: 'Typebase: make your backend a folder.',
+    title: 'Typebase: like Supabase, but code your AI can read.',
     description,
     url: '/',
-    images: [{ url: '/og/site', width: 1200, height: 630, alt: 'Typebase: your backend is a folder of TypeScript.' }],
+    images: [{ url: '/og/site', width: 1200, height: 630, alt: 'Typebase: like Supabase, but code your AI can read.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Typebase: make your backend a folder.',
+    title: 'Typebase: like Supabase, but code your AI can read.',
     description,
     images: ['/og/site'],
   },

@@ -4,8 +4,8 @@ export const revalidate = false;
 
 export function GET() {
   return brandedOgImage({
-    title: 'Your backend is',
-    titleAccent: 'a folder of TypeScript',
+    title: 'Like Supabase, but code',
+    titleAccent: 'your AI can read.',
     description: 'A type-safe backend you write as TypeScript files inside your existing app. AI loves code.',
   });
 }

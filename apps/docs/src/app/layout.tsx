@@ -14,13 +14,13 @@ const SITE_URL = 'https://typebase.io';
 const DESCRIPTION =
   'Write actions, a database schema, and auth as TypeScript files in a typebase/ folder inside your app. Your frontend calls them like local functions, end-to-end typed, zero REST boilerplate.';
 
-const DEFAULT_TITLE = 'Typebase: your backend is a folder of TypeScript. AI loves code.';
+const DEFAULT_TITLE = 'Typebase: like Supabase, but code your AI can read.';
 
 const OG_IMAGE = {
   url: '/og/site',
   width: 1200,
   height: 630,
-  alt: 'Typebase: your backend is a folder of TypeScript. AI loves code.',
+  alt: 'Typebase: like Supabase, but code your AI can read.',
 };
 
 export const metadata: Metadata = {
