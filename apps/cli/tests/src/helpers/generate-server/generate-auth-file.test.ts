@@ -166,6 +166,43 @@ export const auth = defineAuth({
     expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'plugins.txt');
   });
 
+  it('imports createAuthMiddleware and AuthError from better-auth/api, so hooks keep working', async () => {
+    const source = `import { AuthError, createAuthMiddleware, defineAuth } from "typebase-io/server";
+
+export const auth = defineAuth({
+  emailAndPassword: { enabled: true },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email") {
+        throw new AuthError("BAD_REQUEST", { message: "Sign-ups are closed" });
+      }
+    }),
+  },
+});`;
+
+    await run(source);
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'auth-api.txt');
+  });
+
+  it('keeps the local names of aliased createAuthMiddleware and AuthError imports', async () => {
+    const source = `import { defineAuth } from "typebase-io/server";
+import { AuthError as Rejection, createAuthMiddleware as hook } from "typebase-io/server";
+
+export const auth = defineAuth({
+  emailAndPassword: { enabled: true },
+  hooks: {
+    before: hook(async () => {
+      throw new Rejection("FORBIDDEN");
+    }),
+  },
+});`;
+
+    await run(source);
+
+    expect(tmp.read('out/auth.ts')).toEqualTemplate('generate-auth-file', 'auth-api-aliased.txt');
+  });
+
   it('removes @typebase-io/typebase imports as well', async () => {
     const source = `import { defineAuth } from "@typebase-io/typebase/server";
 

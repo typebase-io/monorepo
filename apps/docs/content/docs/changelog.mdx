@@ -22,6 +22,13 @@ typebase-io@latest
 
 _2026-10-02._
 
+**Fixed**
+
+- An `auth.ts` that writes [better-auth hooks](https://www.better-auth.com/docs/concepts/hooks) with `createAuthMiddleware` and rejects requests
+  with `AuthError`, both from `typebase-io/server`, builds a server that starts. The generated auth file dropped every `typebase-io` import while
+  keeping the code that used them, so the server crashed at boot with `createAuthMiddleware is not defined`, and `AuthError` would have failed the
+  first time a hook threw it. Both are now imported from `better-auth/api`, where they come from, and keep any local name you gave them.
+
 **Changed**
 
 - `typebase-io/server` now exports only the API you write against. `Action`, `filterActions`, `createPublisher`, `createStorage`, and the

@@ -1,0 +1,18 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./db/index.ts";
+import * as schema from "./db/schema.ts";
+
+import { APIError as AuthError, createAuthMiddleware } from "better-auth/api";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: "pg", usePlural: true, schema }),
+  emailAndPassword: { enabled: true },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email") {
+        throw new AuthError("BAD_REQUEST", { message: "Sign-ups are closed" });
+      }
+    }),
+  },
+});

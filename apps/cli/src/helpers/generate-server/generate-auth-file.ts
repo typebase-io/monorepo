@@ -5,6 +5,7 @@ import { IndentationText, Project, SyntaxKind } from 'ts-morph';
 import { P, match } from 'ts-pattern';
 
 import { type ServerProvider } from '#helpers/constants.ts';
+import { rewriteAuthApiImport } from '#helpers/generate-server/rewrite-auth-api-import.ts';
 import { findDefineCalls } from '#helpers/shared/find-define-calls.ts';
 import { fixImportExtensions } from '#helpers/shared/fix-import-extensions.ts';
 import { getAuthBasePathProperty } from '#helpers/shared/get-auth-base-path-property.ts';
@@ -42,7 +43,7 @@ export const generateAuthFile = async ({
     if (specifier === '@typebase-io/typebase/server/auth-plugins' || specifier === 'typebase-io/server/auth-plugins') {
       decl.setModuleSpecifier('better-auth/plugins');
     } else if (specifier.startsWith('@typebase-io/typebase') || specifier.startsWith('typebase-io')) {
-      decl.remove();
+      rewriteAuthApiImport(decl);
     }
   }
 

@@ -1,0 +1,16 @@
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./db/index.ts";
+import * as schema from "./db/schema.ts";
+
+import { APIError as Rejection, createAuthMiddleware as hook } from "better-auth/api";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: "pg", usePlural: true, schema }),
+  emailAndPassword: { enabled: true },
+  hooks: {
+    before: hook(async () => {
+      throw new Rejection("FORBIDDEN");
+    }),
+  },
+});
