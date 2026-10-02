@@ -4,22 +4,8 @@ import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 import pino from "pino";
 import pretty from "pino-pretty";
-import { handleNodeRequest } from "typebase-io/internal/local-storage";
-import { localFileStorage } from "./storage.ts";
 
-import { filterActions } from "typebase-io/internal";
-
-import * as ActionModule0 from "./actions/mutations/todos.ts";
-import * as ActionModule1 from "./actions/queries/todos.ts";
-
-export const router = {
-  mutations: {
-    todos: filterActions(ActionModule0),
-  },
-  queries: {
-    todos: filterActions(ActionModule1),
-  },
-};
+export const router = {};
 
 const logger = pino(pretty({ ignore: "pid,hostname", singleLine: true }));
 
@@ -106,12 +92,6 @@ export const typebaseHandler = async (req: IncomingMessage, res: ServerResponse,
   const requestLog = startRequestLog(req, res);
 
   try {
-    const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
-
-    if (pathname === "/storage" || pathname.startsWith("/storage" + "/")) {
-      return await handleNodeRequest(localFileStorage.handle, req, res);
-    }
-
     const { matched } = await handler.handle(req, res, {
       prefix: "/rpc",
       context: { [LOG_ENTRY]: requestLog.entry } as {},

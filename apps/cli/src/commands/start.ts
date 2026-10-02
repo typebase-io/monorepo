@@ -241,6 +241,7 @@ export const start = new Command('start')
                   },
               signal: buildSignal,
               quiet: rebuild,
+              logging: true,
             });
           } finally {
             spinner?.stop();

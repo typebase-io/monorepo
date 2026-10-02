@@ -22,6 +22,16 @@ describe('nodeServerFileTemplate', () => {
     );
   });
 
+  it('logs one line per request, with the action and its input, instead of printing errors itself', () => {
+    expect(nodeServerFileTemplate({ ...OPTIONS, logging: true })).toEqualTemplate('server-file', 'node', 'logging.txt');
+  });
+
+  it('logs the auth and storage routes too, awaiting them so their errors reach the log', () => {
+    expect(
+      nodeServerFileTemplate({ ...OPTIONS, logging: true, hasAuth: true, trustedOrigins: ['https://app.com'], storagePath: '/storage' })
+    ).toEqualTemplate('server-file', 'node', 'logging-auth-local-storage.txt');
+  });
+
   it('mounts the local storage route at the storage path', () => {
     expect(nodeServerFileTemplate({ ...OPTIONS, storagePath: '/storage' })).toEqualTemplate('server-file', 'node', 'local-storage.txt');
   });

@@ -2,6 +2,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
+import pino from "pino";
+import pretty from "pino-pretty";
 
 import { filterActions } from "typebase-io/internal";
 
@@ -17,6 +19,56 @@ export const router = {
   },
 };
 
+const logger = pino(pretty({ ignore: "pid,hostname", singleLine: true }));
+
+const LOG_ENTRY = Symbol("typebase.logEntry");
+
+interface LogEntry {
+  action?: string;
+  input?: unknown;
+  error?: unknown;
+}
+
+const logEntryOf = (context: object) => (context as { [LOG_ENTRY]?: LogEntry })[LOG_ENTRY];
+
+const startRequestLog = (req: IncomingMessage, res: ServerResponse) => {
+  const entry: LogEntry = {};
+  const startedAt = performance.now();
+  const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+
+  let written = false;
+
+  const write = (outcome: number | string) => {
+    if (written) {
+      return;
+    }
+
+    written = true;
+
+    const line = `${req.method} ${pathname} ${outcome} ${Math.round(performance.now() - startedAt)}ms`;
+    const fields = { action: entry.action, input: entry.input, err: entry.error };
+
+    if (outcome === "failed" || res.statusCode >= 500) {
+      logger.error(fields, line);
+    } else if (res.statusCode >= 400) {
+      logger.warn(fields, line);
+    } else {
+      logger.info(fields, line);
+    }
+  };
+
+  res.once("finish", () => write(res.statusCode));
+  res.once("close", () => write("aborted"));
+
+  return {
+    entry,
+    fail: (error: unknown) => {
+      entry.error = error;
+      write("failed");
+    },
+  };
+};
+
 const handler = new RPCHandler(router, {
   plugins: [
     new CORSPlugin({
@@ -26,27 +78,51 @@ const handler = new RPCHandler(router, {
     new RequestHeadersPlugin(),
   ],
   interceptors: [
-    onError((error) => {
-      console.error(error);
+    onError((error, { context }) => {
+      const entry = logEntryOf(context);
+
+      if (entry) {
+        entry.error = error;
+      }
     }),
+  ],
+  clientInterceptors: [
+    ({ next, context, path, input }) => {
+      const entry = logEntryOf(context);
+
+      if (entry) {
+        entry.action = path.join(".");
+        entry.input = input;
+      }
+
+      return next();
+    },
   ],
 });
 
 export const typebaseHandler = async (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => {
-  const { matched } = await handler.handle(req, res, {
-    prefix: "/rpc",
-    context: {},
-  });
+  const requestLog = startRequestLog(req, res);
 
-  if (matched) {
-    return;
+  try {
+    const { matched } = await handler.handle(req, res, {
+      prefix: "/rpc",
+      context: { [LOG_ENTRY]: requestLog.entry } as {},
+    });
+
+    if (matched) {
+      return;
+    }
+
+    if (next) {
+      next();
+      return;
+    }
+
+    res.statusCode = 404;
+    res.end("Not found");
+  } catch (error) {
+    requestLog.fail(error);
+
+    throw error;
   }
-
-  if (next) {
-    next();
-    return;
-  }
-
-  res.statusCode = 404;
-  res.end("Not found");
 };

@@ -56,6 +56,7 @@ export const buildServer = async ({
   localStorage,
   signal,
   quiet = false,
+  logging = false,
 }: {
   projectPath: string;
   output: ServerOutput;
@@ -70,6 +71,7 @@ export const buildServer = async ({
   localStorage?: LocalStorageRoute;
   signal?: AbortSignal;
   quiet?: boolean;
+  logging?: boolean;
 }) => {
   const authPath = normalizeServerPath(configuredAuthPath);
   const typebaseDirPath = path.resolve(projectPath);
@@ -199,6 +201,7 @@ export const buildServer = async ({
       hasAuth: includeAuthFile,
       hasEnv: includeEnvFile,
       hasStorage: includeStorageFile !== false,
+      hasLogging: logging,
     });
 
     await generatePackageManagerConfig({ outputDirPath: tempServerDirPath });
@@ -283,6 +286,7 @@ export const buildServer = async ({
       actionsPath,
       authPath: registeredAuthPath,
       storagePath: localStorageRoute?.path,
+      logging,
     });
 
     if (mode === 'embedded' && output === 'ts') {

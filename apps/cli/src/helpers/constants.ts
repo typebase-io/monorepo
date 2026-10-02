@@ -127,6 +127,14 @@ export const DEPS = {
     name: 'pg',
     version: '8.20.0',
   },
+  pino: {
+    name: 'pino',
+    version: '10.3.1',
+  },
+  'pino-pretty': {
+    name: 'pino-pretty',
+    version: '13.1.3',
+  },
   typescript: {
     name: 'typescript',
     version: '5.9.3',

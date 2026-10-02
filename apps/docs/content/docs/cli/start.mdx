@@ -35,7 +35,7 @@ Every pass, including the first:
 3. **Generates server files**: Builds the server into the [server cache](#the-server-cache), outside your project.
 4. **Installs its dependencies**: With your own package manager, in the cache. Skipped when the generated `package.json` has not changed.
 5. **Pushes your database schema**: Syncs your Drizzle schema to the database you chose. A change that would drop data stops here for confirmation. In [migrations mode](/docs/database/migrations) it applies your pending migrations instead. Skipped when nothing under `typebase/db/` has changed.
-6. **Starts the server**: Spawned directly as a Node process against its entry file.
+6. **Starts the server**: Spawned directly as a Node process against its entry file. It prints a [line for every request](#request-logs) it answers.
 
 Then it watches `typebase/` and does all six again on every change. Steps 4 and 5 are the [skipped ones](#what-gets-skipped-on-a-rebuild); the rest run every time.
 
@@ -217,6 +217,50 @@ Port 8080 is already in use. Pass a different one with --port.
 
 That check runs once, not on rebuilds, where it would race the old process releasing the port the new one is about to take.
 
+## Request logs
+
+The local server prints one line for every request it answers, once the response is sent: the method, the path, the status, and how long it took. A request to an [action](/docs/actions) also names the action and the input it was called with:
+
+```
+[08:33:01.774] INFO: POST /rpc/mutations/todos/create 200 12ms {"action":"mutations.todos.create","input":{"title":"Buy milk"}}
+[08:33:01.790] INFO: POST /api/auth/sign-in/email 200 48ms
+[08:33:01.802] INFO: GET /storage/avatars/42.png 200 3ms
+```
+
+Auth and [local storage](#choosing-storage) requests get the same line, without a body. That keeps the password a sign-in sends out of your terminal. The query string is left out of every path, since links such as email verification carry their token there.
+
+The input is what the client sent, before your schema validated it, so a request your schema rejects still shows what it was rejected for. An action called without input has no `input` field.
+
+### Errors
+
+A request that went wrong is logged at a higher level, with the error and its stack printed under the line:
+
+```
+[08:33:02.114] ERROR: POST /rpc/mutations/todos/create 500 4ms {"action":"mutations.todos.create","input":{"title":"Buy milk"}}
+    err: {
+      "type": "Error",
+      "message": "insert into \"todos\" failed",
+      "stack":
+          Error: insert into "todos" failed
+              at ...
+    }
+```
+
+| What happened                                     | Level   | The line ends with |
+| ------------------------------------------------- | ------- | ------------------ |
+| A response below 400                              | `INFO`  | the status         |
+| A 4xx, such as input your schema rejected         | `WARN`  | the status         |
+| A 5xx, such as an action that threw               | `ERROR` | the status         |
+| The auth or storage handler threw before replying | `ERROR` | `failed`           |
+| The client went away before the response          | `INFO`  | `aborted`          |
+
+Whenever an action threw, including an `ORPCError` such as `NOT_FOUND`, the error is printed under the line whatever its level.
+
+<Callout type="warn">
+  Action input is printed in full. Anything sensitive an action receives, such as a token, appears in your terminal, and a large payload makes a long
+  line. Only `start` builds a server that logs requests: [`generate-server`](/docs/cli/generate-server) and [`deploy`](/docs/cli/deploy) do not.
+</Callout>
+
 ## Environment variables
 
 Two keys are ever written to your **project-root `.env`**:
@@ -307,6 +351,7 @@ While a destructive-change prompt is open, the stop key belongs to the prompt an
 | You want                                          | Command                                        |
 | ------------------------------------------------- | ---------------------------------------------- |
 | A server running on your machine, kept up to date | `start`                                        |
+| A log line for every request                      | `start`                                        |
 | To read the generated code, or self-host it       | [`generate-server`](/docs/cli/generate-server) |
 | A different adapter or a fixed output format      | [`generate-server`](/docs/cli/generate-server) |
 

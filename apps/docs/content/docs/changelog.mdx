@@ -22,6 +22,20 @@ typebase-io@latest
 
 _2026-10-02._
 
+**Added**
+
+- [`start`](/docs/cli/start#request-logs) logs every request the local server answers, on one line once the response is sent: the method, the
+  path, the status, and how long it took. Until now a local run printed nothing for a request that worked and only the bare error for one that
+  didn't, so finding out what your frontend actually called meant adding `console.log` to your actions.
+  - A request to an action names the action and the input it was called with, as the client sent it, so a request your schema rejected still shows
+    what was rejected.
+  - Auth and local storage requests are logged too, without their body, so the password a sign-in sends never reaches your terminal. Query strings
+    are left out of every path, since links such as email verification carry their token there.
+  - A 4xx is logged as a warning and a 5xx as an error, and the error an action threw is printed under its request line with its stack. An auth or
+    storage handler that throws gets a line ending in `failed`.
+  - Only `start` builds a server that logs. [`generate-server`](/docs/cli/generate-server) and [`deploy`](/docs/cli/deploy) build the same server
+    as before.
+
 **Fixed**
 
 - An `auth.ts` that writes [better-auth hooks](https://www.better-auth.com/docs/concepts/hooks) with `createAuthMiddleware` and rejects requests

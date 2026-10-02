@@ -22,6 +22,8 @@ Reach for a local run when:
 - **You are iterating on server code.** A save rebuilds, re-applies your schema, and restarts the server, so there is no redeploy between writing an
   action and calling it.
 - **You want a debugger.** It is a Node process on your machine, so `--command "node --inspect src/index.ts"` attaches one.
+- **You want to see every request.** The local server prints a [line for each one](/docs/cli/start#request-logs) with the action it called, the
+  input it sent, and the status, and prints the stack of any error under it.
 - **You are offline, or the network is slow.** Nothing is uploaded and nothing is fetched from a provider.
 - **You do not want to touch a shared database.** A local run defaults to a Postgres you run yourself rather than your dev branch.
 - **You do not want test files in real buckets.** A local run keeps [storage](/docs/storage) on your own disk unless you ask for your dev buckets.

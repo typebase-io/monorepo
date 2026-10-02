@@ -265,6 +265,28 @@ describe('generatePackageJson', () => {
     expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-storage.txt');
   });
 
+  it('adds pino and its pretty printer for a server that logs its requests', async () => {
+    vi.mocked(getPackageManager).mockResolvedValue('npm');
+
+    const { typebaseDirPath, outputDirPath } = setup({ dependencies: { 'typebase-io': '0.1.0' } });
+
+    await generatePackageJson({
+      adapter: 'node',
+      mode: 'standalone',
+      typebaseDirPath,
+      outputDirPath,
+      generation: 'esm',
+      outDir: '_server',
+      configuredOutDir: '_server',
+      hasAuth: false,
+      hasEnv: false,
+      hasStorage: false,
+      hasLogging: true,
+    });
+
+    expect(tmp.read('out/package.json')).toEqualTemplate('generate-package-json', 'node-esm-logging.txt');
+  });
+
   describe('generated output already in the project', () => {
     const setupWithGeneratedServer = () => {
       const dirs = setup({ dependencies: { 'typebase-io': '0.1.0', zod: '3.2.1' } });

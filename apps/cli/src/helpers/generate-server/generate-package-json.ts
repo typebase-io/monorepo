@@ -17,6 +17,7 @@ export const generatePackageJson = async ({
   hasAuth,
   hasEnv,
   hasStorage,
+  hasLogging = false,
 }: {
   adapter: ServerAdapter;
   mode: ServerMode;
@@ -28,6 +29,7 @@ export const generatePackageJson = async ({
   hasAuth: boolean;
   hasEnv: boolean;
   hasStorage: boolean;
+  hasLogging?: boolean;
 }) => {
   const defaultSkipDirs = new Set(['node_modules', 'dist', 'build', outDir, configuredOutDir]);
   const userDependencies = await getPackageDeps({ sourceDirPath: typebaseDirPath, skipDirs: (name) => defaultSkipDirs.has(name) });
@@ -81,6 +83,11 @@ export const generatePackageJson = async ({
 
   if (hasStorage) {
     dependencies[DEPS['files-sdk'].name] = DEPS['files-sdk'].version;
+  }
+
+  if (hasLogging) {
+    dependencies[DEPS.pino.name] = DEPS.pino.version;
+    dependencies[DEPS['pino-pretty'].name] = DEPS['pino-pretty'].version;
   }
 
   if (generation === 'ts') {

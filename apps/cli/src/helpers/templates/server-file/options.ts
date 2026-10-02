@@ -8,4 +8,5 @@ export interface ServerFileOptions {
   actionsPath: string;
   authPath: string | { fromAuth: true };
   storagePath?: string;
+  logging?: boolean;
 }

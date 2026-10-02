@@ -4,22 +4,12 @@ import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 import pino from "pino";
 import pretty from "pino-pretty";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth.ts";
 import { handleNodeRequest } from "typebase-io/internal/local-storage";
 import { localFileStorage } from "./storage.ts";
 
-import { filterActions } from "typebase-io/internal";
-
-import * as ActionModule0 from "./actions/mutations/todos.ts";
-import * as ActionModule1 from "./actions/queries/todos.ts";
-
-export const router = {
-  mutations: {
-    todos: filterActions(ActionModule0),
-  },
-  queries: {
-    todos: filterActions(ActionModule1),
-  },
-};
+export const router = {};
 
 const logger = pino(pretty({ ignore: "pid,hostname", singleLine: true }));
 
@@ -102,11 +92,33 @@ const handler = new RPCHandler(router, {
   ],
 });
 
+const TRUSTED_ORIGINS = new Set(["https://app.com"]);
+
 export const typebaseHandler = async (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => {
   const requestLog = startRequestLog(req, res);
 
   try {
     const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+
+    if (pathname === "/api/auth" || pathname.startsWith("/api/auth" + "/")) {
+      const origin = req.headers.origin;
+
+      if (typeof origin === "string" && TRUSTED_ORIGINS.has(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+        res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.setHeader("Access-Control-Max-Age", "600");
+      }
+
+      if (req.method === "OPTIONS") {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+
+      return await toNodeHandler(auth)(req, res);
+    }
 
     if (pathname === "/storage" || pathname.startsWith("/storage" + "/")) {
       return await handleNodeRequest(localFileStorage.handle, req, res);
@@ -134,3 +146,5 @@ export const typebaseHandler = async (req: IncomingMessage, res: ServerResponse,
     throw error;
   }
 };
+
+export { auth };
