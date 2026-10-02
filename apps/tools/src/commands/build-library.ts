@@ -147,6 +147,16 @@ export const buildLibrary = new Command('build-library')
             import: './dist/esm/src/db/index.js',
             require: './dist/cjs/src/db/index.js',
           },
+          './internal': {
+            types: './dist/types/src/internal/index.d.ts',
+            import: './dist/esm/src/internal/index.js',
+            require: './dist/cjs/src/internal/index.js',
+          },
+          './internal/local-storage': {
+            types: './dist/types/src/internal/local-storage/index.d.ts',
+            import: './dist/esm/src/internal/local-storage/index.js',
+            require: './dist/cjs/src/internal/local-storage/index.js',
+          },
           './server': {
             types: './dist/types/src/server/index.d.ts',
             import: './dist/esm/src/server/index.js',
@@ -156,11 +166,6 @@ export const buildLibrary = new Command('build-library')
             types: './dist/types/src/server/auth/plugins.d.ts',
             import: './dist/esm/src/server/auth/plugins.js',
             require: './dist/cjs/src/server/auth/plugins.js',
-          },
-          './server/local-storage': {
-            types: './dist/types/src/server/storage/local-storage/index.d.ts',
-            import: './dist/esm/src/server/storage/local-storage/index.js',
-            require: './dist/cjs/src/server/storage/local-storage/index.js',
           },
         },
         dependencies: {

@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { Action } from "typebase-io/server";
+import { Action } from "typebase-io/internal";
 import type { RequestHeadersPluginContext } from "@orpc/server/plugins";
 import { auth } from "../auth.ts";
 

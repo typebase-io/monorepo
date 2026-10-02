@@ -4,7 +4,7 @@ import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.ts";
-import { handleNodeRequest } from "typebase-io/server/local-storage";
+import { handleNodeRequest } from "typebase-io/internal/local-storage";
 import { localFileStorage } from "./storage.ts";
 
 export const router = {};

@@ -49,7 +49,7 @@ import { auth } from "./auth.ts";
   const storageImports =
     storagePath === undefined
       ? ''
-      : `import { handleNodeRequest } from "typebase-io/server/local-storage";
+      : `import { handleNodeRequest } from "typebase-io/internal/local-storage";
 import { localFileStorage } from "./storage.ts";
 `;
 

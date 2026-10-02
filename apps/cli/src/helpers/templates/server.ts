@@ -9,7 +9,7 @@ export interface ServerFeatures {
 export const serverTemplate = (features: ServerFeatures) => {
   const imports = [
     'import { os } from "@orpc/server";',
-    'import { Action } from "typebase-io/server";',
+    'import { Action } from "typebase-io/internal";',
     'import type { RequestHeadersPluginContext } from "@orpc/server/plugins";',
     features.db ? 'import { db } from "../db/index.ts";' : '',
     features.auth ? 'import { auth } from "../auth.ts";' : '',

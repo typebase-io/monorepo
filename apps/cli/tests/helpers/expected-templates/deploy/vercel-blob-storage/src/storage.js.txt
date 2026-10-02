@@ -1,4 +1,4 @@
-import { createStorage } from "typebase-io/server";
+import { createStorage } from "typebase-io/internal";
 import { env } from "./env.js";
 export const storage = createStorage({
     provider: 'vercel',

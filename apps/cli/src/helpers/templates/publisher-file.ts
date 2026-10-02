@@ -17,7 +17,7 @@ export const publisherFileTemplate = ({
 }) => {
   const { imports: resourceImports, resources } = PROVIDER_RESOURCES[provider];
 
-  const lines = ['import { createPublisher } from "typebase-io/server";', ...resourceImports(ts ? 'ts' : 'js'), ...imports, ''];
+  const lines = ['import { createPublisher } from "typebase-io/internal";', ...resourceImports(ts ? 'ts' : 'js'), ...imports, ''];
 
   lines.push(`export const publisher = createPublisher(${config}, ${resources});`);
 

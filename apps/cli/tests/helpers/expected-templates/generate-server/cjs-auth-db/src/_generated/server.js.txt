@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDB = exports.action = void 0;
 const server_1 = require("@orpc/server");
-const server_2 = require("typebase-io/server");
+const internal_1 = require("typebase-io/internal");
 const index_ts_1 = require("../db/index.js");
 const auth_ts_1 = require("../auth.js");
 const env_ts_1 = require("../env.js");
@@ -19,6 +19,6 @@ const providerMiddleware = base
     });
 });
 const withProviders = base.use(providerMiddleware);
-exports.action = new server_2.Action(withProviders);
+exports.action = new internal_1.Action(withProviders);
 const getDB = () => index_ts_1.db;
 exports.getDB = getDB;

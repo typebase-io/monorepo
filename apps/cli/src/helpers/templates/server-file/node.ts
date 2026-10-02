@@ -56,7 +56,7 @@ export const nodeServerFileTemplate = ({ routerCode, hasAuth, trustedOrigins, mo
 import { RPCHandler } from "@orpc/server/node";
 ${rpcPluginsImport(mode)}
 import { onError } from "@orpc/server";
-${hasAuth ? `import { toNodeHandler } from "better-auth/node";\nimport { auth } from "./auth.ts";\n` : ''}${storagePath === undefined ? '' : `import { handleNodeRequest } from "typebase-io/server/local-storage";\nimport { localFileStorage } from "./storage.ts";\n`}
+${hasAuth ? `import { toNodeHandler } from "better-auth/node";\nimport { auth } from "./auth.ts";\n` : ''}${storagePath === undefined ? '' : `import { handleNodeRequest } from "typebase-io/internal/local-storage";\nimport { localFileStorage } from "./storage.ts";\n`}
 ${routerCode}
 
 const handler = new RPCHandler(router, {

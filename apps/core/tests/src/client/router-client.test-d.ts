@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { createRouterClient, createTanstackQueryClient } from '#client/router-client.ts';
 
-import { filterActions } from '#server/actions/index.ts';
+import { filterActions } from '#server/actions/filter-actions.ts';
 
 const _router = {
   todos: filterActions({

@@ -1,4 +1,4 @@
-import { createStorage } from "typebase-io/server";
+import { createStorage } from "typebase-io/internal";
 import { contentType } from "files-sdk/content-type";
 import { logUploads } from "./hooks.js";
 

@@ -7,15 +7,15 @@ const server_1 = require("@orpc/server");
 const node_2 = require("better-auth/node");
 const auth_ts_1 = require("./auth.js");
 Object.defineProperty(exports, "auth", { enumerable: true, get: function () { return auth_ts_1.auth; } });
-const server_2 = require("typebase-io/server");
+const internal_1 = require("typebase-io/internal");
 const ActionModule1 = require("./actions/mutations/todos.js");
 const ActionModule2 = require("./actions/queries/todos.js");
 exports.router = {
     mutations: {
-        todos: (0, server_2.filterActions)(ActionModule1),
+        todos: (0, internal_1.filterActions)(ActionModule1),
     },
     queries: {
-        todos: (0, server_2.filterActions)(ActionModule2),
+        todos: (0, internal_1.filterActions)(ActionModule2),
     },
 };
 const handler = new node_1.RPCHandler(exports.router, {

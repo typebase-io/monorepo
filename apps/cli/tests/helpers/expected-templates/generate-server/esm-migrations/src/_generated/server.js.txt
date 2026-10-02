@@ -1,5 +1,5 @@
 import { os } from "@orpc/server";
-import { Action } from "typebase-io/server";
+import { Action } from "typebase-io/internal";
 import { db } from "../db/index.js";
 import { env } from "../env.js";
 const base = os.$context();

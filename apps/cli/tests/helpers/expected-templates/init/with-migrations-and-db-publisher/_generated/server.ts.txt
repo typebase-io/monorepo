@@ -1,11 +1,12 @@
 // ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
 
-import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
+import type { ActionBuilder, GetDBBuilder } from "typebase-io/internal";
+import type { InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
 import type { env as envSchema } from "../env.ts";
 import type { publisher as publisherConfig } from "../publisher.ts";
 import type { relations } from "../db/relations.ts";
 
-import { filterActions } from "typebase-io/server";
+import { filterActions } from "typebase-io/internal";
 
 import * as ActionModule0 from "../actions/mutations/todos.ts";
 import * as ActionModule1 from "../actions/queries/todos.ts";

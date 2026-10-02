@@ -1,6 +1,7 @@
 // ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
 
-import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
+import type { ActionBuilder, GetDBBuilder } from "typebase-io/internal";
+import type { InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
 import type { relations } from "../db/relations.ts";
 
 export const router = {};

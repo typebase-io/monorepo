@@ -25,7 +25,9 @@ export const storageFileTemplate = ({
   ts: boolean;
 }) => {
   if (provider === 'filesystem') {
-    return ['import { createStorage } from "typebase-io/server";', ...imports, '', `export const storage = createStorage(${config}, {});`].join('\n');
+    return ['import { createStorage } from "typebase-io/internal";', ...imports, '', `export const storage = createStorage(${config}, {});`].join(
+      '\n'
+    );
   }
 
   if (localStorage === undefined) {
@@ -45,7 +47,7 @@ export const storageFileTemplate = ({
           ].join('\n');
 
     return [
-      'import { createStorage } from "typebase-io/server";',
+      'import { createStorage } from "typebase-io/internal";',
       `import { env } from "${ts ? './env.ts' : './env.js'}";`,
       ...imports,
       '',
@@ -54,8 +56,8 @@ export const storageFileTemplate = ({
   }
 
   return [
-    'import { createStorage } from "typebase-io/server";',
-    'import { createLocalStorage } from "typebase-io/server/local-storage";',
+    'import { createStorage } from "typebase-io/internal";',
+    'import { createLocalStorage } from "typebase-io/internal/local-storage";',
     ...imports,
     '',
     `export const localFileStorage = createLocalStorage({ root: ${JSON.stringify(localStorage.root)}, url: ${JSON.stringify(localStorage.url)} });`,

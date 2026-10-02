@@ -3,7 +3,7 @@ import { describe, expectTypeOf, it } from 'vitest';
 import { p, q } from '#db/drizzle.ts';
 
 import { type DB } from '#server/actions/types.ts';
-import { type GetDBBuilder } from '#server/db/index.ts';
+import { type GetDBBuilder } from '#server/db/get-db-builder.ts';
 
 const todos = p.pgTable('todos', { id: p.integer().primaryKey(), userId: p.text().notNull() });
 const users = p.pgTable('users', { id: p.text().primaryKey() });

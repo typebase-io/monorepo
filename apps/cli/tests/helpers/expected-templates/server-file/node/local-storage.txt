@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { RPCHandler } from "@orpc/server/node";
 import { CORSPlugin, RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-import { handleNodeRequest } from "typebase-io/server/local-storage";
+import { handleNodeRequest } from "typebase-io/internal/local-storage";
 import { localFileStorage } from "./storage.ts";
 
 export const router = {};

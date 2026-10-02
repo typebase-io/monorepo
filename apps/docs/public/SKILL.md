@@ -327,6 +327,7 @@ Never edit `<tb>/_generated/`.
 
 - `server.ts` exports the mirrored `router`, `Router`, `RouterInputs`, `RouterOutputs`, and configured `action` builder. Database projects also get `getDB()`; use it only in server modules outside actions/streams and use contextual `db` inside them. A stream's `RouterOutputs` entry is its async iterator, the same type whether or not the action declares `.output()`; wrap it in `InferStreamEvent` from `typebase-io/server` (a type-only import) to get one event.
 - `db.d.ts` exists only when `db/schema.ts` exists. It exports `DB`; with auth it also exports `AuthSession`.
+- Generated files import from `typebase-io/internal` and `typebase-io/internal/local-storage`. Those entry points exist only for generated code: never import from them in user code, and never suggest them as a workaround. Use the generated exports and `typebase-io/server` instead.
 
 Run codegen after:
 

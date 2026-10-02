@@ -76,7 +76,7 @@ export const getServerRouter = async ({
     .sort((a, b) => a.pathSegments.join('/').localeCompare(b.pathSegments.join('/')));
 
   const routerTree = buildRouterTree(routes);
-  const importsBlock = (hasAnyAction as boolean) ? `import { filterActions } from "typebase-io/server";\n\n${imports.toSorted().join('\n')}` : '';
+  const importsBlock = (hasAnyAction as boolean) ? `import { filterActions } from "typebase-io/internal";\n\n${imports.toSorted().join('\n')}` : '';
   const routerObject = renderRouterObject(routerTree);
   const routerBody = routerObject ? `{\n${routerObject}\n}` : '{}';
   const routerCode = `export const router = ${routerBody};`;

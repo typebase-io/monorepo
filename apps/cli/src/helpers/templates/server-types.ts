@@ -3,8 +3,9 @@ import { type ServerFeatures } from '#helpers/templates/server.ts';
 export const serverTypesTemplate = (features: ServerFeatures, routerImports: string, router: string) => {
   const imports = [
     features.db
-      ? `import type { ActionBuilder, GetDBBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`
-      : `import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`,
+      ? `import type { ActionBuilder, GetDBBuilder } from "typebase-io/internal";`
+      : `import type { ActionBuilder } from "typebase-io/internal";`,
+    `import type { InferRouterInputs, InferRouterOutputs } from "typebase-io/server";`,
     features.auth ? 'import type { auth as authConfig } from "../auth.ts";' : '',
     features.env ? 'import type { env as envSchema } from "../env.ts";' : '',
     features.publisher ? 'import type { publisher as publisherConfig } from "../publisher.ts";' : '',

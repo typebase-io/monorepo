@@ -1,9 +1,10 @@
 // ⚠️ AUTO-GENERATED FILE — DO NOT EDIT
 
-import type { ActionBuilder, InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
+import type { ActionBuilder } from "typebase-io/internal";
+import type { InferRouterInputs, InferRouterOutputs } from "typebase-io/server";
 import type { env as envSchema } from "../env.ts";
 
-import { filterActions } from "typebase-io/server";
+import { filterActions } from "typebase-io/internal";
 
 import * as ActionModule0 from "../actions/hello.ts";
 

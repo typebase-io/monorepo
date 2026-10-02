@@ -18,6 +18,20 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.21 [#v0-1-21]
+
+_2026-10-02._
+
+**Changed**
+
+- `typebase-io/server` now exports only the API you write against. `Action`, `filterActions`, `createPublisher`, `createStorage`, and the
+  `ActionBuilder` and `GetDBBuilder` types moved to `typebase-io/internal`, and `typebase-io/server/local-storage` is now
+  `typebase-io/internal/local-storage`. They exist for the code the CLI generates and were never meant to be imported by hand, so your editor's
+  autocomplete on `typebase-io/server` no longer offers them. Code you write is unaffected unless it imported one of them directly.
+- Run [`codegen`](/docs/cli/codegen) after upgrading. A `_generated/server.ts` written by an older CLI still imports `filterActions` and the builder
+  types from `typebase-io/server`, and stops type-checking until it is regenerated. [`deploy`](/docs/cli/deploy), [`start`](/docs/cli/start), and
+  [`generate-server`](/docs/cli/generate-server) regenerate it before every build, so a server they build is never affected.
+
 ## 0.1.20 [#v0-1-20]
 
 _2026-09-30._

@@ -4,15 +4,15 @@ exports.typebaseHandler = exports.router = void 0;
 const node_1 = require("@orpc/server/node");
 const plugins_1 = require("@orpc/server/plugins");
 const server_1 = require("@orpc/server");
-const server_2 = require("typebase-io/server");
+const internal_1 = require("typebase-io/internal");
 const ActionModule0 = require("./actions/mutations/todos.js");
 const ActionModule1 = require("./actions/queries/todos.js");
 exports.router = {
     mutations: {
-        todos: (0, server_2.filterActions)(ActionModule0),
+        todos: (0, internal_1.filterActions)(ActionModule0),
     },
     queries: {
-        todos: (0, server_2.filterActions)(ActionModule1),
+        todos: (0, internal_1.filterActions)(ActionModule1),
     },
 };
 const handler = new node_1.RPCHandler(exports.router, {

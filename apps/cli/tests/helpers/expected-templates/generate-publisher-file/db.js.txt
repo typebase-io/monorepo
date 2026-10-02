@@ -1,4 +1,4 @@
-import { createPublisher } from "typebase-io/server";
+import { createPublisher } from "typebase-io/internal";
 import { db } from "./db/index.js";
 import { postCreated } from "./schemas.js";
 

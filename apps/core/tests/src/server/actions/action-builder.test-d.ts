@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { p, q } from '#db/index.ts';
 
-import { type ActionBuilder } from '#server/actions/index.ts';
+import { type ActionBuilder } from '#server/actions/action-builder.ts';
 import { type DB } from '#server/actions/types.ts';
 import { defineAuth } from '#server/auth/index.ts';
 import { defineEnv } from '#server/env/index.ts';

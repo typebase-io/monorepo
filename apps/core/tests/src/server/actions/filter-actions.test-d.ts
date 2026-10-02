@@ -2,7 +2,9 @@ import { os } from '@orpc/server';
 import { describe, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
 
-import { Action, type InferRouterInputs, type InferRouterOutputs, filterActions } from '#server/actions/index.ts';
+import { Action } from '#server/actions/action.ts';
+import { filterActions } from '#server/actions/filter-actions.ts';
+import { type InferRouterInputs, type InferRouterOutputs } from '#server/actions/index.ts';
 
 const todos = filterActions({
   getOne: new Action(os)

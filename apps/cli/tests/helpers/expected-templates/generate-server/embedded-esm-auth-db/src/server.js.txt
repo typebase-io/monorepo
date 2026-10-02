@@ -3,7 +3,7 @@ import { RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
-import { filterActions } from "typebase-io/server";
+import { filterActions } from "typebase-io/internal";
 import * as ActionModule1 from "./actions/mutations/todos.js";
 import * as ActionModule2 from "./actions/queries/todos.js";
 export const router = {

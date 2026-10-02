@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { RPCHandler } from "@orpc/server/fastify";
 import { RequestHeadersPlugin } from "@orpc/server/plugins";
 import { onError } from "@orpc/server";
-import { handleNodeRequest } from "typebase-io/server/local-storage";
+import { handleNodeRequest } from "typebase-io/internal/local-storage";
 import { localFileStorage } from "./storage.ts";
 
 export const router = {};
