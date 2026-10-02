@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "typebase-io-cli codegen",
     "typebase": "typebase-io-cli"
   },
   "dependencies": {
