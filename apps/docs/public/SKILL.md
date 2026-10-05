@@ -558,6 +558,7 @@ Keep `app.json` scheme, plugin scheme/storage prefix, and trusted origins aligne
 - Missing `db`, `auth`, `env`, `publisher`, or `storage` context: resolve `<tb>`, check the enabling file, and rerun codegen if its presence changed.
 - “Property 'X' is missing” on the `q.defineRelations` call: a table exported from `db/schema.ts` is not registered in `db/relations.ts`. Add it, as `{}` when it has no relations.
 - “relation does not exist”: schema code changed but the target database was not pushed.
+- `auth generate` says “Could not register the auth tables”: it needs `q.defineRelations(schema, (r) => ({ ... }))` with an inline arrow returning an object literal, and a named parameter or none (any name works; `r` is added when missing). Inline the callback or name a destructured parameter; nothing was modified.
 - Storage sync/build failure: make `defineStorage` statically resolvable (plain-string `provider`, inline `buckets`, `access` on every cloud bucket). An access-mismatch error needs the user's decision, not a workaround.
 - Boot-time `TYPEBASE_STORAGE_*` failure: run `storage sync <target>` or redeploy; for `generate-server` either sync and refresh `_server/.env` or use `--local-storage`.
 - Local storage 403: signature missing, tampered, or expired, or the upload `Content-Type` differs from the signed one. Request a fresh URL and send the returned headers.

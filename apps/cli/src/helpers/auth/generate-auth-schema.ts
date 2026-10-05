@@ -30,29 +30,39 @@ export const generateAuthSchema = async ({
     throw new Error('Better Auth did not return generated schema code.');
   }
 
-  const { cleaned, tableNames, relations } = parseGeneratedSchema(result.code.replaceAll('/* @__PURE__ */ ', ''));
-
   const schemaProject = new Project({ skipAddingFilesFromTsConfig: true });
   const schemaSourceFile = schemaProject.addSourceFileAtPath(schemaFilePath);
 
   const relationsProject = new Project({ skipAddingFilesFromTsConfig: true });
   const relationsSourceFile = relationsProject.addSourceFileAtPath(relationsFilePath);
 
-  const callbackBody = relationsSourceFile
+  const relationsArrow = relationsSourceFile
     .getDescendantsOfKind(SyntaxKind.CallExpression)
     .find((callExpr) => callExpr.getExpression().getText() === 'q.defineRelations')
     ?.getArguments()[1]
-    ?.asKind(SyntaxKind.ArrowFunction)
-    ?.getBody();
+    ?.asKind(SyntaxKind.ArrowFunction);
 
+  const callbackBody = relationsArrow?.getBody();
   const relationsCallback = callbackBody?.asKind(SyntaxKind.ParenthesizedExpression)?.getExpression() ?? callbackBody;
   const relationsObject = relationsCallback?.asKind(SyntaxKind.ObjectLiteralExpression);
 
-  if (!relationsObject) {
+  if (!relationsArrow || !relationsObject) {
     throw new Error(
       `Could not register the auth tables in \`${relationsFilePath}\`: expected a \`q.defineRelations(schema, (r) => ({ ... }))\` call with an inline arrow function returning an object literal. No files were modified.`
     );
   }
+
+  const helpersParameter = relationsArrow.getParameters()[0];
+
+  if (helpersParameter && !helpersParameter.getNameNode().isKind(SyntaxKind.Identifier)) {
+    throw new Error(
+      `Could not register the auth tables in \`${relationsFilePath}\`: the \`q.defineRelations\` callback destructures its parameter, so the auth relations have no name to reach the helpers through. Name it instead, as in \`(r) => ({ ... })\`. No files were modified.`
+    );
+  }
+
+  const helpersName = helpersParameter?.getName() ?? 'r';
+
+  const { cleaned, tableNames, relations } = parseGeneratedSchema(result.code.replaceAll('/* @__PURE__ */ ', ''), helpersName);
 
   for (const name of tableNames) {
     for (const stmt of schemaSourceFile.getVariableStatements()) {
@@ -90,6 +100,10 @@ export const generateAuthSchema = async ({
   const inner = [...allEntries.entries()].map(([name, value]) => `  ${name}: ${value},`).join('\n');
 
   relationsObject.replaceWithText(`{\n${inner}\n}`);
+
+  if (!helpersParameter) {
+    relationsArrow.addParameter({ name: helpersName });
+  }
 
   schemaSourceFile.saveSync();
   relationsSourceFile.saveSync();

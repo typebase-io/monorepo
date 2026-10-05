@@ -28,6 +28,12 @@ _2026-10-05._
   [`relations.ts`](/docs/database/relations) is now a type error on the call that names it, such as
   `Property 'events' is missing in type '{ todos: {}; }'`, instead of passing silently. Register a table with no relations as `{}`.
 
+**Fixed**
+
+- [`auth generate`](/docs/cli/auth#how-it-edits-relationsts) writes a `relations.ts` that type-checks when your `q.defineRelations` callback takes
+  no parameter. It wrote the auth relations as `r.one.users(...)` either way, so `() => ({ todos: {} })` ended in `Cannot find name 'r'`. A
+  callback without a parameter now gets `r` added, and one that names it differently keeps its name, which the auth relations are written through.
+
 ## 0.1.21 [#v0-1-21]
 
 _2026-10-02._

@@ -470,6 +470,13 @@ from what was pulled — and note that every target then has to be marked again 
 
 You need both `typebase/auth.ts` and `typebase/db/schema.ts` before running `auth generate`. The command appends auth tables to your existing schema; it won't create one from scratch.
 
+### `auth generate` says "Could not register the auth tables"
+
+The command registers the auth tables inside your `q.defineRelations` call, so it has to be able to read it: an inline arrow function returning an
+object literal, written as `q.defineRelations(schema, (r) => ({ ... }))`. A callback stored in a variable, one that returns a variable, or one that
+destructures its parameter (`({ one, many }) => ...`) can't be edited, and the command stops without touching either file. Inline the callback, or name
+its parameter, and run `auth generate` again. See [how it edits `relations.ts`](/docs/cli/auth#how-it-edits-relationsts).
+
 ### Sessions don't persist on the frontend
 
 The most common cause is a missing or misconfigured proxy. Auth cookies must be set on your frontend's domain, not on your Typebase server's domain. See the proxy setup section in your framework's integration guide ([Next.js](/docs/integrations/nextjs#proxy-setup), [SvelteKit](/docs/integrations/sveltekit#proxy-setup), [Nuxt](/docs/integrations/nuxt#proxy-setup)).

@@ -1,7 +1,10 @@
 export const buildRelation = (
   oneRelations: { sourceTable: string; relationName: string; targetTable: string; field: string; reference: string }[],
-  manyRelations: { sourceTable: string; relationName: string; targetTable: string }[]
+  manyRelations: { sourceTable: string; relationName: string; targetTable: string }[],
+  helpersName = 'r'
 ): Map<string, string> => {
+  const r = helpersName;
+
   const entries = new Map<string, Map<string, string>>();
 
   const getOrCreate = (table: string) => {
@@ -20,7 +23,7 @@ export const buildRelation = (
 
     tableEntries.set(
       rel.relationName,
-      `r.one.${rel.targetTable}({\n      from: r.${rel.sourceTable}.${rel.field},\n      to: r.${rel.targetTable}.${rel.reference},\n    })`
+      `${r}.one.${rel.targetTable}({\n      from: ${r}.${rel.sourceTable}.${rel.field},\n      to: ${r}.${rel.targetTable}.${rel.reference},\n    })`
     );
   }
 
@@ -31,10 +34,10 @@ export const buildRelation = (
     if (inverse) {
       tableEntries.set(
         rel.relationName,
-        `r.many.${rel.targetTable}({\n      from: r.${rel.sourceTable}.${inverse.reference},\n      to: r.${rel.targetTable}.${inverse.field},\n    })`
+        `${r}.many.${rel.targetTable}({\n      from: ${r}.${rel.sourceTable}.${inverse.reference},\n      to: ${r}.${rel.targetTable}.${inverse.field},\n    })`
       );
     } else {
-      tableEntries.set(rel.relationName, `r.many.${rel.targetTable}()`);
+      tableEntries.set(rel.relationName, `${r}.many.${rel.targetTable}()`);
     }
   }
 

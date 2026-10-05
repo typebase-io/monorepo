@@ -20,6 +20,16 @@ This command:
 5. Generates and saves `BETTER_AUTH_SECRET` in your local `.env` if it doesn't already exist
 6. Regenerates type definitions
 
+### How it edits `relations.ts`
+
+The auth tables are registered inside your existing `q.defineRelations(schema, (r) => ({ ... }))` call, and your own entries are kept as they are.
+The relations it adds go through whatever your callback calls its parameter: `(helpers) => ...` gets `helpers.one.users(...)`. A callback with no
+parameter, such as `() => ({ todos: {} })`, gets an `r` added.
+
+The callback has to be an inline arrow function returning an object literal, with a named parameter or none. A destructured one, like
+`({ one, many }) => ...`, leaves no name to write the auth relations through, so the command stops and changes no files. Name the parameter and run it
+again.
+
 ### Prerequisites
 
 - A `typebase/auth.ts` file must exist

@@ -3,7 +3,7 @@ import { Project, SyntaxKind } from 'ts-morph';
 import { buildRelation } from '#helpers/auth/build-relations.ts';
 import { getDrizzleRelations } from '#helpers/auth/get-drizzle-relations.ts';
 
-export const parseGeneratedSchema = (code: string): { cleaned: string; tableNames: string[]; relations: Map<string, string> } => {
+export const parseGeneratedSchema = (code: string, helpersName = 'r'): { cleaned: string; tableNames: string[]; relations: Map<string, string> } => {
   const project = new Project({ skipAddingFilesFromTsConfig: true, useInMemoryFileSystem: true });
   const sourceFile = project.createSourceFile('schema.ts', code);
   const tableNames: string[] = [];
@@ -20,7 +20,7 @@ export const parseGeneratedSchema = (code: string): { cleaned: string; tableName
   }
 
   const { oneRelations, manyRelations } = getDrizzleRelations(code);
-  const relations = buildRelation(oneRelations, manyRelations);
+  const relations = buildRelation(oneRelations, manyRelations, helpersName);
 
   for (const stmt of sourceFile.getVariableStatements()) {
     for (const decl of stmt.getDeclarations()) {

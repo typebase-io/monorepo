@@ -38,6 +38,37 @@ export const postsTable = pgTable('posts', {
     );
   });
 
+  it('writes the relations through the given helpers name', () => {
+    const schema = `import { pgTable, text } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+
+export const usersTable = pgTable('users', {
+  id: text('id').primaryKey(),
+});
+
+export const usersRelations = relations(usersTable, ({ many }) => ({
+  posts: many(postsTable),
+}));
+
+export const postsTable = pgTable('posts', {
+  id: text('id').primaryKey(),
+});`;
+
+    const { relations } = parseGeneratedSchema(schema, 'helpers');
+
+    expect(relations).toEqual(
+      new Map([
+        [
+          'usersTable',
+          `{
+    posts: helpers.many.postsTable(),
+  }`,
+        ],
+        ['postsTable', '{}'],
+      ])
+    );
+  });
+
   it('collects table names from every declaration in a variable statement', () => {
     const schema = `import { pgTable, text } from 'drizzle-orm/pg-core';
 

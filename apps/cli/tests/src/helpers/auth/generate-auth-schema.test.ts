@@ -182,6 +182,58 @@ describe('generateAuthSchema', () => {
     expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-other-call.txt');
   });
 
+  it('adds an `r` parameter when the defineRelations callback has none', async () => {
+    relations = `
+      import { q } from "typebase-io/db";
+
+      import * as schema from "./schema.ts";
+
+      export const relations = q.defineRelations(schema, () => ({
+        todos: {},
+      }));
+    `;
+
+    await run();
+
+    expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations.txt');
+  });
+
+  it('keeps a differently named defineRelations parameter and writes the auth relations through it', async () => {
+    relations = `
+      import { q } from "typebase-io/db";
+
+      import * as schema from "./schema.ts";
+
+      export const relations = q.defineRelations(schema, (helpers) => ({
+        todos: {},
+      }));
+    `;
+
+    await run();
+
+    expect(tmp.read('relations.ts')).toEqualTemplate('generate-auth-schema', 'relations-custom-helpers-name.txt');
+  });
+
+  it('throws without modifying any file when the defineRelations callback destructures its parameter', async () => {
+    relations = `
+      import { q } from "typebase-io/db";
+
+      import * as schema from "./schema.ts";
+
+      export const relations = q.defineRelations(schema, ({ one }) => ({
+        todos: {},
+      }));
+    `;
+
+    const originalSchema = removeExtraSpaces(schema);
+    const originalRelations = removeExtraSpaces(relations);
+
+    await expect(run()).rejects.toThrow('the `q.defineRelations` callback destructures its parameter');
+
+    expect(tmp.read('schema.ts')).toBe(originalSchema);
+    expect(tmp.read('relations.ts')).toBe(originalRelations);
+  });
+
   it('throws when the defineRelations callback is not an inline arrow function', async () => {
     relations = `
       import { q } from "typebase-io/db";

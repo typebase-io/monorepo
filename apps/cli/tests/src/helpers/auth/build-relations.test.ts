@@ -23,6 +23,41 @@ describe('buildRelation', () => {
     );
   });
 
+  it('writes every helper reference through the given helpers name', () => {
+    expect(
+      buildRelation(
+        [{ sourceTable: 'posts', relationName: 'author', targetTable: 'users', field: 'authorId', reference: 'id' }],
+        [
+          { sourceTable: 'users', relationName: 'posts', targetTable: 'posts' },
+          { sourceTable: 'users', relationName: 'comments', targetTable: 'comments' },
+        ],
+        'helpers'
+      )
+    ).toEqual(
+      new Map([
+        [
+          'posts',
+          `{
+    author: helpers.one.users({
+      from: helpers.posts.authorId,
+      to: helpers.users.id,
+    }),
+  }`,
+        ],
+        [
+          'users',
+          `{
+    posts: helpers.many.posts({
+      from: helpers.users.id,
+      to: helpers.posts.authorId,
+    }),
+    comments: helpers.many.comments(),
+  }`,
+        ],
+      ])
+    );
+  });
+
   it('renders a many-relation with from/to derived from its inverse one-relation', () => {
     expect(
       buildRelation(
