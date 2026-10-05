@@ -556,7 +556,7 @@ Keep `app.json` scheme, plugin scheme/storage prefix, and trusted origins aligne
 ## Common failure modes
 
 - Missing `db`, `auth`, `env`, `publisher`, or `storage` context: resolve `<tb>`, check the enabling file, and rerun codegen if its presence changed.
-- `db.query.X` missing or “no relations found”: register the table in `db/relations.ts`, even as `{}`.
+- “Property 'X' is missing” on the `q.defineRelations` call: a table exported from `db/schema.ts` is not registered in `db/relations.ts`. Add it, as `{}` when it has no relations.
 - “relation does not exist”: schema code changed but the target database was not pushed.
 - Storage sync/build failure: make `defineStorage` statically resolvable (plain-string `provider`, inline `buckets`, `access` on every cloud bucket). An access-mismatch error needs the user's decision, not a workaround.
 - Boot-time `TYPEBASE_STORAGE_*` failure: run `storage sync <target>` or redeploy; for `generate-server` either sync and refresh `_server/.env` or use `--local-storage`.

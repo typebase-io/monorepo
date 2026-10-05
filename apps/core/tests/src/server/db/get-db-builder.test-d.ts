@@ -10,6 +10,7 @@ const users = p.pgTable('users', { id: p.text().primaryKey() });
 
 const _relations = q.defineRelations({ todos, users }, (r) => ({
   todos: { user: r.one.users({ from: r.todos.userId, to: r.users.id }) },
+  users: {},
 }));
 
 type Relations = typeof _relations;

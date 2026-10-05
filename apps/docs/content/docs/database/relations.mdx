@@ -6,8 +6,8 @@ description: Define how your tables connect to each other and work with generate
 Relations tell Typebase how your tables connect to each other so you can query across them. For example, instead of manually looking up a user's posts by their `authorId`, you can ask for a user and get their posts included automatically.
 
 <Callout type="warn">
-  Every table exported from `schema.ts` **must** be registered in `typebase/db/relations.ts`, even if it has no relations to other tables. Typebase
-  uses this file to enable the relational query API (e.g. `db.query.users.findFirst()`).
+  Every table exported from `schema.ts` **must** be registered in `typebase/db/relations.ts`, even if it has no relations to other tables. A table you
+  forget is a type error on `relations.ts`, so adding a table to your schema always means coming back here.
 </Callout>
 
 ## Defining relations
@@ -46,7 +46,7 @@ export const relations = q.defineRelations(schema, (r) => ({
 }));
 ```
 
-Even if a table is standalone with no relations to other tables, it still needs an empty entry:
+Even if a table is standalone with no relations to other tables, it still needs an empty entry on `relations.ts`:
 
 ```ts title="typebase/db/relations.ts"
 export const relations = q.defineRelations(schema, (r) => ({

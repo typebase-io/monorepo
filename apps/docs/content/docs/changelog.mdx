@@ -18,6 +18,16 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.22 [#v0-1-22]
+
+_2026-10-05._
+
+**Changed**
+
+- `q.defineRelations` requires every table your schema exports. A table added to `schema.ts` and left out of
+  [`relations.ts`](/docs/database/relations) is now a type error on the call that names it, such as
+  `Property 'events' is missing in type '{ todos: {}; }'`, instead of passing silently. Register a table with no relations as `{}`.
+
 ## 0.1.21 [#v0-1-21]
 
 _2026-10-02._

@@ -49,6 +49,7 @@ describe('q', () => {
       todos: {
         user: r.one.users({ from: r.todos.userId, to: r.users.id }),
       },
+      users: {},
     }));
 
     expect(Object.keys(relations)).toEqual(['users', 'todos']);

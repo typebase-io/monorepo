@@ -1,7 +1,7 @@
 import { describe, expectTypeOf, it } from 'vitest';
 
 import { type InferDB } from '#db/drizzle.ts';
-import { p } from '#db/drizzle.ts';
+import { p, q } from '#db/drizzle.ts';
 
 const _todos = p.pgTable('todos', {
   id: p.integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -65,5 +65,36 @@ describe('InferDB', () => {
 
   it('resolves a schema without tables to an empty object', () => {
     expectTypeOf<[keyof InferDB<{ NOT_A_TABLE: string }>]>().toEqualTypeOf<[never]>();
+  });
+});
+
+describe('q.defineRelations', () => {
+  const todos = p.pgTable('todos', { id: p.integer().primaryKey(), userId: p.text().notNull() });
+  const users = p.pgTable('users', { id: p.text().primaryKey() });
+
+  it('accepts a config that lists every table of the schema', () => {
+    const _relations = q.defineRelations({ todos, users }, (r) => ({
+      todos: { user: r.one.users({ from: r.todos.userId, to: r.users.id }) },
+      users: {},
+    }));
+
+    expectTypeOf<keyof typeof _relations>().toEqualTypeOf<'todos' | 'users'>();
+  });
+
+  it('rejects a config that leaves a table of the schema out', () => {
+    // @ts-expect-error -- `users` is in the schema but missing from the relations config.
+    q.defineRelations({ todos, users }, () => ({ todos: {} }));
+  });
+
+  it('ignores schema exports that are not tables', () => {
+    const _relations = q.defineRelations({ todos, NOT_A_TABLE: 'constant' }, () => ({ todos: {} }));
+
+    expectTypeOf<keyof typeof _relations>().toEqualTypeOf<'todos'>();
+  });
+
+  it('still accepts a schema without a relations config', () => {
+    const _relations = q.defineRelations({ todos, users });
+
+    expectTypeOf<keyof typeof _relations>().toEqualTypeOf<'todos' | 'users'>();
   });
 });

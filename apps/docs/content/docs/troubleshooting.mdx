@@ -147,7 +147,7 @@ The same applies to `auth`, `publisher`, and `storage`. Each requires its matchi
 
 The `db` publisher stores its events in your own Postgres database, so `typebase/db/schema.ts` must export the [required `events` table](/docs/publisher#the-events-table). The CLI refuses to build without it.
 
-Also add an `events: {}` entry to `typebase/db/relations.ts`, following the general rule that every table should be registered for Typebase's relational query API.
+Also add an `events: {}` entry to `typebase/db/relations.ts`. Every table in your schema has to be registered there.
 
 [`init --with-db-publisher`](/docs/cli/init#--with-db-publisher) scaffolds both definitions. If you added the publisher by hand, copy them from the [Publisher](/docs/publisher) page, run `npx typebase-io-cli codegen`, and push the table with `npx typebase-io-cli db dev push` before starting the server.
 
@@ -405,9 +405,13 @@ Or just deploy: `npx typebase-io-cli deploy dev` / `npx typebase-io-cli deploy p
 In [migrations mode](/docs/database/migrations) the equivalent is `db dev migrate` / `db prod migrate` — and if you added the table without generating
 a migration, run `db migrations generate` first.
 
-### "No relations found" when using `db.query.X`
+### "Property 'X' is missing" in `relations.ts`
 
-Every table exported from `schema.ts` must also appear in `db/relations.ts`, even if it has no foreign keys. See [Relations](/docs/database/relations) for the empty-entry pattern.
+```
+Property 'events' is missing in type '{ todos: {}; }' but required in type ...
+```
+
+You added a table to `schema.ts` without registering it in `db/relations.ts`. Every table exported from `schema.ts` must appear there, even if it has no foreign keys: add an entry for the table the error names, as `{}` if it has no relations. See [Relations](/docs/database/relations) for the empty-entry pattern.
 
 ### Schema push hangs or times out
 
