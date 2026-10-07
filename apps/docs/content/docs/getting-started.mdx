@@ -109,8 +109,8 @@ This creates your backend directory with example files. Pass `--with-auth` to in
   <File name="typebase.json" comment="CLI configuration" />
 </Files>
 
-It also creates a [`typebase.json`](/docs/configuration) at your project root. It starts out with only a `$schema` reference, which is enough for your
-editor to autocomplete the options.
+It also creates a [`typebase.json`](/docs/configuration) at your project root. It starts out with a `$schema` reference, which is enough for your
+editor to autocomplete the options, and a `telemetry` entry recording that the CLI showed you its [telemetry notice](/docs/cli#telemetry).
 
 <Callout type="info">
   If your project has a `src/` directory, Typebase will create the files inside `src/typebase/` instead. You can customize this path in

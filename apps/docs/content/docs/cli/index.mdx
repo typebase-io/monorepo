@@ -45,3 +45,54 @@ deploys can break while they differ. Install `typebase-io@0.1.15`, or run the CL
 ```
 
 It's a warning, not an error, so the command still runs. `env`, `logs` and `config` don't need `typebase-io` at all and skip the check.
+
+## Telemetry
+
+The CLI collects anonymous usage data so we can see which commands and options people use, and focus work where it matters. The first command you
+run in a project prints a notice about it to stderr, then records in [`typebase.json`](/docs/configuration#telemetry) that it was shown, so you only
+see it once per project.
+
+Each command you run sends one event with:
+
+| Field        | Example                                      |
+| ------------ | -------------------------------------------- |
+| Command      | `env prod add`                               |
+| Target       | `dev` or `prod`, for commands that take one  |
+| Options      | `{ "provider": "vercel", "logs": true }`     |
+| CLI version  | `0.1.23`                                     |
+| Node version | `v24.1.0`                                    |
+| OS and CPU   | `darwin`, `arm64`                            |
+| CI           | Whether the `CI` environment variable is set |
+
+Options are recorded only when you pass them. Flags that are on or off, and options that take one of a fixed list of values such as `--provider`,
+are sent as you typed them. Every other option, a URL, a path, a command or a name, is sent as `true`, so we learn it was used but never its value.
+Arguments other than the `dev` or `prod` target, such as the key and value given to [`env add`](/docs/cli/env), are never sent, and neither are
+your code, your `.env` files or anything read from them.
+
+IP addresses are discarded when events arrive, so no IP address and no location derived from one is stored.
+
+Events from the same project on the same machine share an id, a SHA-256 hash of the machine name and the project directory, so repeated runs can be
+counted together without the hash revealing either.
+
+### Opting out
+
+Set `telemetry.enabled` to `false` in `typebase.json`:
+
+```json title="typebase.json"
+{
+  "telemetry": {
+    "enabled": false
+  }
+}
+```
+
+Because `typebase.json` is committed, this opts out everyone working on the project. To opt out on your own machine, or in CI, set either environment
+variable instead:
+
+```bash
+export TYPEBASE_TELEMETRY_DISABLED=1
+# or the cross-tool convention
+export DO_NOT_TRACK=1
+```
+
+With telemetry disabled, the CLI sends nothing and shows no notice.

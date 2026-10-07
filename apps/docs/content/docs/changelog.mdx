@@ -18,6 +18,17 @@ typebase-io@latest
   left over from an older release can describe a context your server no longer provides.
 </Callout>
 
+## 0.1.23 [#v0-1-23]
+
+_2026-10-07._
+
+**Added**
+
+- The CLI collects [anonymous usage data](/docs/cli#telemetry): the command you ran, the options you passed, and your CLI, Node and OS versions.
+  Option values are sent only when they come from a fixed list, such as `--provider`, so URLs, paths and secrets never leave your machine. The first
+  command in a project prints a notice once. Opt out with `"telemetry": { "enabled": false }` in
+  [`typebase.json`](/docs/configuration#telemetry), or with `TYPEBASE_TELEMETRY_DISABLED=1` or `DO_NOT_TRACK=1`.
+
 ## 0.1.22 [#v0-1-22]
 
 _2026-10-05._

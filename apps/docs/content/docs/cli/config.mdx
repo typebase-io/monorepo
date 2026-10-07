@@ -64,6 +64,7 @@ Because the titles, descriptions and enums travel with the values, a tool can re
 If `typebase.json` is malformed or fails validation, the command writes the error to stderr and exits with code `1`, printing nothing to stdout.
 
 <Callout type="info">
-  This command exists so that other tools do not have to reimplement the config schema or its defaults. It reads a file and never writes one, and
-  unlike most commands it does not require `typebase-io` to be installed.
+  This command exists so that other tools do not have to reimplement the config schema or its defaults. It reads a file and doesn't write one, and
+  unlike most commands it does not require `typebase-io` to be installed. The one exception is the first CLI command run in a project, which prints
+  the [telemetry notice](/docs/cli#telemetry) to stderr and records it in `typebase.json`; stdout stays the JSON above.
 </Callout>

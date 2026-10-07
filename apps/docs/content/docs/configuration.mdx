@@ -3,7 +3,7 @@ title: Configuration
 description: Customize Typebase with the typebase.json configuration file.
 ---
 
-Typebase uses a `typebase.json` file in your project root to store configuration. [`init`](/docs/cli/init) creates it with a `$schema` reference and nothing else, so every option starts on its default. Other CLI commands update it as you go, and you can edit it manually.
+Typebase uses a `typebase.json` file in your project root to store configuration. [`init`](/docs/cli/init) creates it with a `$schema` reference, so every option starts on its default. Other CLI commands update it as you go, and you can edit it manually.
 
 ## Example
 
@@ -313,6 +313,27 @@ See [bucket names on the provider](/docs/storage#bucket-names-on-the-provider). 
 is separate from the `vercel` and `cloudflare` server sections above, so your files and your server can live on different accounts, or different
 platforms.
 
+---
+
+### `telemetry`
+
+Anonymous usage data the CLI collects about the commands you run. See [telemetry](/docs/cli#telemetry) for exactly what is sent.
+
+```json
+{
+  "telemetry": {
+    "enabled": false
+  }
+}
+```
+
+| Field         | Type      | Default | Description                                                                         |
+| ------------- | --------- | ------- | ----------------------------------------------------------------------------------- |
+| `enabled`     | `boolean` | `true`  | Set to `false` to stop the CLI from sending usage data and showing the notice       |
+| `noticeShown` | `boolean` | `false` | Set by the CLI once it has printed the telemetry notice, so the notice appears once |
+
+The first command you run in a project writes both fields, with `enabled` set to `true`, so the opt-out is in the file where you can find it.
+
 ## Full schema
 
 Here is the complete `typebase.json` schema with all optional fields:
@@ -356,6 +377,10 @@ Here is the complete `typebase.json` schema with all optional fields:
     "cloudflare": {
       "accountId": ""
     }
+  },
+  "telemetry": {
+    "enabled": true,
+    "noticeShown": false
   }
 }
 ```
