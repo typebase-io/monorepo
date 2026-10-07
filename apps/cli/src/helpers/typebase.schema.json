@@ -173,6 +173,21 @@
         }
       },
       "additionalProperties": false
+    },
+    "telemetry": {
+      "type": "object",
+      "description": "Anonymous usage data configuration.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Send anonymous usage data about the commands you run. Defaults to true."
+        },
+        "noticeShown": {
+          "type": "boolean",
+          "description": "Whether the CLI has already shown the telemetry notice. Set by the CLI."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

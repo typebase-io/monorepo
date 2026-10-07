@@ -276,6 +276,27 @@
         },
         "title": "Storage",
         "description": "Storage configuration."
+      },
+      "telemetry": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Send anonymous usage data about the commands you run. Defaults to true.",
+            "x-current-value": true,
+            "x-is-default": true
+          },
+          "noticeShown": {
+            "type": "boolean",
+            "title": "Notice shown",
+            "description": "Whether the CLI has already shown the telemetry notice. Set by the CLI.",
+            "x-current-value": false,
+            "x-is-default": true
+          }
+        },
+        "title": "Telemetry",
+        "description": "Anonymous usage data configuration."
       }
     }
   }

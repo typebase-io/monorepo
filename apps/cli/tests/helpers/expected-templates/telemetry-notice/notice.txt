@@ -1,0 +1,3 @@
+Typebase now collects anonymous usage data to learn which commands and options are used.
+It never records paths, URLs, secrets or your code.
+To opt out, set `"telemetry": { "enabled": false }` in `typebase.json`.

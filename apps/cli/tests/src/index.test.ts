@@ -1,3 +1,4 @@
+import type { Command } from '@commander-js/extra-typings';
 import { type MockInstance, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const spies = vi.hoisted(() => ({
@@ -15,6 +16,8 @@ const spies = vi.hoisted(() => ({
   isTypebaseIoInstalled: vi.fn(),
   warnOnVersionMismatch: vi.fn(),
   getCliVersion: vi.fn<() => string | undefined>(),
+  trackCommand: vi.fn(() => Promise.resolve()),
+  flushAnalytics: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('#commands/init.ts', async () => {
@@ -93,6 +96,14 @@ vi.mock('#helpers/shared/warn-on-version-mismatch.ts', () => {
 
 vi.mock('#helpers/shared/get-cli-version.ts', () => {
   return { getCliVersion: spies.getCliVersion };
+});
+
+vi.mock('#helpers/analytics/track-command.ts', () => {
+  return { trackCommand: spies.trackCommand };
+});
+
+vi.mock('#helpers/analytics/flush-analytics.ts', () => {
+  return { flushAnalytics: spies.flushAnalytics };
 });
 
 describe('cli entrypoint', () => {
@@ -209,6 +220,21 @@ describe('cli entrypoint', () => {
     await runCli(['--version']);
 
     expect(stderr()).toContain("unknown option '--version'");
+  });
+
+  it('tracks the command before running it', async () => {
+    await runCli(['deploy']);
+
+    expect(spies.trackCommand).toHaveBeenCalledOnce();
+    expect((spies.trackCommand.mock.lastCall as unknown as [Command])[0].name()).toBe('deploy');
+    expect(spies.trackCommand).toHaveBeenCalledBefore(spies.deploy);
+  });
+
+  it('waits up to a second for pending analytics before exiting', async () => {
+    await runCli(['init']);
+
+    expect(spies.flushAnalytics).toHaveBeenCalledExactlyOnceWith(1000);
+    expect(spies.flushAnalytics).toHaveBeenCalledBefore(exitSpy as MockInstance);
   });
 
   it('reports an unexpected error and sets the exit code when a command throws', async () => {

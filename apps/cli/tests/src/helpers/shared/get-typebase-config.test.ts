@@ -37,7 +37,16 @@ describe('getTypebaseConfig', () => {
       cloudflare: undefined,
       deno: undefined,
       neon: undefined,
+      telemetry: { enabled: true, noticeShown: false },
     });
+  });
+
+  it('reads the telemetry settings', async () => {
+    tmp.write('typebase.json', JSON.stringify({ telemetry: { enabled: false, noticeShown: true } }));
+
+    const config = await withCwd(tmp.path, () => getTypebaseConfig());
+
+    expect(config.telemetry).toEqual({ enabled: false, noticeShown: true });
   });
 
   it('defaults the project path to src/typebase when a src directory exists', async () => {
@@ -100,6 +109,7 @@ describe('getTypebaseConfig', () => {
       cloudflare: undefined,
       deno: undefined,
       neon: undefined,
+      telemetry: { enabled: true, noticeShown: false },
     });
   });
 

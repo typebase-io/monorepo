@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/typebase-io/monorepo/refs/heads/main/apps/cli/src/helpers/typebase.schema.json",
+  "serverProvider": "vercel",
+  "telemetry": {
+    "enabled": true,
+    "noticeShown": true
+  }
+}

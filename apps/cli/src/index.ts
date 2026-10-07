@@ -15,6 +15,8 @@ import { logs } from '#commands/logs.ts';
 import { start } from '#commands/start.ts';
 import { storage } from '#commands/storage.ts';
 
+import { flushAnalytics } from '#helpers/analytics/flush-analytics.ts';
+import { trackCommand } from '#helpers/analytics/track-command.ts';
 import { getCliVersion } from '#helpers/shared/get-cli-version.ts';
 import { isTypebaseIoInstalled } from '#helpers/shared/is-typebase-io-installed.ts';
 import { warnOnVersionMismatch } from '#helpers/shared/warn-on-version-mismatch.ts';
@@ -44,6 +46,9 @@ const main = async () => {
 
       warnOnVersionMismatch();
     })
+    .hook('preAction', async (_program, actionCommand) => {
+      await trackCommand(actionCommand);
+    })
     .addCommand(init)
     .addCommand(codegen)
     .addCommand(generateServer)
@@ -66,6 +71,8 @@ const main = async () => {
     console.error(chalkStderr.red(`Unexpected Error: ${e}`));
     process.exitCode = 1;
   }
+
+  await flushAnalytics(1000);
 
   process.exit();
 };

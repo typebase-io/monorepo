@@ -1,6 +1,6 @@
 {
   "name": "@typebase-io/cli",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "private": false,
   "type": "module",
   "description": "The CLI for Typebase. A type-safe backend you write as TypeScript files inside your existing app.",
@@ -67,6 +67,7 @@
     "jiti": "2.7.0",
     "ora": "9.4.0",
     "pg": "8.20.0",
+    "posthog-node": "5.55.0",
     "preferred-pm": "5.0.0",
     "semver": "7.7.4",
     "ts-morph": "27.0.2",

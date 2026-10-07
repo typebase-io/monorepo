@@ -59,5 +59,9 @@ export const getTypebaseConfig = async () => {
     deno: config.data.deno,
     neon: config.data.neon,
     storage: config.data.storage,
+    telemetry: {
+      enabled: config.data.telemetry?.enabled ?? true,
+      noticeShown: config.data.telemetry?.noticeShown ?? false,
+    },
   };
 };

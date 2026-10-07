@@ -11,7 +11,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/helpers/templates/server-file/options.ts', 'src/helpers/storage/storage-provider-client.ts'],
+      exclude: [
+        'src/helpers/templates/server-file/options.ts',
+        'src/helpers/storage/storage-provider-client.ts',
+        'src/helpers/analytics/posthog-client.ts',
+      ],
       reporter: ['text', 'html'],
     },
   },

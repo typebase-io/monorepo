@@ -114,6 +114,22 @@ describe('constants', () => {
     });
   });
 
+  it('publishes the telemetry section in the JSON schema', async () => {
+    const schema = JSON.parse(await readFile(new URL('../../../src/helpers/typebase.schema.json', import.meta.url), 'utf8')) as {
+      properties: Record<string, unknown>;
+    };
+
+    expect(schema.properties.telemetry).toEqual({
+      type: 'object',
+      description: 'Anonymous usage data configuration.',
+      properties: {
+        enabled: { type: 'boolean', description: 'Send anonymous usage data about the commands you run. Defaults to true.' },
+        noticeShown: { type: 'boolean', description: 'Whether the CLI has already shown the telemetry notice. Set by the CLI.' },
+      },
+      additionalProperties: false,
+    });
+  });
+
   it('publishes the embedded boolean in the JSON schema instead of a mode setting', async () => {
     const schema = JSON.parse(await readFile(new URL('../../../src/helpers/typebase.schema.json', import.meta.url), 'utf8')) as {
       properties: { server: { properties: Record<string, unknown> } };

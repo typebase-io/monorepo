@@ -326,6 +326,24 @@ export const typebaseConfigSchema = z.object({
       })
       .meta({ title: 'Storage', description: 'Storage configuration.' })
   ),
+  telemetry: z.optional(
+    z
+      .object({
+        enabled: z.optional(
+          z.boolean().meta({
+            title: 'Enabled',
+            description: 'Send anonymous usage data about the commands you run. Defaults to true.',
+          })
+        ),
+        noticeShown: z.optional(
+          z.boolean().meta({
+            title: 'Notice shown',
+            description: 'Whether the CLI has already shown the telemetry notice. Set by the CLI.',
+          })
+        ),
+      })
+      .meta({ title: 'Telemetry', description: 'Anonymous usage data configuration.' })
+  ),
 });
 
 export type TypebaseConfigSchema = z.infer<typeof typebaseConfigSchema>;
